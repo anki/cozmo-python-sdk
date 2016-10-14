@@ -1,0 +1,14 @@
+.DS_Store
+*.sw?
+__pycache__
+*.pyc
+*.tox
+*.egg
+*.egg-info
+.cache
+/build
+htmlcov
+.coverage
+
+# pycharm 
+.idea
