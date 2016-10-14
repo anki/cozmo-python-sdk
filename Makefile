@@ -48,7 +48,6 @@ dist/vagrant_bundle.tar.gz: sdist examples
 	rm -rf dist/vagrant_bundle
 	mkdir dist/vagrant_bundle
 	cp dist/cozmo_sdk_examples.tar.gz dist/vagrant_bundle/
-	cp dist/cozmo-$(version).tar.gz dist/vagrant_bundle/
 	cp vagrant/Vagrantfile dist/vagrant_bundle/
 	cp vagrant/setup-vm.sh dist/vagrant_bundle/
 	cd dist && tar -czvf vagrant_bundle.tar.gz vagrant_bundle
