@@ -329,6 +329,7 @@ As a third beginning tutorial, you can tell Cozmo to look around for his blocks,
 
   if len(cubes) < 2:
         print("Error: need 2 Cubes but only found", len(cubes), "Cube(s)")
+..
 
   a. ``if len(cubes) < 2:`` is an argument that is called if Cozmo detects fewer than two cubes.
   b. ``print("Error: need 2 Cubes but only found", len(cubes), "Cube(s)")`` is the error message that prints telling the user how many cubes Cozmo saw while looking around.
