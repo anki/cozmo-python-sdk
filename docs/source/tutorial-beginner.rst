@@ -128,12 +128,12 @@ For your first program, you will tell Cozmo to drive in a straight line for thre
 .. code-block:: python
   :lineno-start: 8
 
-      robot.drive_wheels(50, 50, 50, 50, duration=3)
+      robot.drive_wheels(50, 50, duration=3)
 
 ..
 
   a. The ``drive_wheels`` function directly controls all aspects of Cozmo's wheel motion.
-  b. ``50, 50, 50, 50`` is the speed of the wheels in his left and right treads, respectively. Speed is measured in millimeters per second (mm/s). In this example, Cozmo will move forward 50 millimeters per second.
+  b. ``50, 50`` is the speed of the wheels in his left and right treads, respectively. Speed is measured in millimeters per second (mm/s). In this example, Cozmo will move forward 50 millimeters per second.
   c. ``duration=3`` specifies how long Cozmo will move. Duration is measured in seconds. In this example, Cozmo will move for three seconds.
 
 5. Type in the last three lines:
@@ -170,7 +170,7 @@ The completed program should look like this.
   def run(sdk_conn):
     robot = sdk_conn.wait_for_robot()
 
-    robot.drive_wheels(50,50, duration=3)
+    robot.drive_wheels(50, 50, duration=3)
 
     if __name__ == '__main__':
         cozmo.setup_basic_logging()
