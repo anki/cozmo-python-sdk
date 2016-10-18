@@ -1,0 +1,14 @@
+{% extends "!layout.html" %}
+{% block extrahead %}
+    <!-- Google Analytics -->
+    <script>
+        if (window.location.hostname.toLowerCase() == 'cozmosdk.anki.com') {
+            window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+            ga('create', 'UA-40941061-1', 'auto');
+            ga('send', 'pageview');
+        }
+    </script>
+    <script async src='https://www.google-analytics.com/analytics.js'></script>
+    <!-- End Google Analytics -->
+    {{ super() }}
+{% endblock %}
