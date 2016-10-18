@@ -294,11 +294,11 @@ class FirstAvailableConnector(DeviceConnector):
             return android_result
 
         ios = IOSConnector()
-        iOS_result = await self._do_connect(ios, *conn_args)
-        if not isinstance(iOS_result, BaseException):
-            return iOS_result
+        ios_result = await self._do_connect(ios, *conn_args)
+        if not isinstance(ios_result, BaseException):
+            return ios_result
 
-        logger.warn('No iOS device found running Cozmo: %s' % iOS_result)
+        logger.warn('No iOS device found running Cozmo: %s' % ios_result)
         logger.warn('No Android device found running Cozmo: %s' % android_result)
 
         raise exceptions.NoDevicesFound('No devices connected running Cozmo in SDK mode')
