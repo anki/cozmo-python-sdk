@@ -62,7 +62,7 @@ Mobile Device Setup
 
 4. **iOS** devices require `usbmuxd <https://github.com/libimobiledevice/usbmuxd>`_ in order to run the Cozmo SDK. Usbmuxd is required for the computer to communicate with the iOS device over a USB cable.
 
-5. **Android** devices require installation of :ref:`adb` (adb) in order to run the Cozmo SDK. Android Debug Bridge is required for the computer to communicate with the Android mobile device over a USB cable. This service automatically runs when required.
+5. **Android** devices require installation of :ref:`adb` (adb) in order to run the Cozmo SDK. This is required for the computer to communicate with the Android mobile device over a USB cable and runs automatically when required.
 
 ----------------
 SDK Installation
@@ -78,7 +78,7 @@ Note that the [camera] option adds support for processing images from Cozmo's ca
 Troubleshooting
 ^^^^^^^^^^^^^^^
 
-Please see the main :ref:`initial` page for tips, or visit the `Cozmo SDK Forums <https://forums.anki.com/>`_ to ask questions, find solutions, or for general discussion.
+Please see the :ref:`trouble` section of the Initial Setup page for tips, or visit the `Cozmo SDK Forums <https://forums.anki.com/>`_ to ask questions, find solutions, or for general discussion.
 
 ----
 

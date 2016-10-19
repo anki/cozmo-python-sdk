@@ -15,9 +15,9 @@ Welcome to the Cozmo SDK Beta!
     :maxdepth: 2
     :caption: Installation
 
-    install
+    initial
     install-linux.rst
-    install-osx.rst
+    install-macos.rst
     install-windows.rst
     vagrant.rst
 

@@ -4,7 +4,7 @@
 Android Debug Bridge
 ####################
 
-.. important:: Android Debug Bridge is required ONLY for those users pairing an Android mobile device with Cozmo. iOS users require *usbmuxd*; instructions for installing this are given on the install pages for each operating system.
+.. important:: Android Debug Bridge (adb)is required ONLY for those users pairing an Android mobile device with Cozmo. iOS users require a separate utility called *usbmuxd*; instructions for installing this, if necessary, are given on the install pages for each operating system.
 
 Android Debug Bridge (adb) is necessary in order for the Cozmo SDK to work with Android mobile devices. Please ensure adb is installed before attempting to run the Cozmo SDK with a paired Android device.
 
@@ -28,13 +28,20 @@ Windows Installation
 4. Run the installer to start the Android SDK Tools Setup Wizard.
 5. The Setup Wizard will direct you to install the Java Development Kit (JDK) if you do not have it installed.
 6. Complete installation of the Android SDK Tools. Take note of the directory it was installed to (e.g. *C:\Program Files (x86)\Android*).
-7. In the Android SDK Tools location, run the SDK Manager as Administrator.
+7. In the Android SDK Tools location, run the SDK Manager as Administrator by right-clicking and selecting *Run as administrator*.
 
-  a. Deselect everything except for *Android SDK Platform - tools*.
+  a. Deselect everything except for *Android SDK Platform - tools*. For a Nexus phone, you may also want to select Google USB Driver to download Google’s drivers.
   b. Click **Install** once finished.
-  c. adb should now be installed to *platform-tools*.
+  c. adb should now be installed in the *platform-tools* folder.
 
-8. Continue to :ref:`final-install` below to complete installation.
+8. Add adb to your PATH environment variable.
+
+  a. Right-click the Start menu and select *System*.
+  b. Select *Advanced System Settings -> Advanced -> Environment Variables*.
+  c. Under *User Variables*, select *PATH* and click **Edit**.
+  d. Under *Edit Environment Variables*, click **New** and add the path to the folder containing adb (e.g. *C:\Program Files (x86)\Android\android-sdk\platform-tools*).
+
+9. Continue to :ref:`final-install` below to complete installation.
 
 ------------------
 Linux Installation
@@ -42,7 +49,7 @@ Linux Installation
 
 1. If you do not yet have the Java Development Kit (JDK) version 8 installed, you must install it.
 
-  a. To check to see if you have java installed, enter the following command into the Terminal::
+  a. To check to see if you have Java installed, enter the following command into the Terminal::
 
         java -version
 
@@ -112,14 +119,7 @@ Final Installation (All Platforms)
     2. Then, under *Settings -> Device Options -> Developer Options*, turn on Enable ADB.
 
 2. Connect your Android device to your computer via USB. When the *Allow USB Debugging?* popup displays, tap **OK**.
-3. Add adb to your PATH environment variable.
-
-  a. Right-click the Start menu and select System.
-  b. Select *Advanced System Settings -> Advanced -> Environment Variables*.
-  c. Under *User Variables*, select *PATH* and click **Edit**.
-  d. Under *Edit Environment Variables*, click **New** and add the path to adb (e.g. C:\Program Files (x86)\Android\android-sdk\platform-tools).
-
-4. At the command line, type this command to confirm that your device shows::
+3. At the command line, type this command to confirm that your device shows::
 
       adb devices
 

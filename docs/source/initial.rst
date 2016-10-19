@@ -38,6 +38,10 @@ To install the SDK on your system, select the instructions for your computer's o
   * :ref:`install-osx`
   * :ref:`install-windows`
 
+..
+
+.. _trouble:
+
 ---------------
 Troubleshooting
 ---------------

@@ -1,8 +1,8 @@
-.. _install-osx:
+.. _install-macos:
 
-###################
-Installation - macOS
-###################
+###########################
+Installation - macOS / OS X
+###########################
 
 .. important:: THIS IS THE COZMO SDK BETA. The SDK is under development and is subject to change.
 
@@ -24,9 +24,8 @@ Python Installation
 Mobile Device Setup
 -------------------
 
-3. **iOS** devices require `iTunes <http://www.apple.com/itunes/download/>`_ to ensure that the usbmuxd service is installed on your computer. Usbmuxd is required for the computer to communicate with the iOS device over a USB cable. While iTunes needs to be installed, it does not need to be running.
-
-4. **Android** devices require installation of :ref:`adb` (adb) in order to run the Cozmo SDK. Android Debug Bridge is required for the computer to communicate with the Android mobile device over a USB cable. This service automatically runs when required.
+3. **iOS** devices do not require any special setup in order to run the Cozmo SDK on a macOS system.
+4. **Android** devices require installation of :ref:`adb` (adb) in order to run the Cozmo SDK. This is required for the computer to communicate with the Android mobile device over a USB cable and runs automatically when required.
 
 ----------------
 SDK Installation
@@ -42,7 +41,7 @@ Note that the [camera] option adds support for processing images from Cozmo's ca
 Troubleshooting
 ^^^^^^^^^^^^^^^
 
-Please see the main :ref:`initial` page for tips, or visit the `Cozmo SDK Forums <https://forums.anki.com/>`_ to ask questions, find solutions, or for general discussion.
+Please see the :ref:`trouble` section of the Initial Setup page for tips, or visit the `Cozmo SDK Forums <https://forums.anki.com/>`_ to ask questions, find solutions, or for general discussion.
 
 ----
 

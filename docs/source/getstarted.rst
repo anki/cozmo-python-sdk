@@ -4,7 +4,7 @@ Getting Started With the Cozmo SDK
 
 .. important:: THIS IS THE COZMO SDK BETA. The SDK is under development and is subject to change.
 
-To make sure you get the best experience possible out of the SDK, please ensure you have followed the steps in the :doc:`Installation Guide </install>`.
+To make sure you get the best experience possible out of the SDK, please ensure you have followed the steps in the :doc:`Initial Setup </initial>`.
 
 ----------------
 Cozmo SDK Forums
