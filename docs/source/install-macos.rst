@@ -20,6 +20,16 @@ Python Installation
 
     brew install python3
 
+----------------
+SDK Installation
+----------------
+
+To install the SDK, type the following into the Terminal window::
+
+    pip3 install --user `cozmo[camera]`
+
+Note that the [camera] option adds support for processing images from Cozmo's camera.
+
 -------------------
 Mobile Device Setup
 -------------------
@@ -27,19 +37,9 @@ Mobile Device Setup
 3. **iOS** devices do not require any special setup in order to run the Cozmo SDK on a macOS system.
 4. **Android** devices require installation of :ref:`adb` (adb) in order to run the Cozmo SDK. This is required for the computer to communicate with the Android mobile device over a USB cable and runs automatically when required.
 
-----------------
-SDK Installation
-----------------
-
-To install the SDK, type the following into the Terminal window::
-
-    pip3 install --user cozmo[camera]
-
-Note that the [camera] option adds support for processing images from Cozmo's camera.
-
-^^^^^^^^^^^^^^^
+---------------
 Troubleshooting
-^^^^^^^^^^^^^^^
+---------------
 
 Please see the :ref:`trouble` section of the Initial Setup page for tips, or visit the `Cozmo SDK Forums <https://forums.anki.com/>`_ to ask questions, find solutions, or for general discussion.
 

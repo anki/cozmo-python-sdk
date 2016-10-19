@@ -27,7 +27,7 @@ Windows Installation
 3. If you downloaded the ``.zip`` file instead of the ``.exe`` file, unzip it into your chosen directory.
 4. Run the installer to start the Android SDK Tools Setup Wizard.
 5. The Setup Wizard will direct you to install the Java Development Kit (JDK) if you do not have it installed.
-6. Complete installation of the Android SDK Tools. Take note of the directory it was installed to (e.g. *C:\Program Files (x86)\Android*).
+6. Complete installation of the Android SDK Tools. Take note of the directory it was installed to (e.g. ``C:\Program Files (x86)\Android``).
 7. In the Android SDK Tools location, run the SDK Manager as Administrator by right-clicking and selecting *Run as administrator*.
 
   a. Deselect everything except for *Android SDK Platform - tools*. For a Nexus phone, you may also want to select Google USB Driver to download Google’s drivers.
@@ -39,7 +39,7 @@ Windows Installation
   a. Right-click the Start menu and select *System*.
   b. Select *Advanced System Settings -> Advanced -> Environment Variables*.
   c. Under *User Variables*, select *PATH* and click **Edit**.
-  d. Under *Edit Environment Variables*, click **New** and add the path to the folder containing adb (e.g. *C:\Program Files (x86)\Android\android-sdk\platform-tools*).
+  d. Under *Edit Environment Variables*, click **New** and add the path to the folder containing adb (e.g. ``C:\Program Files (x86)\Android\android-sdk\platform-tools``).
 
 9. Continue to :ref:`final-install` below to complete installation.
 
@@ -68,7 +68,7 @@ Linux Installation
 2. Open your internet browser and go to `the Android developer website <https://developer.android.com/studio/index.html#Other>`_ .
 3. Scroll down to *Get just the command line tools*. Download the SDK tools package.
 4. Unzip the file into your chosen directory.
-5. In the downloaded Linux SDK tools, start the Android SDK Manager by executing the program **android** in *android-sdk-linux/tools* like this::
+5. In the downloaded Linux SDK tools, start the Android SDK Manager by executing the program **android** in ``android-sdk-linux/tools`` like this::
 
         cd YOUR_ANDROID_SDK_LOCATION/android-sdk-linux/tools
         ./android
