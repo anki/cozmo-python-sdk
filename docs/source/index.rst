@@ -16,6 +16,9 @@ Welcome to the Cozmo SDK Beta!
     :caption: Installation
 
     install
+    install-linux.rst
+    install-osx.rst
+    install-windows.rst
     vagrant.rst
 
 .. toctree::
