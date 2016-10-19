@@ -22,7 +22,7 @@ SDK Example Programs
 
 Anki provides example programs for novice and advanced users to run with the SDK. Download the SDK example programs here:
 
-  * `OS X/Linux SDK Examples <http://cozmosdk.anki.com/0.7.0/cozmo_sdk_examples_0.7.0.tar.gz>`_
+  * `macOS/Linux SDK Examples <http://cozmosdk.anki.com/0.7.0/cozmo_sdk_examples_0.7.0.tar.gz>`_
 
   * `Windows SDK Examples <http://cozmosdk.anki.com/0.7.0/cozmo_sdk_examples_0.7.0.zip>`_
 
@@ -48,7 +48,7 @@ Failure to Install Python Package
 
 If your attempt to install Python packages such as NumPy fails, please upgrade your pip install as follows:
 
-    On OS X and Linux::
+    On macOS and Linux::
 
         pip3 install -U pip
 

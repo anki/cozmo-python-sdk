@@ -1,12 +1,12 @@
 .. _install-osx:
 
 ###################
-Installation - OS X
+Installation - macOS
 ###################
 
 .. important:: THIS IS THE COZMO SDK BETA. The SDK is under development and is subject to change.
 
-This guide provides instructions on installing the Cozmo SDK for computers running with a OS X operating system.
+This guide provides instructions on installing the Cozmo SDK for computers running with a macOS operating system.
 
 -------------------
 Python Installation

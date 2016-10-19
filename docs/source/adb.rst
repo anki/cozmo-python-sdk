@@ -9,7 +9,7 @@ Android Debug Bridge
 Android Debug Bridge (adb) is necessary in order for the Cozmo SDK to work with Android mobile devices. Please ensure adb is installed before attempting to run the Cozmo SDK with a paired Android device.
 
 -----------------
-OS X Installation
+macOS Installation
 -----------------
 
 1. Type the following into a Terminal window (requires Homebrew to be installed)::
