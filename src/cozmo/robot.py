@@ -725,7 +725,7 @@ class Robot(event.Dispatcher):
         Abort / Cancel any action that is currently either running or queued within the engine
         '''
         # RobotActionType.UNKNOWN is a wildcard that matches all actions when cancelling.
-        msg = _clad_to_engine_iface.CancelAction(robotId=self.robot_id,
+        msg = _clad_to_engine_iface.CancelAction(robotID=self.robot_id,
                                                  actionType=_clad_to_engine_cozmo.RobotActionType.UNKNOWN)
         self.conn.send_msg(msg)
 
