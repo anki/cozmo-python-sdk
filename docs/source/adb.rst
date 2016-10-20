@@ -129,3 +129,8 @@ Final Installation (All Platforms)
 
       List of devices attached
       88148a08    device
+
+  If you are required to accept the connection request on the mobile device itself, a message will appear saying the device is unauthorized. For example::
+
+      List of devices attached
+      88148a08 unauthorized

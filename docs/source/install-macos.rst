@@ -26,7 +26,7 @@ SDK Installation
 
 To install the SDK, type the following into the Terminal window::
 
-    pip3 install --user `cozmo[camera]`
+    pip3 install --user 'cozmo[camera]'
 
 Note that the [camera] option adds support for processing images from Cozmo's camera.
 
