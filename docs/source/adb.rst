@@ -4,7 +4,7 @@
 Android Debug Bridge
 ####################
 
-.. important:: Android Debug Bridge (adb)is required ONLY for those users pairing an Android mobile device with Cozmo. iOS users require a separate utility called *usbmuxd*; instructions for installing this, if necessary, are given on the install pages for each operating system.
+.. important:: Android Debug Bridge (adb)is required ONLY for those users pairing an Android mobile device with Cozmo.
 
 Android Debug Bridge (adb) is necessary in order for the Cozmo SDK to work with Android mobile devices. Please ensure adb is installed before attempting to run the Cozmo SDK with a paired Android device.
 

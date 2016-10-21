@@ -34,8 +34,8 @@ Note that the [camera] option adds support for processing images from Cozmo's ca
 Mobile Device Setup
 -------------------
 
-3. **iOS** devices do not require any special setup in order to run the Cozmo SDK on a macOS system.
-4. **Android** devices require installation of :ref:`adb` (adb) in order to run the Cozmo SDK. This is required for the computer to communicate with the Android mobile device over a USB cable and runs automatically when required.
+* **iOS** devices do not require any special setup in order to run the Cozmo SDK on a macOS system.
+* **Android** devices require installation of :ref:`adb` (adb) in order to run the Cozmo SDK. This is required for the computer to communicate with the Android mobile device over a USB cable and runs automatically when required.
 
 ---------------
 Troubleshooting

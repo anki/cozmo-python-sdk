@@ -31,9 +31,9 @@ Note that the [camera] option adds support for processing images from Cozmo's ca
 Mobile Device Setup
 -------------------
 
-1. **iOS** devices require `iTunes <http://www.apple.com/itunes/download/>`_ to ensure that the usbmuxd service is installed on your computer. Usbmuxd is required for the computer to communicate with the iOS device over a USB cable. While iTunes needs to be installed, it does not need to be running.
+* **iOS** devices require `iTunes <http://www.apple.com/itunes/download/>`_ to ensure that the usbmuxd service is installed on your computer. Usbmuxd is required for the computer to communicate with the iOS device over a USB cable. While iTunes needs to be installed, it does not need to be running.
 
-2. **Android** devices require installation of :ref:`adb` (adb) in order to run the Cozmo SDK. This is required for the computer to communicate with the Android mobile device over a USB cable and runs automatically when required.
+* **Android** devices require installation of :ref:`adb` (adb) in order to run the Cozmo SDK. This is required for the computer to communicate with the Android mobile device over a USB cable and runs automatically when required.
 
 ---------------
 Troubleshooting

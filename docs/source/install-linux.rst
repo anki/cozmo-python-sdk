@@ -70,9 +70,9 @@ Note that the [camera] option adds support for processing images from Cozmo's ca
 Mobile Device Setup
 -------------------
 
-4. **iOS** devices require `usbmuxd <https://github.com/libimobiledevice/usbmuxd>`_ in order to run the Cozmo SDK. Usbmuxd is required for the computer to communicate with the iOS device over a USB cable.
+* **iOS** devices require `usbmuxd <https://github.com/libimobiledevice/usbmuxd>`_ in order to run the Cozmo SDK. Usbmuxd is required for the computer to communicate with the iOS device over a USB cable.
 
-5. **Android** devices require installation of :ref:`adb` (adb) in order to run the Cozmo SDK. This is required for the computer to communicate with the Android mobile device over a USB cable and runs automatically when required.
+* **Android** devices require installation of :ref:`adb` (adb) in order to run the Cozmo SDK. This is required for the computer to communicate with the Android mobile device over a USB cable and runs automatically when required.
 
 ---------------
 Troubleshooting
