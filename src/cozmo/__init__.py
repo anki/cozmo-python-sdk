@@ -29,7 +29,7 @@ from . import behavior
 from . import conn
 from . import event
 from . import exceptions
-from . import lcd_face
+from . import oled_face
 from . import lights
 from . import objects
 from . import robot
@@ -45,5 +45,5 @@ from .version import __version__, __cozmoclad_version__
 
 __all__ = ['logger', 'logger_protocol'] + \
     ['action', 'anim', 'annotate', 'behavior', 'conn', 'event', 'exceptions'] + \
-    ['lcd_face', 'lights', 'objects', 'robot', 'run', 'util', 'world'] + \
+    ['oled_face', 'lights', 'objects', 'robot', 'run', 'util', 'world'] + \
         (run.__all__ + exceptions.__all__)

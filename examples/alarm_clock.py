@@ -56,7 +56,7 @@ def make_text_image(text_to_draw, x, y, font=None):
     '''
 
     # make a blank image for the text, initialized to opaque black
-    text_image = Image.new('RGBA', cozmo.lcd_face.dimensions(), (0, 0, 0, 255))
+    text_image = Image.new('RGBA', cozmo.oled_face.dimensions(), (0, 0, 0, 255))
 
     # get a drawing context
     dc = ImageDraw.Draw(text_image)
@@ -130,14 +130,14 @@ def make_clock_image(current_time):
         return make_text_image(time_text, 8, 6, _clock_font)
 
     # make a blank image for the text, initialized to opaque black
-    clock_image = Image.new('RGBA', cozmo.lcd_face.dimensions(), (0, 0, 0, 255))
+    clock_image = Image.new('RGBA', cozmo.oled_face.dimensions(), (0, 0, 0, 255))
 
     # get a drawing context
     dc = ImageDraw.Draw(clock_image)
 
     # calculate position of clock elements
     text_height = 9
-    screen_width, screen_height = cozmo.lcd_face.dimensions()
+    screen_width, screen_height = cozmo.oled_face.dimensions()
     analog_width = screen_width
     analog_height = screen_height - text_height
     cen_x = analog_width * 0.5
@@ -298,10 +298,10 @@ def alarm_clock(robot):
             if (last_displayed_time is None) or (current_time.second != last_displayed_time.second):
                 # Create the updated image with this time
                 clock_image = make_clock_image(current_time)
-                lcd_face_data = cozmo.lcd_face.convert_image_to_screen_data(clock_image)
+                oled_face_data = cozmo.oled_face.convert_image_to_screen_data(clock_image)
 
                 # display for 1 second
-                robot.display_lcd_face_image(lcd_face_data, 1000.0)
+                robot.display_oled_face_image(oled_face_data, 1000.0)
                 last_displayed_time = current_time
 
         # only sleep for a fraction of a second to ensure we update the seconds as soon as they change

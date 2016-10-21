@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-''' Cozmo's LCD-screen that displays his face - related functions and values.
+''' Cozmo's OLED screen that displays his face - related functions and values.
 '''
 
 # __all__ should order by constants, event classes, other classes, functions.
@@ -26,7 +26,7 @@ SCREEN_HEIGHT = SCREEN_HALF_HEIGHT * 2
 
 
 def dimensions():
-    '''Return the dimension (width, height) of the lcd screen.
+    '''Return the dimension (width, height) of the oled screen.
 
     Note: The screen is displayed interlaced, with only every other line displayed
     This alternates every time the image is changed (no longer than 30 seconds)

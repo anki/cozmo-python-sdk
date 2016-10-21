@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Display images on Cozmo's face (lcd screen)
+'''Display images on Cozmo's face (oled screen)
 '''
 
 import sys
@@ -45,10 +45,10 @@ def run(sdk_conn):
         image = Image.open(image_name)
 
         # resize to fit on Cozmo's face screen
-        resized_image = image.resize(cozmo.lcd_face.dimensions(), resampling_mode)
+        resized_image = image.resize(cozmo.oled_face.dimensions(), resampling_mode)
 
-        # convert the image to the format used by the lcd screen
-        face_image = cozmo.lcd_face.convert_image_to_screen_data(resized_image,
+        # convert the image to the format used by the oled screen
+        face_image = cozmo.oled_face.convert_image_to_screen_data(resized_image,
                                                                  invert_image=True)
         face_images.append(face_image)
 
@@ -61,7 +61,7 @@ def run(sdk_conn):
 
     for _ in range(num_loops):
         for image in face_images:
-            robot.display_lcd_face_image(image, duration_s * 1000.0)
+            robot.display_oled_face_image(image, duration_s * 1000.0)
             time.sleep(duration_s)
 
 
