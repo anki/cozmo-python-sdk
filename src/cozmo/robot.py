@@ -933,13 +933,13 @@ class Robot(event.Dispatcher):
 
     # Cozmo's Face animation commands
 
-    def display_lcd_face_image(self, screen_data, duration_ms):
-        ''' Display a bitmap image on Cozmo's LCD face screen.
+    def display_oled_face_image(self, screen_data, duration_ms):
+        ''' Display a bitmap image on Cozmo's OLED face screen.
 
         Args:
             screen_data (:class:`bytes`): a sequence of pixels (8 pixels per
                 byte) (from e.g.
-                :func:`cozmo.lcd_face.convert_pixels_to_screen_data`).
+                :func:`cozmo.oled_face.convert_pixels_to_screen_data`).
             duration_ms (float): time to keep displaying this image on Cozmo's
                 face (clamped to 30 seconds in engine).
         '''

@@ -16,7 +16,7 @@ The API
     cozmo.event
     cozmo.exceptions
     cozmo.faces
-    cozmo.lcd_face
+    cozmo.oled_face
     cozmo.lights
     cozmo.objects
     cozmo.robot
