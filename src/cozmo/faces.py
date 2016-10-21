@@ -33,7 +33,7 @@ observed by adding handlers there.
 __all__ = ['FACE_VISIBILITY_TIMEOUT',
            'EvtErasedEnrolledFace', 'EvtFaceAppeared', 'EvtFaceDisappeared',
            'EvtFaceIdChanged', 'EvtFaceObserved', 'EvtFaceRenamed',
-           'Face',
+           'EnrollNamedFace', 'Face',
            'erase_all_enrolled_faces', 'erase_enrolled_face_by_id',
            'update_enrolled_face_by_id']
 
@@ -163,18 +163,25 @@ class EnrollNamedFace(action.Action):
 
     _action_type = _clad_to_engine_cozmo.RobotActionType.ENROLL_NAMED_FACE
 
-    def __init__(self, face, name, **kw):
+    def __init__(self, face, name, play_anim, **kw):
         super().__init__(**kw)
         #: The face (e.g. an instance of :class:`cozmo.faces.Face`) that will be named.
         self.face = face
         #: The name that is going to be bound to the face.
         self.name = name
 
+        anim_sequence = _clad_to_engine_cozmo.FaceEnrollmentSequence.Simple
+        immediate_sequence = _clad_to_engine_cozmo.FaceEnrollmentSequence.Immediate
+        #: The sequence to play (either plays a face-scanning animation, or nothing)
+        self.sequence = anim_sequence if play_anim else immediate_sequence
+
     def _repr_values(self):
         return "face=%s name=%s" % (self.face, self.name)
 
     def _encode(self):
-        return _clad_to_engine_iface.EnrollNamedFace(faceID=self.face.face_id, name=self.name)
+        return _clad_to_engine_iface.EnrollNamedFace(faceID=self.face.face_id,
+                                                     name=self.name,
+                                                     sequence=self.sequence)
 
 
 class Face(event.Dispatcher):
@@ -188,7 +195,7 @@ class Face(event.Dispatcher):
     which face it is looking at.
     '''
 
-    #: callable: The factory function to return a :class:`ErollNamedFace`
+    #: callable: The factory function to return an :class:`~cozmo.faces.EnrollNamedFace`
     #: class or subclass instance.
     enroll_named_face_factory = EnrollNamedFace
 
@@ -341,18 +348,20 @@ class Face(event.Dispatcher):
 
     #### Commands ####
 
-    def name_face(self, name):
+    def name_face(self, name, play_anim=True):
         '''Assign a name to this face. Cozmo will remember this name between SDK runs.
 
         Args:
             name (string): The name that will be assigned to this face
-
+            play_anim (bool): True plays a scanning animation,
+                False to enroll immediately with no animation sequence
         Returns:
             An instance of :class:`cozmo.faces.EnrollNamedFace` action object
         '''
         logger.info("Sending enroll named face request for face=%s and name=%s", self, name)
         action = self.enroll_named_face_factory(face=self, name=name,
-                    conn=self.conn, robot=self._robot, dispatch_parent=self)
+                            play_anim=play_anim, conn=self.conn,
+                            robot=self._robot, dispatch_parent=self)
         self._robot._action_dispatcher._send_single_action(action)
         return action
 
