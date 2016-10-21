@@ -34,7 +34,7 @@ Installation
 
 To install the SDK on your system, select the instructions for your computer's operating system.
 
-* :ref:`install-osx`
+* :ref:`install-macos`
 * :ref:`install-windows`
 * :ref:`install-linux`
 
