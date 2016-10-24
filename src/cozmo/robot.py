@@ -473,6 +473,7 @@ class Robot(event.Dispatcher):
 
         self._is_ready = False
         self._pose = None
+        #: bool: is this the primary robot (always True currently)
         self.is_primary = is_primary
 
         #: :class:`cozmo.camera.Camera` Provides access to the robot's camera
@@ -483,14 +484,23 @@ class Robot(event.Dispatcher):
 
         self._action_dispatcher = self._action_dispatcher_factory(self)
 
+        #: :class:`cozmo.util.Speed` Speed of the left wheel
         self.left_wheel_speed = None
+        #: :class:`cozmo.util.Speed` Speed of the right wheel
         self.right_wheel_speed = None
-        self.light_height = None
+        #: :class:`cozmo.util.Distance` height of the lift from the ground (in :const:`MIN_LIFT_HEIGHT_MM` to :const:`MAX_LIFT_HEIGHT_MM` range)
+        self.lift_height = None
+        #: float: the current battery_voltage (not linear, but < 3.5 is low)
         self.battery_voltage = None
+        #: int: the ID of the object currently being carried (-1 if none)
         self.carrying_object_id = -1
+        #: int: the ID of the object on top of the object currently being carried (-1 if none)
         self.carrying_object_on_top_id = -1
+        #: int: the ID of the object the head is tracking to (-1 if none)
         self.head_tracking_object_id  = -1
+        #: int: the ID of the object that robot is localized to (-1 if none)
         self.localized_to_object_id = -1
+        #: int: the timestamp for the last image seen (>= 0)
         self.last_image_time = None
         self._pose_angle = None
         self._pose_pitch = None
