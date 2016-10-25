@@ -473,25 +473,38 @@ class Robot(event.Dispatcher):
 
         self._is_ready = False
         self._pose = None
+        #: bool: Specifies that this is the primary robot (always True currently)
         self.is_primary = is_primary
 
-        #: :class:`cozmo.camera.Camera` Provides access to the robot's camera
+        #: :class:`cozmo.camera.Camera`: Provides access to the robot's camera
         self.camera = self.camera_factory(self, dispatch_parent=self)
 
-        #: :class:`cozmo.world.World` Tracks state information about Cozmo's world.
+        #: :class:`cozmo.world.World`: Tracks state information about Cozmo's world.
         self.world = self.world_factory(self.conn, self, dispatch_parent=self)
 
         self._action_dispatcher = self._action_dispatcher_factory(self)
 
+        #: :class:`cozmo.util.Speed`: Speed of the left wheel
         self.left_wheel_speed = None
+        #: :class:`cozmo.util.Speed`: Speed of the right wheel
         self.right_wheel_speed = None
-        self.light_height = None
+        #: :class:`cozmo.util.Distance`: Height of the lift from the ground
+        #: (in :const:`MIN_LIFT_HEIGHT_MM` to :const:`MAX_LIFT_HEIGHT_MM` range)
+        self.lift_height = None
+        #: float: The current battery voltage (not linear, but < 3.5 is low)
         self.battery_voltage = None
+        #: int: The ID of the object currently being carried (-1 if none)
         self.carrying_object_id = -1
+        #: int: The ID of the object on top of the object currently being carried (-1 if none)
         self.carrying_object_on_top_id = -1
+        #: int: The ID of the object the head is tracking to (-1 if none)
         self.head_tracking_object_id  = -1
+        #: int: The ID of the object that the robot is localized to (-1 if none)
         self.localized_to_object_id = -1
-        self.last_image_time = None
+        #: int: The robot's timestamp for the last image seen.
+        #: ``None`` if no image was received yet.
+        #: In milliseconds relative to robot epoch.
+        self.last_image_robot_timestamp = None
         self._pose_angle = None
         self._pose_pitch = None
         self._head_angle = None
@@ -689,7 +702,7 @@ class Robot(event.Dispatcher):
         self.carrying_object_on_top_id = msg.carryingObjectOnTopID # int_32 will be -1 if no object on top of object being carried
         self.head_tracking_object_id   = msg.headTrackingObjectID  # int_32 will be -1 if head is not tracking to any object
         self.localized_to_object_id    = msg.localizedToObjectID   # int_32 Will be -1 if not localized to any object
-        self.last_image_time           = msg.lastImageTimeStamp
+        self.last_image_robot_timestamp = msg.lastImageTimeStamp
         self._robot_status_flags       = msg.status     # uint_16 as bitflags - See _clad_to_game_cozmo.RobotStatusFlag
         self._game_status_flags        = msg.gameStatus # uint_8  as bitflags - See _clad_to_game_cozmo.GameStatusFlag
 

@@ -215,6 +215,7 @@ class Face(event.Dispatcher):
 
         #: int: The robot's timestamp of the last observed event.
         #: ``None`` if the face has not yet been observed.
+        #: In milliseconds relative to robot epoch.
         self.last_observed_robot_timestamp = None
 
         #: :class:`~cozmo.util.ImageBox`: The ImageBox defining where the
