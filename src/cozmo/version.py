@@ -17,5 +17,5 @@ __version__ = "0.7.1.dev0"
 # Specify the version of cozmoclad that this package requires
 # Releases of the Cozmo package must specify an exact cozmoclad release
 # to ensure compatibility with a specific release of the ios/android app.
-#__cozmoclad_version__ = None
-__cozmoclad_version__ = "1.0.1"
+__cozmoclad_version__ = None
+#__cozmoclad_version__ = "1.0.1"
