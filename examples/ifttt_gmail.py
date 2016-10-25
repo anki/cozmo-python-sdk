@@ -104,7 +104,8 @@ def handle_iftttGmail():
 
         try:
             # TODO move off charger then back on
-            ifttt_gmail.cozmo.say_text("New email")
+            with ifttt_gmail.perform_operation_off_charger(ifttt_gmail.cozmo):
+                ifttt_gmail.cozmo.say_text("New email")
         except cozmo.exceptions.RobotBusy:
             pass
 
