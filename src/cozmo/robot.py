@@ -501,9 +501,9 @@ class Robot(event.Dispatcher):
         self.head_tracking_object_id  = -1
         #: int: The ID of the object that the robot is localized to (-1 if none)
         self.localized_to_object_id = -1
-        #: int: The robot's timestamp for the last image seen
-        #: ``None`` if no image was received yet
-        #: In milliseconds relative to robot epoch
+        #: int: The robot's timestamp for the last image seen.
+        #: ``None`` if no image was received yet.
+        #: In milliseconds relative to robot epoch.
         self.last_image_robot_timestamp = None
         self._pose_angle = None
         self._pose_pitch = None

@@ -141,7 +141,7 @@ class ObservableObject(event.Dispatcher):
 
         #: int: The robot's timestamp of the last observed event.
         #: ``None`` if the object has not yet been observed.
-        #: In milliseconds relative to robot epoch
+        #: In milliseconds relative to robot epoch.
         self.last_observed_robot_timestamp = None
 
         #: :class:`~cozmo.util.ImageBox`: The ImageBox defining where the
@@ -283,9 +283,9 @@ class LightCube(ObservableObject):
         #: float: The time the object was last tapped
         self.last_tapped_time = None
 
-        #: int: The robot's timestamp of the last tapped event
-        #: ``None`` if the cube wasn't tapped yet
-        #: In milliseconds relative to robot epoch
+        #: int: The robot's timestamp of the last tapped event.
+        #: ``None`` if the cube wasn't tapped yet.
+        #: In milliseconds relative to robot epoch.
         self.last_tapped_robot_timestamp = None
 
 
