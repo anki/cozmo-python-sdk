@@ -20,8 +20,10 @@ This example shows how you can receive a web request from IFTTT, using a web end
 served by Flask. TODO add instructions for how to set it up on IFTTT, etc.
 '''
 
+from contextlib import contextmanager
 import json
 import sys
+import time
 
 import flask_helpers
 import cozmo
@@ -47,6 +49,49 @@ class IFTTTGmail:
     def __init__(self, coz):
         self.cozmo = coz
 
+        self.get_in_position(self.cozmo)
+
+
+    def backup_onto_charger(self, robot):
+        '''Attempts to reverse robot onto its charger
+
+        Assumes charger is directly behind Cozmo
+        Keep driving straight back until charger is in contact
+        '''
+
+        robot.drive_wheels(-30, -30)
+        time_waited = 0.0
+        while time_waited < 3.0 and not robot.is_on_charger:
+            sleep_time_s = 0.1
+            time.sleep(sleep_time_s)
+            time_waited += sleep_time_s
+
+        robot.stop_all_motors()
+
+
+    @contextmanager
+    def perform_operation_off_charger(self, robot):
+        '''Perform a block of code with robot off the charger
+
+        Ensure robot is off charger before yielding
+        yield - (at which point any code in the caller's with block will run).
+        If Cozmo started on the charger then return it back afterwards'''
+        was_on_charger = robot.is_on_charger
+        robot.drive_off_charger_contacts().wait_for_completed()
+
+        yield robot
+
+        if was_on_charger:
+            self.backup_onto_charger(robot)
+
+
+    def get_in_position(self, robot):
+        '''If necessary, Move Cozmo'qs Head and Lift to make it easy to see Cozmo's face'''
+        if (robot.lift_height.distance_mm > 45) or (robot.head_angle.degrees < 40):
+            with self.perform_operation_off_charger(robot):
+                robot.set_lift_height(0.0).wait_for_completed()
+                robot.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
+
 
 @flask_app.route('/iftttGmail', methods=['POST'])
 def handle_iftttGmail():
@@ -58,8 +103,7 @@ def handle_iftttGmail():
     if ifttt_gmail:
 
         try:
-            # TODO raise head: ifttt_gmail.cozmo.move_head(head_vel)
-            # TODO move lift down: ifttt_gmail.cozmo.move_lift(lift_vel)
+            # TODO move off charger then back on
             ifttt_gmail.cozmo.say_text("New email")
         except cozmo.exceptions.RobotBusy:
             pass
@@ -73,11 +117,11 @@ def run(sdk_conn):
     global ifttt_gmail
     ifttt_gmail = IFTTTGmail(robot)
 
-    # TODO stop opening web page for this example
-    flask_helpers.run_flask(flask_app)
+    flask_helpers.run_flask(flask_app, "127.0.0.1", 5000, False, False)
 
 if __name__ == '__main__':
     cozmo.setup_basic_logging()
+    cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
     try:
         cozmo.connect(run)
     except cozmo.ConnectionError as e:
