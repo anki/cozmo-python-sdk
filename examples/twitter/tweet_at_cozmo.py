@@ -182,20 +182,22 @@ class ReactToTweetsStreamListener(twitter_helpers.CozmoTweetStreamListener):
 
     def extract_command_from_string(self, in_string):
         '''Separate inString at each space, loop through until we find a command, return tuple of cmd_func and cmd_args'''
+        first_split_string = in_string.split(';')
 
-        split_string = in_string.split()
+        result = []
+        for com_string in first_split_string:
+            split_string = com_string.split()
 
-        for i in range(len(split_string)):
+            for i in range(len(split_string)):
 
-            cmd_func = self.get_command(split_string[i])
+                cmd_func = self.get_command(split_string[i])
 
-            if cmd_func:
-                cmd_args = split_string[i + 1:]
-                return cmd_func, cmd_args
+                if cmd_func:
+                    cmd_args = split_string[i + 1:]
+                    result.append((cmd_func, cmd_args))
+        return result
 
         # No valid command found
-        return None, None
-
 
     def on_tweet_from_user(self, json_data, tweet_text, from_user, is_retweet):
         '''Handle every new tweet as it appears'''
@@ -218,17 +220,18 @@ class ReactToTweetsStreamListener(twitter_helpers.CozmoTweetStreamListener):
 
         tweet_id = json_data.get('id_str')
 
-        cmd_func, cmd_args = self.extract_command_from_string(tweet_text)
-
-        reply_prefix = "@" + from_user_name + " "
-        if cmd_func is not None:
-            kw_args = {'tweet_id': tweet_id, 'reply_prefix': reply_prefix}
-            result_string = cmd_func(cmd_args, kw_args)
-            if result_string:
-                self.post_tweet(reply_prefix + result_string, tweet_id)
-        else:
-            self.post_tweet(reply_prefix + "Sorry I don't understand, available commands are: "
-                            + str(self.get_supported_commands()), tweet_id)
+        command_list = self.extract_command_from_string(tweet_text)
+        print(command_list)
+        for cmd_func, cmd_args in command_list:
+            reply_prefix = "@" + from_user_name + " "
+            if cmd_func is not None:
+                kw_args = {'tweet_id': tweet_id, 'reply_prefix': reply_prefix}
+                result_string = cmd_func(cmd_args, kw_args)
+                if result_string:
+                    self.post_tweet(reply_prefix + result_string, tweet_id)
+            else:
+                self.post_tweet(reply_prefix + "Sorry I don't understand, available commands are: "
+                                + str(self.get_supported_commands()), tweet_id)
 
 
 def run(coz_conn):
