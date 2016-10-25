@@ -931,6 +931,30 @@ class Robot(event.Dispatcher):
         self._action_dispatcher._send_single_action(action)
         return action
 
+    def set_idle_animation(self, anim_trigger):
+        '''Set the Idle Animation on Cozmo
+
+        Idle animations behave the same as regular animations except that they
+        loop forever on Cozmo regardless of what actions and animations
+        are being played.
+
+        Args:
+            anim_trigger (:class:`cozmo.anim.Triggers`): The animation trigger to set
+                Note: :attr:`cozmo.anim.Triggers.Count` will clear all idle animations.
+        Raises:
+            :class:`ValueError` if supplied an invalid animation trigger.
+        '''
+        if not isinstance(anim_trigger, anim._AnimTrigger):
+            raise TypeError("Invalid anim_trigger supplied")
+
+        msg = _clad_to_engine_iface.SetIdleAnimation(robotID=self.robot_id,
+                                                     animTrigger=anim_trigger.id)
+        self.conn.send_msg(msg)
+
+    def clear_idle_animation(self):
+        '''Clears any Idle Animation currently playing on Cozmo'''
+        self.set_idle_animation(anim.Triggers.Count)
+
     # Cozmo's Face animation commands
 
     def display_oled_face_image(self, screen_data, duration_ms):
