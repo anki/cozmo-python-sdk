@@ -28,8 +28,8 @@ import cozmo
 from cozmo.util import degrees, distance_mm, speed_mmps
 
 
-def find_charger(robot):
-    '''The core of the follow_faces program'''
+def drive_to_charger(robot):
+    '''The core of the drive_to_charger program'''
 
     # If the robot was on the charger, drive them forward and clear of the charger
     if robot.is_on_charger:
@@ -48,16 +48,18 @@ def find_charger(robot):
         robot.drive_straight(distance_mm(-60), speed_mmps(50)).wait_for_completed()
 
     # try to find the charger
-    charger = robot.world.charger
+    charger = None
 
-    if charger:
-        if charger.pose.origin_id == robot.pose.origin_id:
+    # see if Cozmo already knows where the charger is
+    if robot.world.charger:
+        if robot.world.charger.pose.origin_id == robot.pose.origin_id:
             print("Cozmo already knows where the charger is!")
+            charger = robot.world.charger
         else:
             # Cozmo knows about the charger, but the pose is not based on the
             # same origin as the robot (e.g. the robot was moved since seeing
             # the charger) so try to look for the charger first
-            charger = None
+            pass
 
     if not charger:
         # Tell Cozmo to look around for the charger
@@ -70,14 +72,6 @@ def find_charger(robot):
         finally:
             # whether we find it or not, we want to stop the behavior
             look_around.stop()
-
-    if not charger:
-        charger = robot.world.charger
-        if charger:
-            if charger.pose.origin_id == robot.pose.origin_id:
-                print("Cozmo now knows where the charger is!")
-            else:
-                print("Attempting to drive to last known location of the charger")
 
     if charger:
         # Attempt to drive near to the charger, and then stop.
@@ -92,7 +86,7 @@ def run(sdk_conn):
     robot = sdk_conn.wait_for_robot()
 
     try:
-        find_charger(robot)
+        drive_to_charger(robot)
 
     except KeyboardInterrupt:
         print("")

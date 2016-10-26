@@ -74,7 +74,7 @@ class EvtObjectObserved(event.Event):
     obj = 'The object that was observed'
     updated = 'A set of field names that have changed'
     image_box = 'A comzo.util.ImageBox defining where the object is within Cozmo\'s camera view'
-    pose = 'The cozmo.util.Pose defining the position and rotation of the object.'
+    pose = 'The cozmo.util.Pose defining the position and rotation of the object'
 
 
 class EvtObjectAppeared(event.Event):
@@ -92,18 +92,18 @@ class EvtObjectAppeared(event.Event):
     obj = 'The object that was observed'
     updated = 'A set of field names that have changed'
     image_box = 'A comzo.util.ImageBox defining where the object is within Cozmo\'s camera view'
-    pose = 'The cozmo.util.Pose defining the position and rotation of the object.'
+    pose = 'The cozmo.util.Pose defining the position and rotation of the object'
 
 
 class EvtObjectAvailable(event.Event):
-    '''Triggered when the engine reports that an object is available (i.e. exists)
+    '''Triggered when the engine reports that an object is available (i.e. exists).
 
     This will usually occur at the start of the program in response to the SDK
     sending RequestAvailableObjects to the engine.
     '''
     obj = 'The object that is available'
     updated = 'A set of field names that have changed'
-    pose = 'The cozmo.util.Pose defining the position and rotation of the object.'
+    pose = 'The cozmo.util.Pose defining the position and rotation of the object'
 
 
 class EvtObjectDisappeared(event.Event):
@@ -200,8 +200,8 @@ class ObservableObject(event.Dispatcher):
     def _handle_available_object(self, available_object):
         # triggered when engine sends available objects
         # as a response to a RequestAvailableObjects message
-        if self.last_observed_robot_timestamp and \
-                (self.last_observed_robot_timestamp > available_object.lastObservedTimestamp):
+        if (self.last_observed_robot_timestamp and
+                (self.last_observed_robot_timestamp > available_object.lastObservedTimestamp)):
             logger.debug("ignoring old available_object=%s obj=%s (last_observed_robot_timestamp=%s)",
                          available_object, self, self.last_observed_robot_timestamp)
             return
@@ -218,7 +218,7 @@ class ObservableObject(event.Dispatcher):
         self.dispatch_event(EvtObjectAvailable,
                             obj=self,
                             updated=changed_fields,
-                            pose = self._pose)
+                            pose=self._pose)
 
     #### Properties ####
 
@@ -399,7 +399,7 @@ class LightCube(ObservableObject):
 
 
 class Charger(ObservableObject):
-    '''Cozmo's charger object, can be seen and driven towards'''
+    '''Cozmo's charger object, which the robot can observe and drive toward.'''
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)

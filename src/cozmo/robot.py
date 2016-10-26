@@ -1172,23 +1172,23 @@ class Robot(event.Dispatcher):
         self._action_dispatcher._send_single_action(action)
         return action
 
-    def go_to_object(self, object, distance_from_object):
+    def go_to_object(self, target_object, distance_from_object):
         '''Tells Cozmo to drive to the specified object.
 
         Args:
-            object (:class:`cozmo.objects.ObservableObject`): The destination object.
-            distance_from_object (:class:`cozmo.util.Distance`): The distance from
-                the object to stop at - this is the distance between the origins so
-                e.g. from between Cozmo's 2 front wheels to the center of a cube
-                is ~40mm
+            target_object (:class:`cozmo.objects.ObservableObject`): The destination object.
+            distance_from_object (:class:`cozmo.util.Distance`): The distance from the
+                object to stop. This is the distance between the origins. For instance,
+                the distance from the robot's origin (between Cozmo's two front wheels)
+                to the cube's origin (at the center of the cube) is ~40mm.
         Returns:
             A :class:`cozmo.robot.GoToObject` action object which can be queried
                 to see when it is complete.
         '''
-        if not isinstance(object, objects.ObservableObject):
-            raise TypeError("Invalid charger supplied")
+        if not isinstance(target_object, objects.ObservableObject):
+            raise TypeError("Target must be an observable object")
 
-        action = self.go_to_object_factory(object_id=object.object_id,
+        action = self.go_to_object_factory(object_id=target_object.object_id,
                                            distance_from_object=distance_from_object,
                                            conn=self.conn, robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action)
