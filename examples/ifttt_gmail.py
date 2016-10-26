@@ -104,36 +104,40 @@ def handle_iftttGmail():
     match_object = re.search(r'([\w.]+)@([\w.]+)', from_email_address)
 
     if ifttt_gmail:
-
-        try:
-            with ifttt_gmail.perform_operation_off_charger(ifttt_gmail.cozmo):
-                ifttt_gmail.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
-                ifttt_gmail.cozmo.say_text("Email from " + match_object.group(1)).wait_for_completed()
-
-                # load image and convert it for display on cozmo's face
-                image = Image.open("images/hello_world.png")
-
-                # resize to fit on Cozmo's face screen
-                resized_image = image.resize(cozmo.oled_face.dimensions(), Image.NEAREST)
-
-                # convert the image to the format used by the oled screen
-                face_image = cozmo.oled_face.convert_image_to_screen_data(resized_image,
-                                                                          invert_image=True)
-
-                # display each image on Cozmo's face for duration_s seconds (Note: this
-                # is clamped at 30 seconds max within the engine to prevent burn-in)
-                # repeat this num_loops times
-                num_loops = 10
-                duration_s = 2.0
-
-                for _ in range(num_loops):
-                    ifttt_gmail.cozmo.display_oled_face_image(face_image, duration_s * 1000.0)
-                    time.sleep(duration_s)
-
-        except cozmo.exceptions.RobotBusy:
-            pass
+        try_ifttt_gmail(match_object.group(1))
 
     return ""
+
+
+def try_ifttt_gmail(email_local_part):
+    try:
+        with ifttt_gmail.perform_operation_off_charger(ifttt_gmail.cozmo):
+            ifttt_gmail.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
+            ifttt_gmail.cozmo.say_text("Email from " + email_local_part).wait_for_completed()
+
+            # load image and convert it for display on cozmo's face
+            # TODO replace with email image
+            image = Image.open("images/hello_world.png")
+
+            # resize to fit on Cozmo's face screen
+            resized_image = image.resize(cozmo.oled_face.dimensions(), Image.NEAREST)
+
+            # convert the image to the format used by the oled screen
+            face_image = cozmo.oled_face.convert_image_to_screen_data(resized_image,
+                                                                      invert_image=True)
+
+            # display each image on Cozmo's face for duration_s seconds (Note: this
+            # is clamped at 30 seconds max within the engine to prevent burn-in)
+            # repeat this num_loops times
+            num_loops = 10
+            duration_s = 2.0
+
+            for _ in range(num_loops):
+                ifttt_gmail.cozmo.display_oled_face_image(face_image, duration_s * 1000.0)
+                time.sleep(duration_s)
+
+    except cozmo.exceptions.RobotBusy:
+        pass
 
 
 def run(sdk_conn):
