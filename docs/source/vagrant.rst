@@ -12,20 +12,20 @@ If you have difficulties using the regular Installation Guide steps (e.g. you ar
 
 To use the Cozmo SDK, the Cozmo mobile app must be installed on your mobile device and that device must be tethered to a computer via USB cable.
 
-------------
+^^^^^^^^^^^^
 Installation
-------------
+^^^^^^^^^^^^
 
-^^^^^^^^^^^^^
+"""""""""""""
 Prerequisites
-^^^^^^^^^^^^^
+"""""""""""""
 
 * WiFi connection
 * An iOS or Android mobile device with the Cozmo app installed, connected to the computer via USB cable
 
-^^^^^^^
+"""""""
 Install
-^^^^^^^
+"""""""
 
 1. Install `VirtualBox and the VirtualBox Extension Pack <https://www.virtualbox.org/wiki/Downloads>`_ from the official webpage. Both of these *must* be installed in order for Vagrant to work properly.
 2. Install `Vagrant <https://www.vagrantup.com/downloads.html>`_ from the official webpage.
