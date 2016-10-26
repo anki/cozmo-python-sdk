@@ -77,10 +77,24 @@ class EvtNewCameraImage(event.Event):
 class World(event.Dispatcher):
     '''Represents the state of the world, as known to a Cozmo robot.'''
 
-    #: Factory to generate LightCube objects.
+    #: callable: The factory function that returns a
+    #: :class:`faces.Face` class or subclass instance.
     face_factory = faces.Face
+
+    #: callable: The factory function that returns an
+    #: :class:`objects.LightCube` class or subclass instance.
     light_cube_factory = objects.LightCube
+
+    #: callable: The factory function that returns an
+    #: :class:`objects.Charger` class or subclass instance.
+    charger_factory = objects.Charger
+
+    #: callable: The factory function that returns an
+    #: :class:`objects.CustomObject` class or subclass instance.
     custom_object_factory = objects.CustomObject
+
+    #: callable: The factory function that returns an
+    #: :class:`annotate.ImageAnnotator` class or subclass instance.
     annotator_factory = annotate.ImageAnnotator
 
     def __init__(self, conn, robot, **kw):
@@ -101,6 +115,10 @@ class World(event.Dispatcher):
         self.latest_image = None
 
         self.light_cubes = {}
+
+        #: :class:`cozmo.objects.Charger`: Cozmo's charger.
+        #: ``None`` if no charger connected or known about yet.
+        self.charger = None
 
         self._last_image_number = -1
         self._objects = {}
@@ -136,7 +154,17 @@ class World(event.Dispatcher):
             logger.debug('Allocated object_id=%d to light cube %s', msg.objectID, cube)
             return cube
 
-        elif (msg.objectFamily == _clad_to_game_cozmo.ObjectFamily.CustomObject):
+        elif msg.objectFamily == _clad_to_game_cozmo.ObjectFamily.Charger:
+            charger = self.charger_factory(self.conn, self, msg.objectID, dispatch_parent=self)
+            if self.charger:
+                logger.error('Allocating multiple chargers: existing charger=%s msg=%s', self.charger, msg)
+            self.charger = charger
+            self._objects[charger.object_id] = charger
+            charger._robot = self.robot  # XXX this will move if/when we have multi-robot support
+            logger.debug('Allocated object_id=%s to Charger %s', msg.objectID, charger)
+            return charger
+
+        elif msg.objectFamily == _clad_to_game_cozmo.ObjectFamily.CustomObject:
             # obj is the base object type for this custom object. We make instances of this for every
             # unique object_id we see of this custom object type.
             obj = self.custom_objects.get(msg.objectType)
@@ -266,11 +294,17 @@ class World(event.Dispatcher):
     def _recv_msg_object_tapped(self, evt, *, msg):
         obj = self._objects.get(msg.objectID)
         if not obj:
-            logger.debug('Tap event received for unknown object ID %s', msg.objectID)
+            logger.warn('Tap event received for unknown object ID %s', msg.objectID)
             return
         obj.dispatch_event(evt)
 
-
+    def _recv_msg_available_objects(self, evt, *, msg):
+        for available_object in msg.objects:
+            obj = self._objects.get(available_object.objectID)
+            if not obj:
+                obj = self._allocate_object_from_msg(available_object)
+            if obj:
+                obj._handle_available_object(available_object)
 
     #### Public Event Handlers ####
 
@@ -336,6 +370,20 @@ class World(event.Dispatcher):
         filter = event.Filter(faces.EvtFaceObserved)
         evt = await self.wait_for(filter, timeout=timeout)
         return evt.face
+
+    async def wait_for_observed_charger(self, timeout=None):
+        '''Waits for a charger to be observed by the robot.
+
+        Args:
+            timeout (float): Number of seconds to wait for a charger to be
+                observed, or None for indefinite
+        Returns:
+            The :class:`cozmo.objects.Charger` object that was observed.
+        '''
+        filter = event.Filter(objects.EvtObjectObserved,
+                obj=lambda obj: isinstance(obj, objects.Charger))
+        evt = await self.wait_for(filter, timeout=timeout)
+        return evt.obj
 
     async def wait_until_observe_num_objects(self, num, object_type=None, timeout=None):
         '''Waits for a certain number of unique objects to be seen at least once.
