@@ -126,7 +126,7 @@ try:
 
 except AttributeError as exc:
     err = ('Incorrect version of cozmoclad package installed.  '
-            'run "pip install --ignore-installed cozmoclad==%s" '
+            'run "pip3 install --user --ignore-installed cozmoclad==%s" '
             '(error: %s in behavior.py)' % (__cozmoclad_version__, exc))
     raise ImportError(err) from exc
 
