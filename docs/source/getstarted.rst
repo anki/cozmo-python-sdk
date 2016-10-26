@@ -20,7 +20,7 @@ Please visit our `Cozmo SDK Forums <https://forums.anki.com/>`_ where you can:
 
 * Join discussion about the SDK
 
-* Be part of the Cozmo SDK Community!
+* Be a part of the Cozmo SDK Community!
 
 
 -------------------
@@ -34,15 +34,19 @@ Starting Up the SDK
 5. On the computer, open a Terminal (iOS/Linux) / Command Prompt (Windows) window. Type ``cd cozmo_sdk_examples`` where *cozmo_sdk_examples* is the name of the directory you extracted the SDK examples into and press Enter. The SDK example scripts can be downloaded from the :doc:`Downloads page </downloads>`.
 6. Now you can run any of the example programs.
 
----------------------------
+----------------
+Example Programs
+----------------
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 First Steps - "Hello World"
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Let's test your new setup by running a very simple program. This program instructs Cozmo to say "Hello, World!" - a perfect way to introduce him and you to the world of programming.
 
-^^^^^^^^^^^
+"""""""""""
 The Program
-^^^^^^^^^^^
+"""""""""""
 
 1. To run the program, using the same Terminal (iOS/Linux) / Command Prompt (Windows) window mentioned above:
 
@@ -87,9 +91,9 @@ The code for the Hello World program is:
 
 We can edit this code to make Cozmo say something new. Let's write our first program using this code.
 
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 Next Steps - "Night-Night"
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. Open a new document in a source code editor or plain-text editor. Free source code editors, such as `Atom <https://atom.io>`_ , `Sublime <https://www.sublimetext.com>`_ , or `TextWrangler <http://www.barebones.com/products/textwrangler/>`_ can be found online. Anki does not provide tech support for third-party source code editors.
 
