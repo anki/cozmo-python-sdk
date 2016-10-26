@@ -22,6 +22,7 @@ served by Flask. TODO add instructions for how to set it up on IFTTT, etc.
 
 from contextlib import contextmanager
 import json
+import re
 import sys
 import time
 
@@ -96,16 +97,18 @@ class IFTTTGmail:
 @flask_app.route('/iftttGmail', methods=['POST'])
 def handle_iftttGmail():
     '''Called from web request sent by IFTTT when Gmail account receives email'''
-    # TODO use the data from the POST (see message below)
-    message = json.loads(request.data.decode("utf-8"))
-    print(message)
+    json_object = json.loads(request.data.decode("utf-8"))
+    from_email_address = json_object["FromAddress"]
+
+    # Use a regular expression to break apart pieces of the email address
+    match_object = re.search(r'([\w.]+)@([\w.]+)', from_email_address)
 
     if ifttt_gmail:
 
         try:
             with ifttt_gmail.perform_operation_off_charger(ifttt_gmail.cozmo):
                 ifttt_gmail.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
-                ifttt_gmail.cozmo.say_text("New email").wait_for_completed()
+                ifttt_gmail.cozmo.say_text("Email from " + match_object.group(1)).wait_for_completed()
 
                 # load image and convert it for display on cozmo's face
                 image = Image.open("images/hello_world.png")
