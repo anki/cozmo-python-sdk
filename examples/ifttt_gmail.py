@@ -104,6 +104,7 @@ def handle_iftttGmail():
 
         try:
             with ifttt_gmail.perform_operation_off_charger(ifttt_gmail.cozmo):
+                ifttt_gmail.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
                 ifttt_gmail.cozmo.say_text("New email").wait_for_completed()
 
                 # load image and convert it for display on cozmo's face
