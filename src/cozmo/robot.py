@@ -460,7 +460,7 @@ class Robot(event.Dispatcher):
     drive_off_charger_contacts_factory = DriveOffChargerContacts
 
     #: callable: The factory function that returns a
-    #: :class: :class:`DriveStraight` class or subclass instance.
+    #: :class:`DriveStraight` class or subclass instance.
     drive_straight_factory = DriveStraight
 
     # other factories
