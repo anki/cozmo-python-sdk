@@ -40,7 +40,8 @@ online documentation.  They will be detected as :class:`CustomObject` instances.
 __all__ = ['OBJECT_VISIBILITY_TIMEOUT',
            'EvtObjectTapped', 'EvtObjectAppeared', 'EvtObjectAvailable',
            'EvtObjectConnectChanged', 'EvtObjectDisappeared', 'EvtObjectObserved',
-           'ObservableObject', 'LightCube', 'CustomObject', 'FixedCustomObject']
+           'ObservableObject', 'LightCube', 'Charger', 'CustomObject',
+           'FixedCustomObject']
 
 
 import collections
