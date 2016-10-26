@@ -41,7 +41,7 @@ import time
 try:
     from PIL import ImageDraw, ImageFont
 except ImportError:
-    sys.exit('run `pip3 install Pillow numpy` to run this example')
+    sys.exit('run `pip3 install --user Pillow numpy` to run this example')
 
 import cozmo
 

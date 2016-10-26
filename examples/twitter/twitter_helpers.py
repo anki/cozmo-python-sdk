@@ -24,7 +24,7 @@ import cozmo
 try:
     import tweepy
 except ImportError:
-    sys.exit("Cannot import tweepy: Do `pip3 install tweepy` to install")
+    sys.exit("Cannot import tweepy: Do `pip3 install --user tweepy` to install")
 
 
 def trim_tweet_text(tweet_text):
