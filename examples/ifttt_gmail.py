@@ -61,9 +61,10 @@ class IFTTTGmail:
 
     def worker(self):
         while True:
-            queued_action, action_args = self.queue.get()
-            if queued_action is None:
+            item = self.queue.get()
+            if item is None:
                 break
+            queued_action, action_args = item
             queued_action(action_args)
 
 
@@ -143,7 +144,7 @@ def try_ifttt_gmail(email_local_part):
             # display each image on Cozmo's face for duration_s seconds (Note: this
             # is clamped at 30 seconds max within the engine to prevent burn-in)
             # repeat this num_loops times
-            num_loops = 10
+            num_loops = 5
             duration_s = 2.0
 
             for _ in range(num_loops):
@@ -162,6 +163,10 @@ def run(sdk_conn):
 
     flask_helpers.run_flask(flask_app, "127.0.0.1", 5000, False, False)
 
+    # put None on the queue to stop the thread. This is called when the
+    # user hits Control C, stopping the run_flask call.
+    ifttt_gmail.queue.put(None)
+
 if __name__ == '__main__':
     cozmo.setup_basic_logging()
     cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
@@ -169,12 +174,3 @@ if __name__ == '__main__':
         cozmo.connect(run)
     except cozmo.ConnectionError as e:
         sys.exit("A connection error occurred: %s" % e)
-
-#TODO stop workers as follows:
-'''
-for i in range(num_worker_threads):
-    q.put(None)
-for t in threads:
-    t.join()
-'''
-#TODO make sure Control C cleanly exits
