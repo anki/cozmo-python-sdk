@@ -47,6 +47,41 @@ flask_app = Flask(__name__)
 ifttt_gmail = None
 
 
+def then_that_action(email_local_part):
+    try:
+        with ifttt_gmail.perform_operation_off_charger(ifttt_gmail.cozmo):
+            ifttt_gmail.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
+            ifttt_gmail.cozmo.say_text("Email from " + email_local_part).wait_for_completed()
+
+            # TODO replace with email image
+            ifttt_gmail.display_image_on_face("images/hello_world.png")
+
+    except cozmo.exceptions.RobotBusy:
+        pass
+
+
+@flask_app.route('/iftttGmail', methods=['POST'])
+def receive_ifttt_web_request():
+    '''Web request endpoint named "iftttGmail" for IFTTT to call when an email is received.
+
+        In the IFTTT web request, in the URL field, specify this method
+        as the endpoint. For instance, if your public url is http://my.url.com,
+        then in the IFTTT web request URL field put the following:
+        http://my.url.com/iftttGmail. Then, this endpoint will be called when
+        IFTTT checks whether the Gmail account received email.
+    '''
+    json_object = json.loads(request.data.decode("utf-8"))
+    from_email_address = json_object["FromAddress"]
+
+    # Use a regular expression to break apart pieces of the email address
+    match_object = re.search(r'([\w.]+)@([\w.]+)', from_email_address)
+
+    if ifttt_gmail:
+        ifttt_gmail.queue.put((then_that_action, match_object.group(1)))
+
+    return ""
+
+
 class IFTTTGmail:
 
     def __init__(self, coz):
@@ -109,50 +144,26 @@ class IFTTTGmail:
                 robot.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
 
 
-@flask_app.route('/iftttGmail', methods=['POST'])
-def handle_iftttGmail():
-    '''Called from web request sent by IFTTT when Gmail account receives email'''
-    json_object = json.loads(request.data.decode("utf-8"))
-    from_email_address = json_object["FromAddress"]
+    def display_image_on_face(self, image_name):
+        # load image and convert it for display on cozmo's face
+        image = Image.open(image_name)
 
-    # Use a regular expression to break apart pieces of the email address
-    match_object = re.search(r'([\w.]+)@([\w.]+)', from_email_address)
+        # resize to fit on Cozmo's face screen
+        resized_image = image.resize(cozmo.oled_face.dimensions(), Image.NEAREST)
 
-    if ifttt_gmail:
-        ifttt_gmail.queue.put((try_ifttt_gmail, match_object.group(1)))
+        # convert the image to the format used by the oled screen
+        face_image = cozmo.oled_face.convert_image_to_screen_data(resized_image,
+                                                                  invert_image=True)
 
-    return ""
+        # display each image on the robot's face for duration_s seconds (Note: this
+        # is clamped at 30 seconds max within the engine to prevent burn-in)
+        # repeat this num_loops times
+        num_loops = 5
+        duration_s = 2.0
 
-
-def try_ifttt_gmail(email_local_part):
-    try:
-        with ifttt_gmail.perform_operation_off_charger(ifttt_gmail.cozmo):
-            ifttt_gmail.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
-            ifttt_gmail.cozmo.say_text("Email from " + email_local_part).wait_for_completed()
-
-            # load image and convert it for display on cozmo's face
-            # TODO replace with email image
-            image = Image.open("images/hello_world.png")
-
-            # resize to fit on Cozmo's face screen
-            resized_image = image.resize(cozmo.oled_face.dimensions(), Image.NEAREST)
-
-            # convert the image to the format used by the oled screen
-            face_image = cozmo.oled_face.convert_image_to_screen_data(resized_image,
-                                                                      invert_image=True)
-
-            # display each image on Cozmo's face for duration_s seconds (Note: this
-            # is clamped at 30 seconds max within the engine to prevent burn-in)
-            # repeat this num_loops times
-            num_loops = 5
-            duration_s = 2.0
-
-            for _ in range(num_loops):
-                ifttt_gmail.cozmo.display_oled_face_image(face_image, duration_s * 1000.0)
-                time.sleep(duration_s)
-
-    except cozmo.exceptions.RobotBusy:
-        pass
+        for _ in range(num_loops):
+            self.cozmo.display_oled_face_image(face_image, duration_s * 1000.0)
+            time.sleep(duration_s)
 
 
 def run(sdk_conn):
@@ -163,9 +174,10 @@ def run(sdk_conn):
 
     flask_helpers.run_flask(flask_app, "127.0.0.1", 5000, False, False)
 
-    # put None on the queue to stop the thread. This is called when the
+    # Put None on the queue to stop the thread. This is called when the
     # user hits Control C, stopping the run_flask call.
     ifttt_gmail.queue.put(None)
+
 
 if __name__ == '__main__':
     cozmo.setup_basic_logging()
