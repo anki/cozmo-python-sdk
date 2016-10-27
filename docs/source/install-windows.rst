@@ -27,6 +27,10 @@ To install the SDK, type the following into the Command Prompt window::
 
 Note that the [camera] option adds support for processing images from Cozmo's camera.
 
+To upgrade the SDK from a previous install, enter this command::
+
+    pip3 install --user --upgrade cozmo
+
 ^^^^^^^^^^^^^^^^^^^
 Mobile Device Setup
 ^^^^^^^^^^^^^^^^^^^
