@@ -22,8 +22,10 @@ served by Flask. TODO add instructions for how to set it up on IFTTT, etc.
 
 from contextlib import contextmanager
 import json
+import queue
 import re
 import sys
+import threading
 import time
 
 import flask_helpers
@@ -49,8 +51,20 @@ class IFTTTGmail:
 
     def __init__(self, coz):
         self.cozmo = coz
+        self.queue = queue.Queue()
+
+        '''Start a separate thread to check if the queue contains an action to run.'''
+        threading.Thread(target=self.worker).start()
 
         self.get_in_position(self.cozmo)
+
+
+    def worker(self):
+        while True:
+            queued_action, action_args = self.queue.get()
+            if queued_action is None:
+                break
+            queued_action(action_args)
 
 
     def backup_onto_charger(self, robot):
@@ -104,7 +118,7 @@ def handle_iftttGmail():
     match_object = re.search(r'([\w.]+)@([\w.]+)', from_email_address)
 
     if ifttt_gmail:
-        try_ifttt_gmail(match_object.group(1))
+        ifttt_gmail.queue.put((try_ifttt_gmail, match_object.group(1)))
 
     return ""
 
@@ -155,3 +169,12 @@ if __name__ == '__main__':
         cozmo.connect(run)
     except cozmo.ConnectionError as e:
         sys.exit("A connection error occurred: %s" % e)
+
+#TODO stop workers as follows:
+'''
+for i in range(num_worker_threads):
+    q.put(None)
+for t in threads:
+    t.join()
+'''
+#TODO make sure Control C cleanly exits
