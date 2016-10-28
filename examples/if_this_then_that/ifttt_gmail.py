@@ -60,27 +60,20 @@ To set up the example:
             2. On your IFTTT receipt webpage, click “Check now”.
 '''
 
-from contextlib import contextmanager
 import json
-import queue
 import re
 import sys
-import threading
-import time
+sys.path.append('../')
 
-import flask_helpers
 import cozmo
+import flask_helpers
+import if_this_then_that_helpers
 
 
 try:
     from flask import Flask, request
 except ImportError:
     sys.exit("Cannot import from flask: Do `pip3 install flask` to install")
-
-try:
-    from PIL import Image
-except ImportError:
-    sys.exit("Cannot import from PIL: Do `pip3 install Pillow` to install")
 
 
 flask_app = Flask(__name__)
@@ -94,7 +87,7 @@ def then_that_action(email_local_part):
             ifttt.cozmo.say_text("Email from " + email_local_part).wait_for_completed()
 
             # TODO replace with email image
-            ifttt.display_image_on_face("images/hello_world.png")
+            ifttt.display_image_on_face("../images/hello_world.png")
 
     except cozmo.exceptions.RobotBusy:
         pass
@@ -122,100 +115,16 @@ def receive_ifttt_web_request():
     return ""
 
 
-class IfThisThenThatHelper:
-
-    def __init__(self, coz):
-        self.cozmo = coz
-        self.queue = queue.Queue()
-
-        '''Start a separate thread to check if the queue contains an action to run.'''
-        threading.Thread(target=self.worker).start()
-
-        self.get_in_position(self.cozmo)
-
-
-    def worker(self):
-        while True:
-            item = self.queue.get()
-            if item is None:
-                break
-            queued_action, action_args = item
-            queued_action(action_args)
-
-
-    def backup_onto_charger(self, robot):
-        '''Attempts to reverse robot onto its charger
-
-        Assumes charger is directly behind Cozmo
-        Keep driving straight back until charger is in contact
-        '''
-
-        robot.drive_wheels(-30, -30)
-        time_waited = 0.0
-        while time_waited < 3.0 and not robot.is_on_charger:
-            sleep_time_s = 0.1
-            time.sleep(sleep_time_s)
-            time_waited += sleep_time_s
-
-        robot.stop_all_motors()
-
-
-    @contextmanager
-    def perform_operation_off_charger(self, robot):
-        '''Perform a block of code with robot off the charger
-
-        Ensure robot is off charger before yielding
-        yield - (at which point any code in the caller's with block will run).
-        If Cozmo started on the charger then return it back afterwards'''
-        was_on_charger = robot.is_on_charger
-        robot.drive_off_charger_contacts().wait_for_completed()
-
-        yield robot
-
-        if was_on_charger:
-            self.backup_onto_charger(robot)
-
-
-    def get_in_position(self, robot):
-        '''If necessary, Move Cozmo'qs Head and Lift to make it easy to see Cozmo's face'''
-        if (robot.lift_height.distance_mm > 45) or (robot.head_angle.degrees < 40):
-            with self.perform_operation_off_charger(robot):
-                robot.set_lift_height(0.0).wait_for_completed()
-                robot.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
-
-
-    def display_image_on_face(self, image_name):
-        # load image and convert it for display on cozmo's face
-        image = Image.open(image_name)
-
-        # resize to fit on Cozmo's face screen
-        resized_image = image.resize(cozmo.oled_face.dimensions(), Image.NEAREST)
-
-        # convert the image to the format used by the oled screen
-        face_image = cozmo.oled_face.convert_image_to_screen_data(resized_image,
-                                                                  invert_image=True)
-
-        # display each image on the robot's face for duration_s seconds (Note: this
-        # is clamped at 30 seconds max within the engine to prevent burn-in)
-        # repeat this num_loops times
-        num_loops = 5
-        duration_s = 2.0
-
-        for _ in range(num_loops):
-            self.cozmo.display_oled_face_image(face_image, duration_s * 1000.0)
-            time.sleep(duration_s)
-
-
 def run(sdk_conn):
     robot = sdk_conn.wait_for_robot()
 
     global ifttt
-    ifttt = IfThisThenThatHelper(robot)
+    ifttt = if_this_then_that_helpers.IfThisThenThatHelper(robot)
 
     flask_helpers.run_flask(flask_app, "127.0.0.1", 5000, False, False)
 
-    # Put None on the queue to stop the thread. This is called when the
-    # user hits Control C, stopping the run_flask call.
+    # Putting None on the queue stops the thread. This is called when the
+    # user hits Control C, which stops the run_flask call.
     ifttt.queue.put(None)
 
 
