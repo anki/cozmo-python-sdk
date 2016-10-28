@@ -27,7 +27,7 @@ from io import BytesIO
 try:
     from flask import make_response, send_file
 except ImportError:
-    sys.exit("Cannot import from flask: Do `pip3 install flask` to install")
+    sys.exit("Cannot import from flask: Do `pip3 install --user flask` to install")
 
 
 

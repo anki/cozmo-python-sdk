@@ -4,13 +4,13 @@
 Android Debug Bridge
 ####################
 
-.. important:: Android Debug Bridge (adb)is required ONLY for those users pairing an Android mobile device with Cozmo.
+.. important:: Android Debug Bridge (adb) is required ONLY for those users pairing an Android mobile device with Cozmo.
 
 Android Debug Bridge (adb) is necessary in order for the Cozmo SDK to work with Android mobile devices. Please ensure adb is installed before attempting to run the Cozmo SDK with a paired Android device.
 
------------------
+^^^^^^^^^^^^^^^^^^
 macOS Installation
------------------
+^^^^^^^^^^^^^^^^^^
 
 1. Type the following into a Terminal window (requires Homebrew to be installed)::
 
@@ -18,9 +18,9 @@ macOS Installation
 
 2. Continue to :ref:`final-install` below to complete installation.
 
---------------------
+^^^^^^^^^^^^^^^^^^^^
 Windows Installation
---------------------
+^^^^^^^^^^^^^^^^^^^^
 
 1. Open your internet browser and go to `the Android developer website. <https://developer.android.com/studio/index.html#Other>`_
 2. Scroll down to *Get just the command line tools*. Download the SDK tools package.
@@ -43,9 +43,9 @@ Windows Installation
 
 9. Continue to :ref:`final-install` below to complete installation.
 
-------------------
+^^^^^^^^^^^^^^^^^^
 Linux Installation
-------------------
+^^^^^^^^^^^^^^^^^^
 
 1. If you do not yet have the Java Development Kit (JDK) version 8 installed, you must install it.
 
@@ -102,9 +102,9 @@ Linux Installation
 
 .. _final-install:
 
-----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Final Installation (All Platforms)
-----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. Enable USB Debugging on your phone.
 

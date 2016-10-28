@@ -29,12 +29,12 @@ import cozmo
 try:
     from flask import Flask, request
 except ImportError:
-    sys.exit("Cannot import from flask: Do `pip3 install flask` to install")
+    sys.exit("Cannot import from flask: Do `pip3 install --user flask` to install")
 
 try:
     from PIL import Image
 except ImportError:
-    sys.exit("Cannot import from PIL: Do `pip3 install Pillow` to install")
+    sys.exit("Cannot import from PIL: Do `pip3 install --user Pillow` to install")
 
 
 def create_default_image(image_width, image_height, do_gradient=False):
