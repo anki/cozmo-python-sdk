@@ -27,6 +27,7 @@ The code for the Hello World program looks like this.
 
   Make Cozmo say 'Hello World' in this simple Cozmo SDK example program.
   '''
+  
   import sys
 
   import cozmo
