@@ -14,11 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Cozmo reads tweets
+'''Cozmo reads tweets.
 
-Example for integrating Cozmo with Twitter
-Cozmo will read aloud each new tweet as it appears on your Twitter stream
-See user_twitter_keys.py for details on how to setup a Twitter account and get access keys
+This is an example for integrating Cozmo with Twitter.
+Cozmo will read aloud each new tweet as it appears on your Twitter stream.
+See user_twitter_keys.py for details on how to setup a Twitter account and get access keys.
 '''
 
 import sys

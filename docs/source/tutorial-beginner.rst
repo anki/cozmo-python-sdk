@@ -27,7 +27,7 @@ The code for the Hello World program looks like this.
 
   Make Cozmo say 'Hello World' in this simple Cozmo SDK example program.
   '''
-
+  
   import sys
 
   import cozmo
@@ -204,7 +204,7 @@ Now that you have written your first program, you're ready to write a more compl
 
 ..
 
-  a. ``from cozmo.util import degrees`` - this utility makes it easy to use degrees as a standard of measurement.
+  a. ``from cozmo.util import degrees`` is a utility that makes it easy to use degrees as a standard of measurement.
 
 3. Next, you need to tell the program wait for Cozmo to connect. Type the following lines into the document exactly as shown:
 
