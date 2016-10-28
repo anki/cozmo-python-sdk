@@ -104,7 +104,7 @@ Example 1 - Drive Straight
 
 For your first program, you will tell Cozmo to drive in a straight line for three seconds. This program will give you a simple overview of the programming process, as well as some of the building blocks necessary for the programs to work.
 
-1. In your source code editor, create a new document (*File -> New Document*). Free source code editors, such as `Atom <https://atom.io>`_ , `Sublime <https://www.sublimetext.com>`_ , or `TextWrangler <http://www.barebones.com/products/textwrangler>`_ can be found online. Anki does not provide tech support for third-party source code editors.
+1. In your source code editor, create a new document (*File -> New Document*). Free source code editors, such as `PyCharm Community Edition <https://www.jetbrains.com/pycharm/`_ , `Atom <https://atom.io>`_ , `Sublime <https://www.sublimetext.com>`_ , or `TextWrangler <http://www.barebones.com/products/textwrangler>`_ can be found online. Anki does not provide tech support for third-party source code editors.
 2. First, you need to tell the program to import some important information. Type the following lines into your document exactly as shown:
 
 .. code-block:: python

@@ -95,7 +95,7 @@ We can edit this code to make Cozmo say something new. Let's write our first pro
 Next Steps - "Night-Night"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. Open a new document in a source code editor or plain-text editor. Free source code editors, such as `Atom <https://atom.io>`_ , `Sublime <https://www.sublimetext.com>`_ , or `TextWrangler <http://www.barebones.com/products/textwrangler/>`_ can be found online. Anki does not provide tech support for third-party source code editors.
+1. Open a new document in a source code editor or plain-text editor. Free source code editors, such as `PyCharm Community Edition <https://www.jetbrains.com/pycharm/`_ , `Atom <https://atom.io>`_ , `Sublime <https://www.sublimetext.com>`_ , or `TextWrangler <http://www.barebones.com/products/textwrangler/>`_ can be found online. Anki does not provide tech support for third-party source code editors.
 
 2. Copy the code from the Hello World program and paste it into the new document.
 3. Each line in the program relates to a specific function. To learn more, see :doc:`the Beginner's Tutorial </tutorial-beginner>`.
