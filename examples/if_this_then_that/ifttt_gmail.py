@@ -15,49 +15,65 @@
 # limitations under the License.
 
 
-'''Use "If This Then That" (http://ifttt.com) to make Cozmo inform you when your Gmail account receives an email.
+'''"If This Then That" Gmail example
 
-This example shows how you can receive and respond to a web request from If This Then That, using a web endpoint
-served by Flask.
+This example demonstrates how "If This Then That" (http://ifttt.com) can be used
+make Cozmo respond when a Gmail account receives an email. Instructions below
+will lead you through setting up a "recipe" on the IFTTT website. When the recipe
+trigger is called (which sends a web request received by the flask server started
+in this example), Cozmo will play an animation, speak the email sender's name and
+show a mailbox image on his face.
 
-To set up the example:
-    1) Get a static ip or public URL that you can respond to on your computer. One easy way to do this is with ngrok.
-        a) Follow instructions here: https://ngrok.com/download
-        b) One ngrok is installed, run this at the command line:
-                ./ngrok http 5000
-        c) In the ngrok UI in the terminal, note the HTTP forwarding address (e.g., http://55e57164.ngrok.io).
-            You will use this address in your recipe.
+Follow these steps to run the example:
+    1) Provide a a static ip, URL or similar that can be reached from the If This
+        Then That server. One easy way to do this is with ngrok, which sets up
+        a secure tunnel to localhost running on your machine.
+
+        To set up ngrok:
+
+        a) Follow instructions here to download and install:
+            https://ngrok.com/download
+        b) Run this command to create a secure public URL for port 5000:
+            ./ngrok http 5000
+        c) Note the HTTP forwarding address shown in the terminal (e.g., http://55e57164.ngrok.io).
+            You will use this address in your recipe, below.
+
     2) Set up your recipe on the "If This Then That" website.
-        a) Create a Free IFTTT Account:
-            https://ifttt.com/join
-        b) Select the Maker channel as a channel that interests you
-        c) Navigate to: https://ifttt.com/myrecipes/personal
-        d) Click “Create a Recipe"
-        e) Click "this"
-        f) Click "Gmail"
-        g) Click “Connect"
-        h) Select your Gmail account
-        i) Click “Allow” to provide permissions to IFTTT for your email account
-        j) Click “Done"
-        k) Click “Continue to the next step"
-        l) Click “Any new email in inbox"
-        m) Click “Create Trigger"
-        n) Click “that"
-        o) Click “Maker"
-        p) Click “Make a web request"
-        q) In section “Complete Action Fields”, fill out the fields as follows. Remember your publicly accessble URL, static ip or ngrok dynamic URL (e.g., http://55e57164.ngrok.io):
-             URL: http://55e57164.ngrok.io/iftttGmail
-             Method: POST
-             Content Type: application/json
-             Body: {"FromAddress":"{{FromAddress}}"}
-        r) Click “Create Action"
-        s) Click “Create Recipe"
-        t) Click “Check now”. Confirm that IFTTT confirms that the recipe was checked successfully.
-        u) Click “Publish”. Add Recipe Title. Publish the recipe.
-        v) Click “Add” to add the recipe to your IFTTT account.
-        w) Test your recipe by sending an email to your Gmail account:
-            1. Run this SDK script: ./ifttt_gmail.py
-            2. On your IFTTT receipt webpage, click “Check now”.
+        a) Sign up and sign into https://ifttt.com
+        b) Create a recipe: https://ifttt.com/myrecipes/personal/new
+        c) Set up your trigger.
+            1. Click "this"
+            2. Select "Gmail". Click "Connect", select your Gmail account, and
+                click “Allow” to provide permissions to IFTTT for your email account.
+                Click "Done".
+            3. Under "Choose a Trigger", click “Any new email in inbox." Click “Create Trigger."
+        d) Set up your action.
+            1. Click “that"
+            2. Click “Maker" to set it as your action channel. Connect to the Maker channel if prompted.
+            3. Click “Make a web request"
+            4. In section “Complete Action Fields”, fill out the fields as follows. Remember your publicly
+                accessible URL from above(e.g., http://55e57164.ngrok.io) and use it in the URL field,
+                followed by "/iftttGmail" as shown below:
+
+                 URL: http://55e57164.ngrok.io/iftttGmail
+                 Method: POST
+                 Content Type: application/json
+                 Body: {"FromAddress":"{{FromAddress}}"}
+
+            5. Click “Create Action" then “Create Recipe."
+
+    3) Publish and test your recipe
+        a) Run this script at the command line: ./ifttt_gmail.py
+        b) On ifttt.com, on your recipe page, click “Check now”. See that IFTTT confirms that the recipe
+            was checked successfully.
+        c) Once IFTTT confirms the recipe was checked successfully, click “Publish”, add a Recipe Title
+            and notes, and publish the recipe.
+        d) Once the recipe is successfully published, click “Add” to add the recipe to your IFTTT account.
+        e) Test your recipe
+            1. Send an email to the Gmail account in your recipe
+            2. On your IFTTT recipe webpage, click “Check now”.
+            3. Cozmo should roll off the charger, raise and lower his lift, announce the email, and then
+                show a mailbox image on his face.
 '''
 
 import json
@@ -121,6 +137,7 @@ def run(sdk_conn):
     global ifttt
     ifttt = if_this_then_that_helpers.IfThisThenThatHelper(robot)
 
+    # Start flash web server so that /iftttGmail can serve as endpoint.
     flask_helpers.run_flask(flask_app, "127.0.0.1", 5000, False, False)
 
     # Putting None on the queue stops the thread. This is called when the
