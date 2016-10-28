@@ -255,10 +255,10 @@ class SayText(action.Action):
             self.play_event = _clad_to_engine_cozmo.AnimationTrigger.Count
 
         if use_cozmo_voice:
-            self.say_style = _clad_to_engine_cozmo.SayTextVoiceStyle.CozmoProcessing
+            self.say_style = _clad_to_engine_cozmo.SayTextVoiceStyle.CozmoProcessing_Sentence
         else:
             # default male human voice
-            self.say_style = _clad_to_engine_cozmo.SayTextVoiceStyle.UnProcessed
+            self.say_style = _clad_to_engine_cozmo.SayTextVoiceStyle.Unprocessed
 
         self.duration_scalar = duration_scalar
         self.voice_pitch = voice_pitch
@@ -272,7 +272,8 @@ class SayText(action.Action):
                                              playEvent=self.play_event,
                                              voiceStyle=self.say_style,
                                              durationScalar=self.duration_scalar,
-                                             voicePitch=self.voice_pitch)
+                                             voicePitch=self.voice_pitch,
+                                             fitToDuration=False)
 
 
 class SetHeadAngle(action.Action):
