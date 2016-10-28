@@ -48,7 +48,7 @@ if OWNER_FACE_ENROLL_NAME == "":
 class TwitterStreamToAppCommunication:
     '''Class for messaging to/from SecurityGuardStreamListener
 
-    Tweepy doesn't support asyncio, so it has to run the SecurityGuardStreamListener
+    Tweepy doesn't support asyncio, so this program must run the SecurityGuardStreamListener
     stream in its own thread. Communication is deliberately limited between the rest of the
     program and the stream to some simple signalling bools to avoid running
     into any threading issues like race conditions.

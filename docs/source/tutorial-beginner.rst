@@ -23,14 +23,13 @@ The code for the Hello World program looks like this.
 .. code-block:: python
   :lineno-start: 17
 
-  import sys
-
-  import cozmo
-
   '''Hello World
 
   Make Cozmo say 'Hello World' in this simple Cozmo SDK example program.
   '''
+  import sys
+
+  import cozmo
 
   def run(sdk_conn):
       '''The run method runs once Cozmo is connected.'''
