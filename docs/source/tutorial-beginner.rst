@@ -21,7 +21,7 @@ The Hello World program is a good example of the basic pieces used in any Cozmo 
 The code for the Hello World program looks like this.
 
 .. code-block:: python
-  :lineno-start: 1
+  :lineno-start: 17
 
   import sys
 
@@ -204,7 +204,7 @@ Now that you have written your first program, you're ready to write a more compl
 
 ..
 
-  a. ``from cozmo.util import degrees`` is a new utility that makes it easy to use degrees as a standard of measurement.
+  a. ``from cozmo.util import degrees`` is a utility that makes it easy to use degrees as a standard of measurement.
 
 3. Next, you need to tell the program wait for Cozmo to connect. Type the following lines into the document exactly as shown:
 

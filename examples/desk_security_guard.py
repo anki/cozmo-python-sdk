@@ -49,7 +49,7 @@ class TwitterStreamToAppCommunication:
     '''Class for messaging to/from SecurityGuardStreamListener
 
     Tweepy doesn't support asyncio, so it has to run the SecurityGuardStreamListener
-    stream in its own thread. Communication is limited between the rest of the
+    stream in its own thread. Communication is deliberately limited between the rest of the
     program and the stream to some simple signalling bools to avoid running
     into any threading issues like race conditions.
     '''
@@ -442,7 +442,7 @@ async def run(sdk_conn):
 
     except KeyboardInterrupt:
         print("")
-        print("Exit requested by user.")
+        print("Exit requested by user")
 
 
 if __name__ == '__main__':
