@@ -84,17 +84,17 @@ except ImportError:
 
 
 flask_app = Flask(__name__)
-ifttt_gmail = None
+ifttt = None
 
 
 def then_that_action(email_local_part):
     try:
-        with ifttt_gmail.perform_operation_off_charger(ifttt_gmail.cozmo):
-            ifttt_gmail.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
-            ifttt_gmail.cozmo.say_text("Email from " + email_local_part).wait_for_completed()
+        with ifttt.perform_operation_off_charger(ifttt.cozmo):
+            ifttt.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
+            ifttt.cozmo.say_text("Email from " + email_local_part).wait_for_completed()
 
             # TODO replace with email image
-            ifttt_gmail.display_image_on_face("images/hello_world.png")
+            ifttt.display_image_on_face("images/hello_world.png")
 
     except cozmo.exceptions.RobotBusy:
         pass
@@ -116,13 +116,13 @@ def receive_ifttt_web_request():
     # Use a regular expression to break apart pieces of the email address
     match_object = re.search(r'([\w.]+)@([\w.]+)', from_email_address)
 
-    if ifttt_gmail:
-        ifttt_gmail.queue.put((then_that_action, match_object.group(1)))
+    if ifttt:
+        ifttt.queue.put((then_that_action, match_object.group(1)))
 
     return ""
 
 
-class IFTTTGmail:
+class IfThisThenThatHelper:
 
     def __init__(self, coz):
         self.cozmo = coz
@@ -209,14 +209,14 @@ class IFTTTGmail:
 def run(sdk_conn):
     robot = sdk_conn.wait_for_robot()
 
-    global ifttt_gmail
-    ifttt_gmail = IFTTTGmail(robot)
+    global ifttt
+    ifttt = IfThisThenThatHelper(robot)
 
     flask_helpers.run_flask(flask_app, "127.0.0.1", 5000, False, False)
 
     # Put None on the queue to stop the thread. This is called when the
     # user hits Control C, stopping the run_flask call.
-    ifttt_gmail.queue.put(None)
+    ifttt.queue.put(None)
 
 
 if __name__ == '__main__':
