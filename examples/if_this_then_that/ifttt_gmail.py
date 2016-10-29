@@ -140,7 +140,7 @@ def run(sdk_conn):
     global ifttt
     ifttt = if_this_then_that_helpers.IfThisThenThatHelper(robot)
 
-    # Start flash web server so that /iftttGmail can serve as endpoint.
+    # Start flask web server so that /iftttGmail can serve as endpoint.
     flask_helpers.run_flask(flask_app, "127.0.0.1", 5000, False, False)
 
     # Putting None on the queue stops the thread. This is called when the
