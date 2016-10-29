@@ -18,11 +18,11 @@
 '''"If This Then That" ESPN example
 
 This example demonstrates how "If This Then That" (http://ifttt.com) can be used
-make Cozmo respond when a breaking sports news item is posted on ESPN. Instructions
-below will lead you through setting up a "recipe" on the IFTTT website. When the recipe
-trigger is called (which sends a web request received by the flask server started
-in this example), Cozmo will play an animation, say "ESPN News", and show the ESPN
-headline on his face.
+make Cozmo respond when there is an in-game or final score update for the team
+you specify. Instructions below will lead you through setting up a "recipe" on
+the IFTTT website. When the recipe trigger is called (which sends a web request
+received by the flask server started in this example), Cozmo will play an animation,
+say "ESPN News", and show the in-game update on his face.
 
 Please place Cozmo on the charger for this example. When necessary, he will be
 rolled off and back on.
@@ -47,8 +47,8 @@ Follow these steps to run the example:
         c) Set up your trigger.
             1. Click "this".
             2. Select "ESPN" as  your trigger channel.
-            3. Under "Choose a Trigger", select “Breaking top news".
-            4. In section "Complete Trigger Fields", click “Create Trigger".
+            3. Under "Choose a Trigger", select “New in-game update".
+            4. In section "Complete Trigger Fields", enter your team and click “Create Trigger".
 
         d) Set up your action.
             1. Click “that".
@@ -72,8 +72,8 @@ Follow these steps to run the example:
         c) Once IFTTT confirms the recipe was checked successfully, click “Publish”, add a Recipe Title
             and notes, and publish the recipe.
         d) Once the recipe is successfully published, click “Add” to add the recipe to your IFTTT account.
-        e) Wait for new sports breaking news  and see Cozmo react! Cozmo should roll off the charger, raise
-            and lower his lift, say "ESPN News", and show the ESPN headline on his face.
+        e) Wait for new in-game updates for your team and see Cozmo react! Cozmo should roll off the charger, raise
+            and lower his lift, say "ESPN News", and show the in-game update on his face.
 '''
 
 import json
@@ -110,15 +110,15 @@ def then_that_action(alert_body):
 
 @flask_app.route('/iftttESPN', methods=['POST'])
 def receive_ifttt_web_request():
-    '''Web request endpoint named "iftttESPN" for IFTTT to call when a breaking
-        news item is posted on ESPN.
+    '''Web request endpoint named "iftttESPN" for IFTTT to call when a new in-game
+        update for your team is posted on ESPN.
 
         In the IFTTT web request, in the URL field, specify this method
         as the endpoint. For instance, if your public url is http://my.url.com,
         then in the IFTTT web request URL field put the following:
         http://my.url.com/iftttESPN. Then, this endpoint will be called when
-        IFTTT checks and discovers that a breaking news item has been posted on
-        ESPN.
+        IFTTT checks and discovers that a new in-game update for your team is
+        posted on ESPN.
     '''
     json_object = json.loads(request.data.decode("utf-8"))
     alert_body = json_object["AlertBody"]
