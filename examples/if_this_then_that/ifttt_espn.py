@@ -22,7 +22,7 @@ make Cozmo respond when there is an in-game or final score update for the team
 you specify. Instructions below will lead you through setting up a "recipe" on
 the IFTTT website. When the recipe trigger is called (which sends a web request
 received by the flask server started in this example), Cozmo will play an animation,
-say "ESPN News", and show the in-game update on his face.
+show "ESPN update" on his face, and speak the in-game update.
 
 Please place Cozmo on the charger for this example. When necessary, he will be
 rolled off and back on.
@@ -73,7 +73,7 @@ Follow these steps to run the example:
             and notes, and publish the recipe.
         d) Once the recipe is successfully published, click “Add” to add the recipe to your IFTTT account.
         e) Wait for new in-game updates for your team and see Cozmo react! Cozmo should roll off the charger, raise
-            and lower his lift, say "ESPN News", and show the in-game update on his face.
+            and lower his lift, show "ESPN update" on his face and speak the in-game update.
 '''
 
 import json
