@@ -49,6 +49,7 @@ import queue
 import shutil
 import subprocess
 import sys
+import types
 
 from . import logger, logger_protocol
 
@@ -67,6 +68,15 @@ if sys.platform in ('win32', 'cygwin'):
     DEFAULT_ADB_CMD = 'adb.exe'
 else:
     DEFAULT_ADB_CMD = 'adb'
+
+
+def _observe_connection_lost(proto, cb):
+    meth = proto.connection_lost
+    @functools.wraps(meth)
+    def connection_lost(self, exc):
+        meth(exc)
+        cb()
+    proto.connection_lost = types.MethodType(connection_lost, proto)
 
 
 class DeviceConnector:
@@ -103,19 +113,49 @@ class IOSConnector(DeviceConnector):
 
     An instance of this class can be passed to the ``connect_`` prefixed
     functions in this module.
+
+    Args:
+        serial (string): Serial number of the device to connect to.
+            If None, then connect to the first available iOS device running
+            the Cozmo app in SDK mode.
     '''
-    def __init__(self, **kw):
+    def __init__(self, serial=None, **kw):
         super().__init__(**kw)
         self.usbmux = None
+        self._connected = set()
+        self.serial = serial
 
     async def connect(self, loop, protocol_factory, conn_check):
         if not self.usbmux:
             self.usbmux = await usbmux.connect_to_usbmux(loop=loop)
-        transport, proto = await self.usbmux.connect_to_first_device(protocol_factory, self.cozmo_port)
+
+        if self.serial is None:
+            device_id, transport, proto = await self.usbmux.connect_to_first_device(
+                    protocol_factory, self.cozmo_port, exclude=self._connected)
+
+        else:
+            device_id = await self.usbmux.wait_for_serial(self.serial)
+            transport, proto = await self.usbmux.connect_to_device(
+                    protocol_factory, device_id, self.cozmo_port)
+
+        proto.device_info={
+            'device_type': 'ios',
+            'device_id': device_id,
+            'serial':  transport.device_info.get('SerialNumber'),
+        }
+
         if conn_check is not None:
             await conn_check(proto)
-        logger.info('Connected to iOS device')
+
+        self._connected.add(device_id)
+        logger.info('Connected to iOS device_id=%s serial=%s', device_id,
+                transport.device_info.get('SerialNumber'))
+        _observe_connection_lost(proto, functools.partial(self._disconnect, device_id))
         return transport, proto
+
+    def _disconnect(self, device_id):
+        logger.info('iOS device_id=%s disconnected.', device_id)
+        self._connected.discard(device_id)
 
 
 class AndroidConnector(DeviceConnector):
@@ -131,12 +171,19 @@ class AndroidConnector(DeviceConnector):
 
     An instance of this class can be passed to the ``connect_`` prefixed
     functions in this module.
+
+    Args:
+        serial (string): Serial number of the device to connect to.
+            If None, then connect to the first available Android device running
+            the Cozmo app in SDK mode.
     '''
-    def __init__(self, adb_cmd=None, **kw):
+    def __init__(self, adb_cmd=None, serial=None, **kw):
         self._adb_cmd = None
         super().__init__(**kw)
 
+        self.serial = serial
         self.portspec = 'tcp:' + str(self.cozmo_port)
+        self._connected = set()
         if adb_cmd:
             self._adb_cmd = adb_cmd
         else:
@@ -195,6 +242,11 @@ class AndroidConnector(DeviceConnector):
 
     async def connect(self, loop, protocol_factory, conn_check):
         for serial in self._devices():
+            if serial in self._connected:
+                continue
+            if self.serial is not None and serial.lower() != self.serial.lower():
+                continue
+
             logger.debug('Checking connection to Android device: %s', serial)
             try:
                 self._remove_forward(serial)
@@ -202,7 +254,12 @@ class AndroidConnector(DeviceConnector):
                 pass
             self._add_forward(serial)
             try:
-                transport, proto = await loop.create_connection(protocol_factory, '127.0.0.1', self.cozmo_port)
+                transport, proto = await loop.create_connection(
+                        protocol_factory, '127.0.0.1', self.cozmo_port)
+                proto.device_info={
+                    'device_type': 'android',
+                    'serial':  serial,
+                }
                 if conn_check:
                     # Check that we have a good connection before returning
                     try:
@@ -211,12 +268,18 @@ class AndroidConnector(DeviceConnector):
                         logger.debug('Failed connection check: %s', e)
                         raise
 
-                logger.info('Connected to Android device: %s', serial)
+                logger.info('Connected to Android device serial=%s', serial)
+                self._connected.add(serial)
+                _observe_connection_lost(proto, functools.partial(self._disconnect, serial))
                 return transport, proto
             except:
                 pass
             self._remove_forward(serial)
         raise ValueError("No connected Android devices running Cozmo in SDK mode")
+
+    def _disconnect(self, serial):
+        logger.info('Android serial=%s disconnected.', serial)
+        self._connected.discard(serial)
 
 
 class TCPConnector(DeviceConnector):
@@ -227,9 +290,10 @@ class TCPConnector(DeviceConnector):
     Requires that a SDK_TCP_PORT environment variable be set to the port
     number to connect to.
     '''
-    def __init__(self, tcp_port=None, **kw):
+    def __init__(self, tcp_port=None, ip_addr='127.0.0.1', **kw):
         super().__init__(**kw)
 
+        self.ip_addr = ip_addr
         if tcp_port is not None:
             # override SDK_TCP_PORT environment variable
             self.tcp_port = tcp_port
@@ -249,7 +313,11 @@ class TCPConnector(DeviceConnector):
 
     async def connect(self, loop, protocol_factory, conn_check):
         try:
-            transport, proto = await loop.create_connection(protocol_factory, '127.0.0.1', self.tcp_port)
+            transport, proto = await loop.create_connection(protocol_factory, self.ip_addr, self.tcp_port)
+            proto.device_info={
+                'device_type': 'tcp',
+                'host': '%s:%s' % (self.ip_addr, self.tcp_port),
+            }
             if conn_check:
                 try:
                     await conn_check(proto)
@@ -271,7 +339,9 @@ class FirstAvailableConnector(DeviceConnector):
     This is the default connector used by ``connect_`` functions.
     '''
     def __init__(self):
-        pass
+        self.tcp = TCPConnector()
+        self.ios = IOSConnector()
+        self.android = AndroidConnector()
 
     async def _do_connect(self, connector,loop, protocol_factory, conn_check):
         connect = connector.connect(loop, protocol_factory, conn_check)
@@ -281,20 +351,17 @@ class FirstAvailableConnector(DeviceConnector):
     async def connect(self, loop, protocol_factory, conn_check):
         conn_args = (loop, protocol_factory, conn_check)
 
-        tcp = TCPConnector()
-        if tcp.enabled:
-            result = await self._do_connect(tcp, *conn_args)
+        if self.tcp.enabled:
+            result = await self._do_connect(self.tcp, *conn_args)
             if not isinstance(result, BaseException):
                 return result
             logger.warn('No TCP connection found running Cozmo: %s' % result)
 
-        android = AndroidConnector()
-        android_result = await self._do_connect(android, *conn_args)
+        android_result = await self._do_connect(self.android, *conn_args)
         if not isinstance(android_result, BaseException):
             return android_result
 
-        ios = IOSConnector()
-        ios_result = await self._do_connect(ios, *conn_args)
+        ios_result = await self._do_connect(self.ios, *conn_args)
         if not isinstance(ios_result, BaseException):
             return ios_result
 
@@ -303,6 +370,10 @@ class FirstAvailableConnector(DeviceConnector):
 
         raise exceptions.NoDevicesFound('No devices connected running Cozmo in SDK mode')
 
+
+# Create an instance of a connector to use by default
+# The instance will maintain state about which devices are currently connected.
+_DEFAULT_CONNECTOR = FirstAvailableConnector()
 
 
 def _sync_exception_handler(abort_future, loop, context):
@@ -459,7 +530,7 @@ def connect_on_loop(loop, conn_factory=conn.CozmoConnection, connector=None):
         A :class:`cozmo.conn.CozmoConnection` instance.
     '''
     if connector is None:
-        connector = FirstAvailableConnector()
+        connector = _DEFAULT_CONNECTOR
 
     factory = functools.partial(conn_factory, loop=loop)
 
