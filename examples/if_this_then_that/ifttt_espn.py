@@ -93,11 +93,25 @@ ifttt = None
 
 
 def then_that_action(alert_body):
+    '''Controls how Cozmo responds to the in-game update.
+
+    You may modify this method to change how Cozmo reacts to
+    the update from ESPN.
+    '''
+
     try:
         with ifttt.perform_operation_off_charger():
+
+            # First, have Cozmo play animation "ID_pokedB", which tells
+            # Cozmo to raise and lower his lift. To change the animation,
+            # you may replace "ID_pokedB" with another animation. Run
+            # remote_control_cozmo.py to see a list of animations.
             ifttt.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
+
+            # Next, have Cozmo speak the text from the in-game update.
             ifttt.cozmo.say_text(alert_body).wait_for_completed()
 
+            # Last, have Cozmo display "ESPN update" on his face.
             ifttt.make_text_image("ESPN update", 8, 6)
 
     except cozmo.exceptions.RobotBusy:
@@ -116,12 +130,19 @@ def receive_ifttt_web_request():
         IFTTT checks and discovers that a new in-game update for your team is
         posted on ESPN.
     '''
+
+    # Retrieve the data passed by If This Then That in the web request body.
     json_object = json.loads(request.data.decode("utf-8"))
+
+    # Extract the text for the in-game update.
     alert_body = json_object["AlertBody"]
 
     if ifttt:
+        # Add this email to the queue of emails awaiting Cozmo's reaction.
         ifttt.queue.put((then_that_action, alert_body))
 
+    # Return promptly so If This Then That knows that the web request was received
+    # successfully.
     return ""
 
 

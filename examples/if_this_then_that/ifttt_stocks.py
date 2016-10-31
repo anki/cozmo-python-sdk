@@ -99,14 +99,27 @@ ifttt = None
 
 
 def then_that_action(parameters):
+    '''Controls how Cozmo responds to stock notification.
+
+    You may modify this method to change how Cozmo reacts to the stock
+    price increasing.
+    '''
+
     stock_name, percentage = parameters
 
     try:
         with ifttt.perform_operation_off_charger():
+
+            # First, have Cozmo play animation "ID_pokedB", which tells
+            # Cozmo to raise and lower his lift. To change the animation,
+            # you may replace "ID_pokedB" with another animation. Run
+            # remote_control_cozmo.py to see a list of animations.
             ifttt.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
+
+            # Next, have Cozmo say that your stock is up by x percent.
             ifttt.cozmo.say_text(stock_name + " is up " + percentage + " percent").wait_for_completed()
 
-            # TODO replace with stock image
+            # Last, have Cozmo display a stock market image on his face.
             ifttt.display_image_file_on_face("../images/ifttt_stocks.png")
 
     except cozmo.exceptions.RobotBusy:
@@ -125,13 +138,22 @@ def receive_ifttt_web_request():
         IFTTT checks and discovers that the selected ticker symbol has increased
         by 1% or more.
     '''
+
+    # Retrieve the data passed by If This Then That in the web request body.
     json_object = json.loads(request.data.decode("utf-8"))
+
+    # Extract the company name for the stock ticker symbol.
     stock_name = json_object["StockName"]
+
+    # Extract the percentage increase.
     percentage_change = str(json_object["PercentageChange"])
 
     if ifttt:
+        # Add this email to the queue of stock notifications awaiting Cozmo's reaction.
         ifttt.queue.put((then_that_action, (stock_name, percentage_change)))
 
+    # Return promptly so If This Then That knows that the web request was received
+    # successfully.
     return ""
 
 

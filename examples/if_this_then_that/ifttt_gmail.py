@@ -97,12 +97,25 @@ ifttt = None
 
 
 def then_that_action(email_local_part):
+    '''Controls how Cozmo responds to the email.
+
+    You may modify this method to change how Cozmo reacts to the email
+    being received.
+    '''
+
     try:
         with ifttt.perform_operation_off_charger():
+
+            # First, have Cozmo play animation "ID_pokedB", which tells
+            # Cozmo to raise and lower his lift. To change the animation,
+            # you may replace "ID_pokedB" with another animation. Run
+            # remote_control_cozmo.py to see a list of animations.
             ifttt.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
+
+            # Next, have Cozmo speak the name of the email sender.
             ifttt.cozmo.say_text("Email from " + email_local_part).wait_for_completed()
 
-            # TODO replace with email image
+            # Last, have Cozmo display an email image on his face.
             ifttt.display_image_file_on_face("../images/ifttt_gmail.png")
 
     except cozmo.exceptions.RobotBusy:
@@ -119,15 +132,22 @@ def receive_ifttt_web_request():
         http://my.url.com/iftttGmail. Then, this endpoint will be called when
         IFTTT checks and discovers that the Gmail account received email.
     '''
+
+    # Retrieve the data passed by If This Then That in the web request body.
     json_object = json.loads(request.data.decode("utf-8"))
+
+    # Extract the name of the email sender.
     from_email_address = json_object["FromAddress"]
 
     # Use a regular expression to break apart pieces of the email address
     match_object = re.search(r'([\w.]+)@([\w.]+)', from_email_address)
 
     if ifttt:
+        # Add this email to the queue of emails awaiting Cozmo's reaction.
         ifttt.queue.put((then_that_action, match_object.group(1)))
 
+    # Return promptly so If This Then That knows that the web request was received
+    # successfully.
     return ""
 
 
