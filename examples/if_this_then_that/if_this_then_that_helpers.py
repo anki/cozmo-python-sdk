@@ -15,15 +15,17 @@
 '''If This Then That helper class
 
 Wrapper class for integrating Cozmo with If This Then That (http://ifttt.com).
-See ifttt_gmail.py for an example of this class being used.
+See ifttt_espn.py, ifttt_gmail.py and ifttt_stocks.py for examples of this
+class being used.
 
-This class includes:
-    1) method get_in_position to move Cozmo's lift down and face up if necessary
-    2) method perform_operation_off_charger and backup_onto_charger so that Cozmo
-        can return to his charger between If This Then That trigger calls
-    3) method display_image_on_face to display the requested image on his face after
-        the If This Then That trigger has been received
-    4) a queue to store If This Then That trigger calls as they come in
+This class includes the following:
+    1) get_in_position moves Cozmo's lift down and face up if necessary.
+    2) perform_operation_off_charger and backup_onto_charger methods help
+        Cozmo return to his charger between If This Then That trigger calls.
+    3) display_image_on_face and display_text_on_face methods display the
+        requested image file or text, respectively, on his face after
+        the If This Then That trigger has been received.
+    4) queue stores If This Then That trigger calls as they come in.
 '''
 
 from contextlib import contextmanager
