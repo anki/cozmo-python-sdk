@@ -141,7 +141,7 @@ class IOSConnector(DeviceConnector):
         proto.device_info={
             'device_type': 'ios',
             'device_id': device_id,
-            'serial':  transport.device_info.get('SerialNumber'),
+            'serial':  transport.device_info.get('SerialNumber')
         }
 
         if conn_check is not None:

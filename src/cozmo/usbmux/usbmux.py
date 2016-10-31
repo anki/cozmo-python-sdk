@@ -271,14 +271,14 @@ class USBMux(PlistProto):
 
         Args:
             serial (string): Serial number of the device to wait for.
-            timeout (float): The maximum amount of time in secondsto wait for a
+            timeout (float): The maximum amount of time in seconds to wait for a
                 matching device to be connected.
                 Set to None to wait indefinitely, or -1 to only check currently
                 connected devices.
         Returns:
             int: The device id of the connected device
         Raises:
-            asyncio.TimeoutError - If the device with the specified serial number doesn't appear.
+            asyncio.TimeoutError if the device with the specified serial number doesn't appear.
         '''
         timeout = Timeout(timeout)
         with self.attach_watcher(include_existing=True) as watcher:
@@ -302,7 +302,7 @@ class USBMux(PlistProto):
         Returns:
             (asyncio.Transport, asyncio.Protocol): The connected transport and protocol.
         Raises:
-            asyncio.TimeoutError - If no devices with the requested port become
+            asyncio.TimeoutError if no devices with the requested port become
                 available in the specified time.
         '''
         with self.attach_watcher(include_existing=True) as watcher:
@@ -331,7 +331,7 @@ class USBMux(PlistProto):
         Returns:
             int: The device id that attached.
         Raises:
-            asyncio.TimeoutError - If no devices with the requested port become
+            asyncio.TimeoutError if no devices with the requested port become
                 available in the specified time.
         '''
         timeout = Timeout(timeout)
@@ -456,6 +456,7 @@ class QueueNotifyCM:
 
 
 class Timeout:
+    '''Helper class to track timeout state.'''
     def __init__(self, timeout=None):
         self.timeout = timeout
         self.start = time.time()
