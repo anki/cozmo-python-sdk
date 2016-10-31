@@ -99,9 +99,9 @@ def then_that_action(alert_body):
     try:
         with ifttt.perform_operation_off_charger(ifttt.cozmo):
             ifttt.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
-            ifttt.cozmo.say_text("E S P N news").wait_for_completed()
+            ifttt.cozmo.say_text(alert_body).wait_for_completed()
 
-            ifttt.make_text_image(alert_body, 8, 6)
+            ifttt.make_text_image("ESPN update", 8, 6)
 
     except cozmo.exceptions.RobotBusy:
         pass
@@ -123,7 +123,7 @@ def receive_ifttt_web_request():
     alert_body = json_object["AlertBody"]
 
     if ifttt:
-        ifttt.queue.put((then_that_action, (alert_body)))
+        ifttt.queue.put((then_that_action, alert_body))
 
     return ""
 
