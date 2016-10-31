@@ -103,7 +103,7 @@ def then_that_action(email_local_part):
             ifttt.cozmo.say_text("Email from " + email_local_part).wait_for_completed()
 
             # TODO replace with email image
-            ifttt.display_image_file_on_face("../images/hello_world.png")
+            ifttt.display_image_file_on_face("../images/ifttt_gmail.png")
 
     except cozmo.exceptions.RobotBusy:
         pass
