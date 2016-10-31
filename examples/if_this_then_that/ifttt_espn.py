@@ -95,15 +95,13 @@ flask_app = Flask(__name__)
 ifttt = None
 
 
-# TODO Use alert_body
 def then_that_action(alert_body):
     try:
         with ifttt.perform_operation_off_charger(ifttt.cozmo):
             ifttt.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
             ifttt.cozmo.say_text("E S P N news").wait_for_completed()
 
-            # TODO replace with actual headline, not image
-            ifttt.display_image_file_on_face("../images/hello_world.png")
+            ifttt.make_text_image(alert_body, 8, 6)
 
     except cozmo.exceptions.RobotBusy:
         pass

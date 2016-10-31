@@ -36,7 +36,7 @@ import cozmo
 
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageDraw, ImageFont
 except ImportError:
     sys.exit("Cannot import from PIL: Do `pip3 install Pillow` to install")
 
@@ -107,16 +107,53 @@ class IfThisThenThatHelper:
         # load image and convert it for display on cozmo's face
         image = Image.open(image_name)
 
-        self.display_image_on_face(image)
-
-
-    def display_image_on_face(self, image):
         # resize to fit on Cozmo's face screen
         resized_image = image.resize(cozmo.oled_face.dimensions(), Image.NEAREST)
 
+        self.display_image_on_face(resized_image, True)
+
+
+    def make_text_image(self, text_to_draw, x, y):
+        '''Make a PIL.Image with the given text printed on it
+
+        Args:
+            text_to_draw (string): the text to draw to the image
+            x (int): x pixel location
+            y (int): y pixel location
+            font (PIL.ImageFont): the font to use
+
+        Returns:
+            :class:(`PIL.Image.Image`): a PIL image with the text drawn on it
+        '''
+
+        # get a font - location depends on OS so try a couple of options
+        # failing that the default of None will just use a default font
+        font = None
+        try:
+            font = ImageFont.truetype("arial.ttf", 20)
+        except IOError:
+            try:
+                font = ImageFont.truetype("/Library/Fonts/Arial.ttf", 20)
+            except IOError:
+                pass
+
+        text_image = Image.new('RGBA', cozmo.oled_face.dimensions(), (0, 0, 0, 255))
+
+        # get a drawing context
+        dc = ImageDraw.Draw(text_image)
+
+        # draw the text
+        dc.text((x, y), text_to_draw, fill=(255, 255, 255, 255), font=font)
+
+        self.display_image_on_face(text_image, False)
+
+        return text_image
+
+
+    def display_image_on_face(self, image, invert_image):
         # convert the image to the format used by the oled screen
-        face_image = cozmo.oled_face.convert_image_to_screen_data(resized_image,
-                                                                  invert_image=True)
+        face_image = cozmo.oled_face.convert_image_to_screen_data(image,
+                                                                  invert_image=invert_image)
 
         # display image for 5 seconds
         self.cozmo.display_oled_face_image(face_image, 5000.0)
