@@ -103,10 +103,14 @@ class IfThisThenThatHelper:
             self.backup_onto_charger(robot)
 
 
-    def display_image_on_face(self, image_name):
+    def display_image_file_on_face(self, image_name):
         # load image and convert it for display on cozmo's face
         image = Image.open(image_name)
 
+        self.display_image_on_face(image)
+
+
+    def display_image_on_face(self, image):
         # resize to fit on Cozmo's face screen
         resized_image = image.resize(cozmo.oled_face.dimensions(), Image.NEAREST)
 
@@ -114,12 +118,5 @@ class IfThisThenThatHelper:
         face_image = cozmo.oled_face.convert_image_to_screen_data(resized_image,
                                                                   invert_image=True)
 
-        # display each image on the robot's face for duration_s seconds (Note: this
-        # is clamped at 30 seconds max within the engine to prevent burn-in)
-        # repeat this num_loops times
-        num_loops = 5
-        duration_s = 2.0
-
-        for _ in range(num_loops):
-            self.cozmo.display_oled_face_image(face_image, duration_s * 1000.0)
-            time.sleep(duration_s)
+        # display image for 5 seconds
+        self.cozmo.display_oled_face_image(face_image, 5000.0)

@@ -110,7 +110,7 @@ def then_that_action(parameters):
             ifttt.cozmo.say_text(stock_name + " is up " + percentage + " percent").wait_for_completed()
 
             # TODO replace with stock image
-            ifttt.display_image_on_face("../images/hello_world.png")
+            ifttt.display_image_file_on_face("../images/hello_world.png")
 
     except cozmo.exceptions.RobotBusy:
         pass

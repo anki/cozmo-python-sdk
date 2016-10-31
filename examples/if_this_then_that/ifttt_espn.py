@@ -95,6 +95,7 @@ flask_app = Flask(__name__)
 ifttt = None
 
 
+# TODO Use alert_body
 def then_that_action(alert_body):
     try:
         with ifttt.perform_operation_off_charger(ifttt.cozmo):
@@ -102,7 +103,7 @@ def then_that_action(alert_body):
             ifttt.cozmo.say_text("E S P N news").wait_for_completed()
 
             # TODO replace with actual headline, not image
-            ifttt.display_image_on_face("../images/hello_world.png")
+            ifttt.display_image_file_on_face("../images/hello_world.png")
 
     except cozmo.exceptions.RobotBusy:
         pass
