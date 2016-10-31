@@ -112,7 +112,7 @@ def then_that_action(alert_body):
             ifttt.cozmo.say_text(alert_body).wait_for_completed()
 
             # Last, have Cozmo display "ESPN update" on his face.
-            ifttt.make_text_image("ESPN update", 8, 6)
+            ifttt.display_text_on_face("ESPN update", 8, 6)
 
     except cozmo.exceptions.RobotBusy:
         pass

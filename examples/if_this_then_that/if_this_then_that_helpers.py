@@ -113,7 +113,7 @@ class IfThisThenThatHelper:
         self.display_image_on_face(resized_image, True)
 
 
-    def make_text_image(self, text_to_draw, x, y):
+    def display_text_on_face(self, text_to_draw, x, y):
         '''Make a PIL.Image with the given text printed on it
 
         Args:
