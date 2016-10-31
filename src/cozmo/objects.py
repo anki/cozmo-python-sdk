@@ -38,9 +38,10 @@ online documentation.  They will be detected as :class:`CustomObject` instances.
 
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['OBJECT_VISIBILITY_TIMEOUT',
-           'EvtObjectTapped', 'EvtObjectAppeared', 'EvtObjectConnectChanged',
-           'EvtObjectDisappeared', 'EvtObjectObserved',
-           'ObservableObject', 'LightCube', 'CustomObject', 'FixedCustomObject']
+           'EvtObjectTapped', 'EvtObjectAppeared', 'EvtObjectAvailable',
+           'EvtObjectConnectChanged', 'EvtObjectDisappeared', 'EvtObjectObserved',
+           'ObservableObject', 'LightCube', 'Charger', 'CustomObject',
+           'FixedCustomObject']
 
 
 import collections
@@ -74,7 +75,7 @@ class EvtObjectObserved(event.Event):
     obj = 'The object that was observed'
     updated = 'A set of field names that have changed'
     image_box = 'A comzo.util.ImageBox defining where the object is within Cozmo\'s camera view'
-    pose = 'The cozmo.util.Pose defining the position and rotation of the object.'
+    pose = 'The cozmo.util.Pose defining the position and rotation of the object'
 
 
 class EvtObjectAppeared(event.Event):
@@ -92,7 +93,18 @@ class EvtObjectAppeared(event.Event):
     obj = 'The object that was observed'
     updated = 'A set of field names that have changed'
     image_box = 'A comzo.util.ImageBox defining where the object is within Cozmo\'s camera view'
-    pose = 'The cozmo.util.Pose defining the position and rotation of the object.'
+    pose = 'The cozmo.util.Pose defining the position and rotation of the object'
+
+
+class EvtObjectAvailable(event.Event):
+    '''Triggered when the engine reports that an object is available (i.e. exists).
+
+    This will usually occur at the start of the program in response to the SDK
+    sending RequestAvailableObjects to the engine.
+    '''
+    obj = 'The object that is available'
+    updated = 'A set of field names that have changed'
+    pose = 'The cozmo.util.Pose defining the position and rotation of the object'
 
 
 class EvtObjectDisappeared(event.Event):
@@ -141,6 +153,7 @@ class ObservableObject(event.Dispatcher):
 
         #: int: The robot's timestamp of the last observed event.
         #: ``None`` if the object has not yet been observed.
+        #: In milliseconds relative to robot epoch.
         self.last_observed_robot_timestamp = None
 
         #: :class:`~cozmo.util.ImageBox`: The ImageBox defining where the
@@ -185,6 +198,28 @@ class ObservableObject(event.Dispatcher):
         self._is_visible = False
         self.dispatch_event(EvtObjectDisappeared, obj=self)
 
+    def _handle_available_object(self, available_object):
+        # triggered when engine sends available objects
+        # as a response to a RequestAvailableObjects message
+        if (self.last_observed_robot_timestamp and
+                (self.last_observed_robot_timestamp > available_object.lastObservedTimestamp)):
+            logger.debug("ignoring old available_object=%s obj=%s (last_observed_robot_timestamp=%s)",
+                         available_object, self, self.last_observed_robot_timestamp)
+            return
+
+        changed_fields = {'last_observed_robot_timestamp', 'pose'}
+
+        self.last_observed_robot_timestamp = available_object.lastObservedTimestamp
+
+        self._pose = util.Pose(available_object.pose.x, available_object.pose.y, available_object.pose.z,
+                               q0=available_object.pose.q0, q1=available_object.pose.q1,
+                               q2=available_object.pose.q2, q3=available_object.pose.q3,
+                               origin_id=available_object.pose.originID)
+
+        self.dispatch_event(EvtObjectAvailable,
+                            obj=self,
+                            updated=changed_fields,
+                            pose=self._pose)
 
     #### Properties ####
 
@@ -282,7 +317,9 @@ class LightCube(ObservableObject):
         #: float: The time the object was last tapped
         self.last_tapped_time = None
 
-        #: int: The robot's timestamp of the last tapped event
+        #: int: The robot's timestamp of the last tapped event.
+        #: ``None`` if the cube wasn't tapped yet.
+        #: In milliseconds relative to robot epoch.
         self.last_tapped_robot_timestamp = None
 
 
@@ -361,6 +398,12 @@ class LightCube(ObservableObject):
         '''Turn off all the lights on the cube.'''
         self.set_lights(lights.off_light)
 
+
+class Charger(ObservableObject):
+    '''Cozmo's charger object, which the robot can observe and drive toward.'''
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
 
 
 class CustomObject(ObservableObject):

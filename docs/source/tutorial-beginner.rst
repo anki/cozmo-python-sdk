@@ -27,7 +27,7 @@ The code for the Hello World program looks like this.
 
   Make Cozmo say 'Hello World' in this simple Cozmo SDK example program.
   '''
-
+  
   import sys
 
   import cozmo
@@ -94,9 +94,13 @@ To run a program for Cozmo:
 
 5. If done correctly, Cozmo will execute the program.
 
---------------------------
+----------------
+Example Programs
+----------------
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 Example 1 - Drive Straight
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For your first program, you will tell Cozmo to drive in a straight line for three seconds. This program will give you a simple overview of the programming process, as well as some of the building blocks necessary for the programs to work.
 
@@ -181,9 +185,9 @@ The completed program should look like this.
 
 ..
 
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 Example 2 - Turn Around
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 Now that you have written your first program, you're ready to write a more complex program. In this example, you will tell Cozmo to make a 90 degree turn in place and play a victory animation.
 
@@ -200,7 +204,7 @@ Now that you have written your first program, you're ready to write a more compl
 
 ..
 
-  a. ``from cozmo.util import degrees`` - this utility makes it easy to use degrees as a standard of measurement.
+  a. ``from cozmo.util import degrees`` is a utility that makes it easy to use degrees as a standard of measurement.
 
 3. Next, you need to tell the program wait for Cozmo to connect. Type the following lines into the document exactly as shown:
 
@@ -279,9 +283,9 @@ The completed program should look like this.
 
 ..
 
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 Example 3 - Cube Stack
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 As a third beginning tutorial, you can tell Cozmo to look around for his blocks, and to stack them one atop the other once he sees two of them.
 
@@ -400,15 +404,11 @@ The completed program should look like this.
 
 ..
 
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Example 4 - Sing the Scales
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Building further on previously introduced code, let's combine your new knowledge on movement with the knowledge gained with the "Hello World" program to make Cozmo sing the scales.
-
-^^^^^^^^^^^^^^^^^^^
-Writing the Program
-^^^^^^^^^^^^^^^^^^^
 
 1. In your source code editor, create a new document (*File -> New Document*).
 2. The code for the program is listed below.

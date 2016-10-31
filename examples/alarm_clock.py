@@ -32,7 +32,7 @@ import time
 try:
     from PIL import Image, ImageDraw, ImageFont
 except ImportError:
-    sys.exit("Cannot import from PIL. Do `pip3 install Pillow` to install")
+    sys.exit("Cannot import from PIL. Do `pip3 install --user Pillow` to install")
 
 import cozmo
 

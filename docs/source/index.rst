@@ -12,7 +12,7 @@ Welcome to the Cozmo SDK Beta!
 ==============================
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     :caption: Installation
 
     initial

@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Cozmo The Desk Security Guard.
+'''Cozmo the Desk Security Guard.
 
-Cozmo patrols your desk, looks out for unknown faces, and reports them to you
+Cozmo patrols your desk, looks out for unknown faces, and reports them to you.
 '''
 
 import asyncio
@@ -31,11 +31,11 @@ import twitter.twitter_helpers as twitter_helpers
 import twitter.cozmo_twitter_keys as twitter_keys
 
 
-#: The twitter user (without the @ symbol) that will receive security photos etc.
+#: The twitter user (without the @ symbol) that will receive security photos, etc.
 OWNER_TWITTER_USERNAME = ""
 
 #: The name that the owner's face is enrolled as (i.e. your username in the app)
-#: When that face is seen Cozmo will assume no faces currently seen are an intruder
+#: When that face is seen, Cozmo will assume no other faces currently seen are intruders
 OWNER_FACE_ENROLL_NAME = ""
 
 
@@ -48,8 +48,8 @@ if OWNER_FACE_ENROLL_NAME == "":
 class TwitterStreamToAppCommunication:
     '''Class for messaging to/from SecurityGuardStreamListener
 
-    Tweepy doesn't support asyncio, so we have to run the SecurityGuardStreamListener
-    stream in its own thread. We limit the communication between the rest of the
+    Tweepy doesn't support asyncio, so this program must run the SecurityGuardStreamListener
+    stream in its own thread. Communication is deliberately limited between the rest of the
     program and the stream to some simple signalling bools to avoid running
     into any threading issues like race conditions.
     '''
@@ -60,10 +60,10 @@ class TwitterStreamToAppCommunication:
 
 
 class SecurityGuardStreamListener(twitter_helpers.CozmoTweetStreamListener):
-    '''React to Tweets sent to our Cozmo user, live, as they happen...
+    '''React to Tweets sent to the Cozmo user, live, as they happen...
 
-    on_tweet_from_user is called whenever our Twitter user receives a tweet
-    This allows the owner (only) to enable and disable the alarm via Twitter
+    on_tweet_from_user is called whenever the Twitter user receives a tweet.
+    This allows the only the owner to enable and disable the alarm via Twitter.
     '''
 
     def __init__(self, twitter_api, stream_to_app_comms):
@@ -88,7 +88,7 @@ class SecurityGuardStreamListener(twitter_helpers.CozmoTweetStreamListener):
             return "Already Disarmed!"
 
     def get_supported_commands(self):
-        '''Construct a list of all methods in this class that start with "do_" - these are commands we accept'''
+        '''Construct a list of all methods in this class that start with "do_" - these are commands we accept.'''
         prefix_str = "do_"
         prefix_len = len(prefix_str)
         supported_commands = []
@@ -98,14 +98,14 @@ class SecurityGuardStreamListener(twitter_helpers.CozmoTweetStreamListener):
         return supported_commands
 
     def get_command(self, command_name):
-        '''Find a matching "do_" function and return it. Return None if there's no match'''
+        '''Find a matching "do_" function and return it. Return None if there's no match.'''
         try:
             return getattr(self, 'do_' + command_name.lower())
         except AttributeError:
             return None
 
     def extract_command_from_string(self, in_string):
-        '''Separate inString at each space, loop through until we find a command, return tuple of cmd_func and cmd_args'''
+        '''Separate inString at each space, loop through until we find a command, and return tuple of cmd_func and cmd_args.'''
 
         split_string = in_string.split()
 
@@ -120,13 +120,13 @@ class SecurityGuardStreamListener(twitter_helpers.CozmoTweetStreamListener):
         return None
 
     def on_tweet_from_user(self, json_data, tweet_text, from_user, is_retweet):
-        '''Handle every new tweet as it appears'''
+        '''Handle every new tweet as it appears.'''
 
         # ignore retweets
         if is_retweet:
             return True
 
-        # ignore any replies from this account (otherwise we'd infinite loop as soon as we reply)
+        # ignore any replies from this account (otherwise it would infinite loop as soon as you reply)
         # allow other messages from this account (so you can tweet at yourself to control Cozmo if you want)
 
         user_me = self.twitter_api.me()
@@ -153,7 +153,7 @@ class SecurityGuardStreamListener(twitter_helpers.CozmoTweetStreamListener):
             if result_string:
                 self.post_tweet(reply_prefix + result_string, tweet_id)
         else:
-            self.post_tweet(reply_prefix + "Sorry I don't understand, available commands are: "
+            self.post_tweet(reply_prefix + "Sorry, I don't understand; available commands are: "
                             + str(self.get_supported_commands()), tweet_id)
 
 
@@ -180,11 +180,11 @@ class DeskSecurityGuard:
         self.time_last_announced_owner = None
 
     def is_investigating_intruder(self):
-        '''Has an unknown face recently been seen'''
+        '''Has an unknown face recently been seen?'''
         return self.time_first_observed_intruder is not None
 
     def has_confirmed_intruder(self):
-        '''Has seen an intruder for long enough that we're pretty sure it's not the owner'''
+        '''The robot has seen an intruder for long enough that it's pretty sure it's not the owner.'''
         if self.time_first_observed_intruder:
             elapsed_time = time.time() - self.time_first_observed_intruder
             return elapsed_time > 2.0
@@ -192,7 +192,7 @@ class DeskSecurityGuard:
 
 
 def did_occur_recently(event_time, max_elapsed_time):
-    '''Did event_time occur and was it within the last max_elapsed_time seconds'''
+    '''Did event_time occur and was it within the last max_elapsed_time seconds?'''
     if event_time is None:
         return False
     elapsed_time = time.time() - event_time

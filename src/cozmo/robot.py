@@ -105,6 +105,29 @@ class GoToPose(action.Action):
                                               rad=self.pose.rotation.angle_z.radians)
 
 
+class GoToObject(action.Action):
+    '''Represents the go to object action in progress.
+
+    Returned by :meth:`~cozmo.robot.Robot.go_to_object`
+    '''
+
+    _action_type = _clad_to_engine_cozmo.RobotActionType.DRIVE_TO_OBJECT
+
+    def __init__(self, object_id, distance_from_object, **kw):
+        super().__init__(**kw)
+        self.object_id = object_id
+        self.distance_from_object = distance_from_object
+
+    def _repr_values(self):
+        return "object_id=%s, distance_from_object=%s" % (self.object_id, self.distance_from_object)
+
+    def _encode(self):
+        return _clad_to_engine_iface.GotoObject(objectID=self.object_id,
+                                                distanceFromObjectOrigin_mm=self.distance_from_object.distance_mm,
+                                                useManualSpeed=False,
+                                                usePreDockPose=False)
+
+
 class DriveOffChargerContacts(action.Action):
     '''Represents the drive off charger contacts action in progress.
 
@@ -393,69 +416,73 @@ class Robot(event.Dispatcher):
     _action_dispatcher_factory = action._ActionDispatcher
 
     #: callable: The factory function that returns a
-    #: class:`TurnInPlace` class or subclass instance.
+    #: :class:`TurnInPlace` class or subclass instance.
     turn_in_place_factory = TurnInPlace
 
     #: callable: The factory function that returns a
-    #: class:`TurnTowardsFace` class or subclass instance.
+    #: :class:`TurnTowardsFace` class or subclass instance.
     turn_towards_face_factory = TurnTowardsFace
 
     #: callable: The factory function that returns a
-    #: class:`PickupObject` class or subclass instance.
+    #: :class:`PickupObject` class or subclass instance.
     pickup_object_factory = PickupObject
 
     #: callable: The factory function that returns a
-    #: class:`PlaceOnObject` class or subclass instance.
+    #: :class:`PlaceOnObject` class or subclass instance.
     place_on_object_factory = PlaceOnObject
 
     #: callable: The factory function that returns a
-    #: class:`GoToPose` class or subclass instance.
+    #: :class:`GoToPose` class or subclass instance.
     go_to_pose_factory = GoToPose
 
     #: callable: The factory function that returns a
-    #: class:`PlaceObjectOnGroundHere` class or subclass instance.
+    #: :class:`GoToObject` class or subclass instance.
+    go_to_object_factory = GoToObject
+
+    #: callable: The factory function that returns a
+    #: :class:`PlaceObjectOnGroundHere` class or subclass instance.
     place_object_on_ground_here_factory = PlaceObjectOnGroundHere
 
     #: callable: The factory function that returns a
-    #: class:`SayText` class or subclass instance.
+    #: :class:`SayText` class or subclass instance.
     say_text_factory = SayText
 
     #: callable: The factory function that returns a
-    #: class:`SetHeadAngle` class or subclass instance.
+    #: :class:`SetHeadAngle` class or subclass instance.
     set_head_angle_factory = SetHeadAngle
 
     #: callable: The factory function that returns a
-    #: class:`SetLiftHeight` class or subclass instance.
+    #: :class:`SetLiftHeight` class or subclass instance.
     set_lift_height_factory = SetLiftHeight
 
     #: callable: The factory function that returns a
-    #: class:`DriveOffChargerContacts` class or subclass instance.
+    #: :class:`DriveOffChargerContacts` class or subclass instance.
     drive_off_charger_contacts_factory = DriveOffChargerContacts
 
     #: callable: The factory function that returns a
-    #: class:`DriveStraight` class or subclass instance.
+    #: :class:`DriveStraight` class or subclass instance.
     drive_straight_factory = DriveStraight
 
     # other factories
 
     #: callable: The factory function that returns a
-    #: class:`cozmo.anim.Animation` class or subclass instance.
+    #: :class:`cozmo.anim.Animation` class or subclass instance.
     animation_factory = anim.Animation
 
     #: callable: The factory function that returns a
-    #: class:`cozmo.anim.AnimationTrigger` class or subclass instance.
+    #: :class:`cozmo.anim.AnimationTrigger` class or subclass instance.
     animation_trigger_factory = anim.AnimationTrigger
 
     #: callable: The factory function that returns a
-    #: class:`cozmo.behavior.Behavior` class or subclass instance.
+    #: :class:`cozmo.behavior.Behavior` class or subclass instance.
     behavior_factory = behavior.Behavior
 
     #: callable: The factory function that returns a
-    #: class:`cozmo.camera.Camera` class or subclass instance.
+    #: :class:`cozmo.camera.Camera` class or subclass instance.
     camera_factory = camera.Camera
 
     #: callable: The factory function that returns a
-    #: class:`cozmo.world.World` class or subclass instance.
+    #: :class:`cozmo.world.World` class or subclass instance.
     world_factory = world.World
 
     # other attributes
@@ -473,25 +500,38 @@ class Robot(event.Dispatcher):
 
         self._is_ready = False
         self._pose = None
+        #: bool: Specifies that this is the primary robot (always True currently)
         self.is_primary = is_primary
 
-        #: :class:`cozmo.camera.Camera` Provides access to the robot's camera
+        #: :class:`cozmo.camera.Camera`: Provides access to the robot's camera
         self.camera = self.camera_factory(self, dispatch_parent=self)
 
-        #: :class:`cozmo.world.World` Tracks state information about Cozmo's world.
+        #: :class:`cozmo.world.World`: Tracks state information about Cozmo's world.
         self.world = self.world_factory(self.conn, self, dispatch_parent=self)
 
         self._action_dispatcher = self._action_dispatcher_factory(self)
 
+        #: :class:`cozmo.util.Speed`: Speed of the left wheel
         self.left_wheel_speed = None
+        #: :class:`cozmo.util.Speed`: Speed of the right wheel
         self.right_wheel_speed = None
-        self.light_height = None
+        #: :class:`cozmo.util.Distance`: Height of the lift from the ground
+        #: (in :const:`MIN_LIFT_HEIGHT_MM` to :const:`MAX_LIFT_HEIGHT_MM` range)
+        self.lift_height = None
+        #: float: The current battery voltage (not linear, but < 3.5 is low)
         self.battery_voltage = None
+        #: int: The ID of the object currently being carried (-1 if none)
         self.carrying_object_id = -1
+        #: int: The ID of the object on top of the object currently being carried (-1 if none)
         self.carrying_object_on_top_id = -1
+        #: int: The ID of the object the head is tracking to (-1 if none)
         self.head_tracking_object_id  = -1
+        #: int: The ID of the object that the robot is localized to (-1 if none)
         self.localized_to_object_id = -1
-        self.last_image_time = None
+        #: int: The robot's timestamp for the last image seen.
+        #: ``None`` if no image was received yet.
+        #: In milliseconds relative to robot epoch.
+        self.last_image_robot_timestamp = None
         self._pose_angle = None
         self._pose_pitch = None
         self._head_angle = None
@@ -519,6 +559,9 @@ class Robot(event.Dispatcher):
 
             await self.world.delete_all_custom_objects()
             self._reset_behavior_state()
+
+            msg = _clad_to_engine_iface.RequestAvailableObjects()
+            self.conn.send_msg(msg)
 
             # wait for animations to load
             await self.conn.anim_names.wait_for_loaded()
@@ -677,7 +720,8 @@ class Robot(event.Dispatcher):
     def _recv_msg_robot_state(self, evt, *, msg):
         self._pose = util.Pose(x=msg.pose.x, y=msg.pose.y, z=msg.pose.z,
                                q0=msg.pose.q0, q1=msg.pose.q1,
-                               q2=msg.pose.q2, q3=msg.pose.q3)
+                               q2=msg.pose.q2, q3=msg.pose.q3,
+                               origin_id=msg.pose.originID)
         self._pose_angle = util.radians(msg.poseAngle_rad) # heading in X-Y plane
         self._pose_pitch = util.radians(msg.posePitch_rad)
         self._head_angle = util.radians(msg.headAngle_rad)
@@ -689,7 +733,7 @@ class Robot(event.Dispatcher):
         self.carrying_object_on_top_id = msg.carryingObjectOnTopID # int_32 will be -1 if no object on top of object being carried
         self.head_tracking_object_id   = msg.headTrackingObjectID  # int_32 will be -1 if head is not tracking to any object
         self.localized_to_object_id    = msg.localizedToObjectID   # int_32 Will be -1 if not localized to any object
-        self.last_image_time           = msg.lastImageTimeStamp
+        self.last_image_robot_timestamp = msg.lastImageTimeStamp
         self._robot_status_flags       = msg.status     # uint_16 as bitflags - See _clad_to_game_cozmo.RobotStatusFlag
         self._game_status_flags        = msg.gameStatus # uint_8  as bitflags - See _clad_to_game_cozmo.GameStatusFlag
 
@@ -931,6 +975,30 @@ class Robot(event.Dispatcher):
         self._action_dispatcher._send_single_action(action)
         return action
 
+    def set_idle_animation(self, anim_trigger):
+        '''Set the Idle Animation on Cozmo
+
+        Idle animations behave the same as regular animations except that they
+        loop forever on Cozmo regardless of what actions and animations
+        are being played.
+
+        Args:
+            anim_trigger (:class:`cozmo.anim.Triggers`): The animation trigger to set
+                Note: :attr:`cozmo.anim.Triggers.Count` will clear all idle animations.
+        Raises:
+            :class:`ValueError` if supplied an invalid animation trigger.
+        '''
+        if not isinstance(anim_trigger, anim._AnimTrigger):
+            raise TypeError("Invalid anim_trigger supplied")
+
+        msg = _clad_to_engine_iface.SetIdleAnimation(robotID=self.robot_id,
+                                                     animTrigger=anim_trigger.id)
+        self.conn.send_msg(msg)
+
+    def clear_idle_animation(self):
+        '''Clears any Idle Animation currently playing on Cozmo'''
+        self.set_idle_animation(anim.Triggers.Count)
+
     # Cozmo's Face animation commands
 
     def display_oled_face_image(self, screen_data, duration_ms):
@@ -1101,6 +1169,28 @@ class Robot(event.Dispatcher):
             pose = self.pose.define_pose_relative_this(pose)
         action = self.go_to_pose_factory(pose=pose,
                 conn=self.conn, robot=self, dispatch_parent=self)
+        self._action_dispatcher._send_single_action(action)
+        return action
+
+    def go_to_object(self, target_object, distance_from_object):
+        '''Tells Cozmo to drive to the specified object.
+
+        Args:
+            target_object (:class:`cozmo.objects.ObservableObject`): The destination object.
+            distance_from_object (:class:`cozmo.util.Distance`): The distance from the
+                object to stop. This is the distance between the origins. For instance,
+                the distance from the robot's origin (between Cozmo's two front wheels)
+                to the cube's origin (at the center of the cube) is ~40mm.
+        Returns:
+            A :class:`cozmo.robot.GoToObject` action object which can be queried
+                to see when it is complete.
+        '''
+        if not isinstance(target_object, objects.ObservableObject):
+            raise TypeError("Target must be an observable object")
+
+        action = self.go_to_object_factory(object_id=target_object.object_id,
+                                           distance_from_object=distance_from_object,
+                                           conn=self.conn, robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action)
         return action
 

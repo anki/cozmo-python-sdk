@@ -33,7 +33,7 @@ observed by adding handlers there.
 __all__ = ['FACE_VISIBILITY_TIMEOUT',
            'EvtErasedEnrolledFace', 'EvtFaceAppeared', 'EvtFaceDisappeared',
            'EvtFaceIdChanged', 'EvtFaceObserved', 'EvtFaceRenamed',
-           'Face',
+           'EnrollNamedFace', 'Face',
            'erase_all_enrolled_faces', 'erase_enrolled_face_by_id',
            'update_enrolled_face_by_id']
 
@@ -174,7 +174,9 @@ class EnrollNamedFace(action.Action):
         return "face=%s name=%s" % (self.face, self.name)
 
     def _encode(self):
-        return _clad_to_engine_iface.EnrollNamedFace(faceID=self.face.face_id, name=self.name)
+        return _clad_to_engine_iface.EnrollNamedFace(faceID=self.face.face_id,
+                                                     name=self.name,
+                                                     sequence=_clad_to_engine_cozmo.FaceEnrollmentSequence.Simple)
 
 
 class Face(event.Dispatcher):
@@ -188,7 +190,7 @@ class Face(event.Dispatcher):
     which face it is looking at.
     '''
 
-    #: callable: The factory function to return a :class:`ErollNamedFace`
+    #: callable: The factory function to return an :class:`EnrollNamedFace`
     #: class or subclass instance.
     enroll_named_face_factory = EnrollNamedFace
 
@@ -213,6 +215,7 @@ class Face(event.Dispatcher):
 
         #: int: The robot's timestamp of the last observed event.
         #: ``None`` if the face has not yet been observed.
+        #: In milliseconds relative to robot epoch.
         self.last_observed_robot_timestamp = None
 
         #: :class:`~cozmo.util.ImageBox`: The ImageBox defining where the
@@ -346,13 +349,12 @@ class Face(event.Dispatcher):
 
         Args:
             name (string): The name that will be assigned to this face
-
         Returns:
             An instance of :class:`cozmo.faces.EnrollNamedFace` action object
         '''
         logger.info("Sending enroll named face request for face=%s and name=%s", self, name)
-        action = self.enroll_named_face_factory(face=self, name=name,
-                    conn=self.conn, robot=self._robot, dispatch_parent=self)
+        action = self.enroll_named_face_factory(face=self, name=name, conn=self.conn,
+                                                robot=self._robot, dispatch_parent=self)
         self._robot._action_dispatcher._send_single_action(action)
         return action
 

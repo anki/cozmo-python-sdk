@@ -12,20 +12,20 @@ If you have difficulties using the regular Installation Guide steps (e.g. you ar
 
 To use the Cozmo SDK, the Cozmo mobile app must be installed on your mobile device and that device must be tethered to a computer via USB cable.
 
-------------
+^^^^^^^^^^^^
 Installation
-------------
+^^^^^^^^^^^^
 
-^^^^^^^^^^^^^
+"""""""""""""
 Prerequisites
-^^^^^^^^^^^^^
+"""""""""""""
 
 * WiFi connection
 * An iOS or Android mobile device with the Cozmo app installed, connected to the computer via USB cable
 
-^^^^^^^
+"""""""
 Install
-^^^^^^^
+"""""""
 
 1. Install `VirtualBox and the VirtualBox Extension Pack <https://www.virtualbox.org/wiki/Downloads>`_ from the official webpage. Both of these *must* be installed in order for Vagrant to work properly.
 2. Install `Vagrant <https://www.vagrantup.com/downloads.html>`_ from the official webpage.
@@ -33,7 +33,7 @@ Install
 4. Plug the mobile device containing the Cozmo app into your computer.
 5. For **Windows**:
 
-  a. Download `vagrant_bundle_***.zip <http://cozmosdk.anki.com/0.7.0/vagrant_bundle_0.7.0.zip>`_.
+  a. Download `vagrant_bundle_***.zip <http://cozmosdk.anki.com/0.8.0/vagrant_bundle_0.8.0.zip>`_.
   b. Unzip the ``vagrant_bundle_***.zip`` file into a folder of your choosing.
   c. Open a Command Prompt window.
 
@@ -64,7 +64,7 @@ Install
 
 6. For **macOS/Linux**:
 
-  a. Download `vagrant_bundle_***.tar.gz <http://cozmosdk.anki.com/0.7.0/vagrant_bundle_0.7.0.tar.gz>`_.
+  a. Download `vagrant_bundle_***.tar.gz <http://cozmosdk.anki.com/0.8.0/vagrant_bundle_0.8.0.tar.gz>`_.
   b. Open a Terminal window.
 
     1. Enter the following commands::
