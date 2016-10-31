@@ -129,14 +129,17 @@ class IOSConnector(DeviceConnector):
         if not self.usbmux:
             self.usbmux = await usbmux.connect_to_usbmux(loop=loop)
 
-        if self.serial is None:
-            device_id, transport, proto = await self.usbmux.connect_to_first_device(
-                    protocol_factory, self.cozmo_port, exclude=self._connected)
+        try:
+            if self.serial is None:
+                device_id, transport, proto = await self.usbmux.connect_to_first_device(
+                        protocol_factory, self.cozmo_port, exclude=self._connected)
 
-        else:
-            device_id = await self.usbmux.wait_for_serial(self.serial)
-            transport, proto = await self.usbmux.connect_to_device(
-                    protocol_factory, device_id, self.cozmo_port)
+            else:
+                device_id = await self.usbmux.wait_for_serial(self.serial)
+                transport, proto = await self.usbmux.connect_to_device(
+                        protocol_factory, device_id, self.cozmo_port)
+        except asyncio.TimeoutError as exc:
+            raise exceptions.ConnectionError("No connected iOS devices running Cozmo in SDK mode") from exc
 
         proto.device_info={
             'device_type': 'ios',
@@ -275,7 +278,7 @@ class AndroidConnector(DeviceConnector):
             except:
                 pass
             self._remove_forward(serial)
-        raise ValueError("No connected Android devices running Cozmo in SDK mode")
+        raise exceptions.ConnectionError("No connected Android devices running Cozmo in SDK mode")
 
     def _disconnect(self, serial):
         logger.info('Android serial=%s disconnected.', serial)
@@ -327,7 +330,7 @@ class TCPConnector(DeviceConnector):
             logger.info("Connected to device on TCP port %d" % self.tcp_port)
             return transport, proto
         except Exception as e:
-            raise ValueError("No connected device running Cozmo in SDK mode on port %d" % self.tcp_port)
+            raise exceptions.ConnectionError("No connected device running Cozmo in SDK mode on port %d" % self.tcp_port)
 
 
 class FirstAvailableConnector(DeviceConnector):
@@ -355,7 +358,7 @@ class FirstAvailableConnector(DeviceConnector):
             result = await self._do_connect(self.tcp, *conn_args)
             if not isinstance(result, BaseException):
                 return result
-            logger.warn('No TCP connection found running Cozmo: %s' % result)
+            logger.warn('No TCP connection found running Cozmo: %s', result)
 
         android_result = await self._do_connect(self.android, *conn_args)
         if not isinstance(android_result, BaseException):
@@ -365,8 +368,8 @@ class FirstAvailableConnector(DeviceConnector):
         if not isinstance(ios_result, BaseException):
             return ios_result
 
-        logger.warn('No iOS device found running Cozmo: %s' % ios_result)
-        logger.warn('No Android device found running Cozmo: %s' % android_result)
+        logger.warn('No iOS device found running Cozmo: %s', ios_result)
+        logger.warn('No Android device found running Cozmo: %s', android_result)
 
         raise exceptions.NoDevicesFound('No devices connected running Cozmo in SDK mode')
 

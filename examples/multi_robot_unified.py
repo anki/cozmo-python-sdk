@@ -52,8 +52,11 @@ if __name__ == '__main__':
     # NOTE: to connect to a specific device with a specific serial number,
     # create a connector (eg. `cozmo.IOSConnector(serial='abc')) and pass it
     # explicitly to `connect` or `connect_on_loop`
-    conn1 = cozmo.connect_on_loop(loop)
-    conn2 = cozmo.connect_on_loop(loop)
+    try:
+        conn1 = cozmo.connect_on_loop(loop)
+        conn2 = cozmo.connect_on_loop(loop)
+    except cozmo.ConnectionError as e:
+        sys.exit("A connection error occurred: %s" % e)
 
     # Run a coroutine controlling both connections
     loop.run_until_complete(run(conn1, conn2))

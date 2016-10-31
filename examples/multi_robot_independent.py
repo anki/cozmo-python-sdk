@@ -42,8 +42,11 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
 
     # Connect to both robots
-    conn1 = cozmo.connect_on_loop(loop)
-    conn2 = cozmo.connect_on_loop(loop)
+    try:
+        conn1 = cozmo.connect_on_loop(loop)
+        conn2 = cozmo.connect_on_loop(loop)
+    except cozmo.ConnectionError as e:
+        sys.exit("A connection error occurred: %s" % e)
 
     # Run two independent coroutines concurrently, one on each connection
     task1 = asyncio.ensure_future(turn_left(conn1), loop=loop)
