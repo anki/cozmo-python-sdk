@@ -102,7 +102,7 @@ def then_that_action(parameters):
     stock_name, percentage = parameters
 
     try:
-        with ifttt.perform_operation_off_charger(ifttt.cozmo):
+        with ifttt.perform_operation_off_charger():
             ifttt.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
             ifttt.cozmo.say_text(stock_name + " is up " + percentage + " percent").wait_for_completed()
 

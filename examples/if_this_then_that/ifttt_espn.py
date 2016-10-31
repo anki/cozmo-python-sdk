@@ -94,7 +94,7 @@ ifttt = None
 
 def then_that_action(alert_body):
     try:
-        with ifttt.perform_operation_off_charger(ifttt.cozmo):
+        with ifttt.perform_operation_off_charger():
             ifttt.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
             ifttt.cozmo.say_text(alert_body).wait_for_completed()
 
