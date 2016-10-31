@@ -46,10 +46,10 @@ Follow these steps to run the example:
         b) Create a recipe: https://ifttt.com/myrecipes/personal/new
         c) Set up your trigger.
             1. Click "this".
-            2. Select "Gmail" as your trigger channel. Click "Connect", select your Gmail account, and
-                click “Allow” to provide permissions to IFTTT for your email account.
-                Click "Done".
-            3. Under "Choose a Trigger", click “Any new email in inbox". Click “Create Trigger".
+            2. Select "Gmail" as your trigger channel. If prompted, click "Connect",
+                select your Gmail account, and click “Allow” to provide permissions
+                to IFTTT for your email account. Click "Done".
+            3. Under "Choose a Trigger", click “Any new email in inbox", then click “Create Trigger".
         d) Set up your action.
             1. Click “that".
             2. Click “Maker" to set it as your action channel. Connect to the Maker channel if prompted.
@@ -65,18 +65,15 @@ Follow these steps to run the example:
 
             5. Click “Create Action" then “Create Recipe".
 
-    3) Publish and test your recipe
+    3) Test your recipe
         a) Run this script at the command line: ./ifttt_gmail.py
         b) On ifttt.com, on your recipe page, click “Check now”. See that IFTTT confirms that the recipe
             was checked successfully.
-        c) Once IFTTT confirms the recipe was checked successfully, click “Publish”, add a Recipe Title
-            and notes, and publish the recipe.
-        d) Once the recipe is successfully published, click “Add” to add the recipe to your IFTTT account.
-        e) Test your recipe
-            1. Send an email to the Gmail account in your recipe
-            2. On your IFTTT recipe webpage, click “Check now”.
-            3. Cozmo should roll off the charger, raise and lower his lift, announce the email, and then
-                show a mailbox image on his face.
+        c) Send an email to the Gmail account in your recipe
+        d) On your IFTTT recipe webpage, click “Check now”. This should cause IFTTT to detect that
+            the email was received and send a web request to the ifttt_gmail.py script.
+        e) In response to the ifttt web request, Cozmo should roll off the charger, raise and lower
+            his lift, announce the email, and then show a mailbox image on his face.
 '''
 
 import json

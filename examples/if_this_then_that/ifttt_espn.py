@@ -65,14 +65,11 @@ Follow these steps to run the example:
 
             5. Click “Create Action" then “Create Recipe".
 
-    3) Publish and test your recipe
+    3) Test your recipe
         a) Run this script at the command line: ./ifttt_espn.py
         b) On ifttt.com, on your recipe page, click “Check now”. See that IFTTT confirms that the recipe
             was checked successfully.
-        c) Once IFTTT confirms the recipe was checked successfully, click “Publish”, add a Recipe Title
-            and notes, and publish the recipe.
-        d) Once the recipe is successfully published, click “Add” to add the recipe to your IFTTT account.
-        e) Wait for new in-game updates for your team and see Cozmo react! Cozmo should roll off the charger, raise
+        c) Wait for new in-game updates for your team and see Cozmo react! Cozmo should roll off the charger, raise
             and lower his lift, show "ESPN update" on his face and speak the in-game update.
 '''
 
