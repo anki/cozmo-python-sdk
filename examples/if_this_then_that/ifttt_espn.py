@@ -36,8 +36,8 @@ Follow these steps to run the example:
 
         a) Follow instructions here to download and install:
             https://ngrok.com/download
-        b) Run this command to create a secure public URL for port 5000:
-            ./ngrok http 5000
+        b) Run this command to create a secure public URL for port 8080:
+            ./ngrok http 8080
         c) Note the HTTP forwarding address shown in the terminal (e.g., http://55e57164.ngrok.io).
             You will use this address in your recipe, below.
 
@@ -73,13 +73,19 @@ Follow these steps to run the example:
             and lower his lift, show "ESPN update" on his face and speak the in-game update.
 '''
 
+from contextlib import contextmanager
+
 import json
+import queue
 import sys
 sys.path.append('../')
+import threading
+import time
 
 import cozmo
 import flask_helpers
-import if_this_then_that_helpers
+
+from common import IFTTTRobot
 
 
 try:
@@ -89,7 +95,8 @@ except ImportError:
 
 
 flask_app = Flask(__name__)
-ifttt = None
+ifttt_queue = queue.Queue()
+robot = None
 
 
 def then_that_action(alert_body):
@@ -100,22 +107,56 @@ def then_that_action(alert_body):
     '''
 
     try:
-        with ifttt.perform_operation_off_charger():
+        with perform_operation_off_charger(robot):
 
             # First, have Cozmo play animation "ID_pokedB", which tells
             # Cozmo to raise and lower his lift. To change the animation,
             # you may replace "ID_pokedB" with another animation. Run
             # remote_control_cozmo.py to see a list of animations.
-            ifttt.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
+            robot.play_anim(name='ID_pokedB').wait_for_completed()
 
             # Next, have Cozmo speak the text from the in-game update.
-            ifttt.cozmo.say_text(alert_body).wait_for_completed()
+            robot.say_text(alert_body).wait_for_completed()
 
             # Last, have Cozmo display "ESPN update" on his face.
-            ifttt.display_text_on_face("ESPN update", 8, 6)
+            robot.display_text_on_face("ESPN update", 8, 6)
 
     except cozmo.exceptions.RobotBusy:
         pass
+
+
+def backup_onto_charger(robot):
+    '''Attempts to reverse robot onto its charger
+
+    Assumes charger is directly behind Cozmo
+    Keep driving straight back until charger is in contact
+    '''
+
+    robot.drive_wheels(-30, -30)
+    time_waited = 0.0
+    while time_waited < 3.0 and not robot.is_on_charger:
+        sleep_time_s = 0.1
+        time.sleep(sleep_time_s)
+        time_waited += sleep_time_s
+
+    robot.stop_all_motors()
+
+
+@contextmanager
+def perform_operation_off_charger(robot):
+    '''Perform a block of code with robot off the charger
+
+    Ensure robot is off charger before yielding
+    yield - (at which point any code in the caller's with block will run).
+    If Cozmo started on the charger then return it back afterwards'''
+
+    was_on_charger = robot.is_on_charger
+    robot.drive_off_charger_contacts().wait_for_completed()
+
+    yield robot
+
+    if was_on_charger:
+        backup_onto_charger(robot)
 
 
 @flask_app.route('/iftttESPN', methods=['POST'])
@@ -137,33 +178,47 @@ def receive_ifttt_web_request():
     # Extract the text for the in-game update.
     alert_body = json_object["AlertBody"]
 
-    if ifttt:
-        # Add this email to the queue of emails awaiting Cozmo's reaction.
-        ifttt.queue.put((then_that_action, alert_body))
+    # Add this email to the queue of emails awaiting Cozmo's reaction.
+    ifttt_queue.put((then_that_action, alert_body))
 
     # Return promptly so If This Then That knows that the web request was received
     # successfully.
     return ""
 
 
+def worker():
+    while True:
+        item = ifttt_queue.get()
+        if item is None:
+            break
+        queued_action, action_args = item
+        queued_action(action_args)
+
+
 def run(sdk_conn):
+    global robot
     robot = sdk_conn.wait_for_robot()
 
-    global ifttt
-    ifttt = if_this_then_that_helpers.IfThisThenThatHelper(robot)
+    threading.Thread(target=worker).start()
 
     # Start flask web server so that /iftttESPN can serve as endpoint.
-    flask_helpers.run_flask(flask_app, "127.0.0.1", 5000, False, False)
+    flask_helpers.run_flask(flask_app, "127.0.0.1", 8080, False, False)
 
     # Putting None on the queue stops the thread. This is called when the
     # user hits Control C, which stops the run_flask call.
-    ifttt.queue.put(None)
+    ifttt_queue.put(None)
 
 
 if __name__ == '__main__':
     cozmo.setup_basic_logging()
     cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
+
+    # Use our custom robot class with extra helper methods
+    cozmo.conn.CozmoConnection.robot_factory = IFTTTRobot
+
     try:
         cozmo.connect(run)
     except cozmo.ConnectionError as e:
         sys.exit("A connection error occurred: %s" % e)
+
+    #TODO call get_in_position
