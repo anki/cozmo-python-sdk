@@ -131,20 +131,21 @@ class IOSConnector(DeviceConnector):
 
         try:
             if self.serial is None:
-                device_id, transport, proto = await self.usbmux.connect_to_first_device(
+                device_info, transport, proto = await self.usbmux.connect_to_first_device(
                         protocol_factory, self.cozmo_port, exclude=self._connected)
 
             else:
                 device_id = await self.usbmux.wait_for_serial(self.serial)
-                transport, proto = await self.usbmux.connect_to_device(
+                device_info, transport, proto = await self.usbmux.connect_to_device(
                         protocol_factory, device_id, self.cozmo_port)
         except asyncio.TimeoutError as exc:
             raise exceptions.ConnectionError("No connected iOS devices running Cozmo in SDK mode") from exc
 
+        device_id = device_info.get('DeviceID')
         proto.device_info={
             'device_type': 'ios',
             'device_id': device_id,
-            'serial':  transport.device_info.get('SerialNumber')
+            'serial':  device_info.get('SerialNumber')
         }
 
         if conn_check is not None:
@@ -152,7 +153,7 @@ class IOSConnector(DeviceConnector):
 
         self._connected.add(device_id)
         logger.info('Connected to iOS device_id=%s serial=%s', device_id,
-                transport.device_info.get('SerialNumber'))
+                device_info.get('SerialNumber'))
         _observe_connection_lost(proto, functools.partial(self._disconnect, device_id))
         return transport, proto
 

@@ -248,23 +248,21 @@ class USBMux(PlistProto):
             device_id (int): The id of the device to connect to
             port (int): The port to connect to on the target device
         Returns:
-            (asyncio.Transport, asyncio.Protocol): The connected transport and protocol.
-                An attribute called ``device_info`` will be set on the transport
-                holding a dictionary with more information about the device,
-                such as SerialNumber.
+            (dict, asyncio.Transport, asyncio.Protocol): The device infor,mation,
+                connected transport and protocol.
         Raises:
             A USBMuxError subclass instance such as ConnectionRefused
         '''
         waiter = asyncio.Future(loop=self.loop)
         connector = USBMuxConnector(device_id, port, waiter)
         transport, switcher = await self._connect_transport(lambda: _ProtoSwitcher(self.loop, connector))
-        transport.device_info = self.attached.get(device_id)
 
         # wait for the connection to succeed or fail
         await waiter
 
         app_protocol = switcher.switch_protocol(protocol_factory)
-        return transport, app_protocol
+        device_info = self.attached.get(device_id) or {}
+        return device_info, transport, app_protocol
 
     async def wait_for_serial(self, serial, timeout=DEFAULT_MAX_WAIT):
         '''Wait for a device with the specified serial number to attach.
@@ -300,7 +298,8 @@ class USBMux(PlistProto):
             port (int): The port to connect to on the target device.
             timeout (float): The maximum amount of time to wait for a suitable device to be connected.
         Returns:
-            (asyncio.Transport, asyncio.Protocol): The connected transport and protocol.
+            (dict, asyncio.Transport, asyncio.Protocol): The device information,
+                connected transport and protocol.
         Raises:
             asyncio.TimeoutError if no devices with the requested port become
                 available in the specified time.
@@ -316,8 +315,7 @@ class USBMux(PlistProto):
                 if include is not None and device_id not in include:
                     continue
                 try:
-                    transport, proto = await self.connect_to_device(protocol_factory, device_id, port)
-                    return device_id, transport, proto
+                    return await self.connect_to_device(protocol_factory, device_id, port)
                 except USBMuxError:
                     pass
 
