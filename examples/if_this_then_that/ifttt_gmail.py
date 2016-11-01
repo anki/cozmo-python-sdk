@@ -134,7 +134,7 @@ app.router.add_post('/iftttGmail', serve_gmail)
 
 if __name__ == '__main__':
     cozmo.setup_basic_logging()
-    cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
+    cozmo.robot.Robot.drive_off_charger_on_connect = False
 
     # Use our custom robot class with extra helper methods
     cozmo.conn.CozmoConnection.robot_factory = IFTTTRobot

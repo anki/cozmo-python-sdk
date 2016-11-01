@@ -20,7 +20,7 @@
 This example demonstrates how "If This Then That" (http://ifttt.com) can be used
 make Cozmo respond when a stock ticker symbol increases by 1% or more. Instructions
 below will lead you through setting up a "recipe" on the IFTTT website. When the recipe
-trigger is called (which sends a web request received by the flask server started
+trigger is called (which sends a web request received by the web server started
 in this example), Cozmo will play an animation, speak the company name and the
 percentage increase, and show a stock market image on his face.
 
@@ -36,8 +36,8 @@ Follow these steps to run the example:
 
         a) Follow instructions here to download and install:
             https://ngrok.com/download
-        b) Run this command to create a secure public URL for port 5000:
-            ./ngrok http 5000
+        b) Run this command to create a secure public URL for port 8080:
+            ./ngrok http 8080
         c) Note the HTTP forwarding address shown in the terminal (e.g., http://55e57164.ngrok.io).
             You will use this address in your recipe, below.
 
@@ -79,102 +79,76 @@ Follow these steps to run the example:
             and lower his lift, announce the stock increase, and then show a stock market image on his face.
 '''
 
-import json
 import sys
-sys.path.append('../')
-
-import cozmo
-import flask_helpers
-import if_this_then_that_helpers
 
 
 try:
-    from flask import Flask, request
+    from aiohttp import web
 except ImportError:
-    sys.exit("Cannot import from flask: Do `pip3 install flask` to install")
+    sys.exit("Cannot import from aiohttp. Do `pip3 install --user aiohttp` to install")
+
+import cozmo
+
+from common import IFTTTRobot
 
 
-flask_app = Flask(__name__)
-ifttt = None
+app = web.Application()
 
 
-def then_that_action(parameters):
-    '''Controls how Cozmo responds to stock notification.
+async def serve_stocks(request):
+    '''Define an HTTP POST handler for receiving requests from If This Then That.
 
-    You may modify this method to change how Cozmo reacts to the stock
-    price increasing.
+    Controls how Cozmo responds to stock notification. You may modify this method
+    to change how Cozmo reacts to the stock price increasing.
     '''
 
-    stock_name, percentage = parameters
-
-    try:
-        with ifttt.perform_operation_off_charger():
-
-            # First, have Cozmo play animation "ID_pokedB", which tells
-            # Cozmo to raise and lower his lift. To change the animation,
-            # you may replace "ID_pokedB" with another animation. Run
-            # remote_control_cozmo.py to see a list of animations.
-            ifttt.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
-
-            # Next, have Cozmo say that your stock is up by x percent.
-            ifttt.cozmo.say_text(stock_name + " is up " + percentage + " percent").wait_for_completed()
-
-            # Last, have Cozmo display a stock market image on his face.
-            ifttt.display_image_file_on_face("../images/ifttt_stocks.png")
-
-    except cozmo.exceptions.RobotBusy:
-        pass
-
-
-@flask_app.route('/iftttStocks', methods=['POST'])
-def receive_ifttt_web_request():
-    '''Web request endpoint named "iftttStocks" for IFTTT to call when the
-        selected ticker symbol increases by 1% or more.
-
-        In the IFTTT web request, in the URL field, specify this method
-        as the endpoint. For instance, if your public url is http://my.url.com,
-        then in the IFTTT web request URL field put the following:
-        http://my.url.com/iftttStocks. Then, this endpoint will be called when
-        IFTTT checks and discovers that the selected ticker symbol has increased
-        by 1% or more.
-    '''
-
-    # Retrieve the data passed by If This Then That in the web request body.
-    json_object = json.loads(request.data.decode("utf-8"))
+    json_object = await request.json()
 
     # Extract the company name for the stock ticker symbol.
     stock_name = json_object["StockName"]
 
     # Extract the percentage increase.
-    percentage_change = str(json_object["PercentageChange"])
+    percentage = str(json_object["PercentageChange"])
 
-    if ifttt:
-        # Add this email to the queue of stock notifications awaiting Cozmo's reaction.
-        ifttt.queue.put((then_that_action, (stock_name, percentage_change)))
+    robot = request.app['robot']
+    try:
+        async with robot.perform_operation_off_charger():
+            # First, have Cozmo play animation "ID_pokedB", which tells
+            # Cozmo to raise and lower his lift. To change the animation,
+            # you may replace "ID_pokedB" with another animation. Run
+            # remote_control_cozmo.py to see a list of animations.
+            await robot.play_anim(name='ID_pokedB').wait_for_completed()
 
-    # Return promptly so If This Then That knows that the web request was received
-    # successfully.
-    return ""
+            # Next, have Cozmo say that your stock is up by x percent.
+            await robot.say_text(stock_name + " is up " + percentage + " percent").wait_for_completed()
 
+            # Last, have Cozmo display a stock market image on his face.
+            robot.display_image_file_on_face("../images/ifttt_stocks.png")
 
-def run(sdk_conn):
-    robot = sdk_conn.wait_for_robot()
+    except cozmo.RobotBusy:
+        return web.Response(status=503, text="Cozmo is busy")
+    return web.Response(text="OK")
 
-    global ifttt
-    ifttt = if_this_then_that_helpers.IfThisThenThatHelper(robot)
-
-    # Start flask web server so that /iftttStocks can serve as endpoint.
-    flask_helpers.run_flask(flask_app, "127.0.0.1", 5000, False, False)
-
-    # Putting None on the queue stops the thread. This is called when the
-    # user hits Control C, which stops the run_flask call.
-    ifttt.queue.put(None)
+# Attach the function as an HTTP handler.
+app.router.add_post('/iftttStocks', serve_stocks)
 
 
 if __name__ == '__main__':
     cozmo.setup_basic_logging()
-    cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
+    cozmo.robot.Robot.drive_off_charger_on_connect = False
+
+    # Use our custom robot class with extra helper methods
+    cozmo.conn.CozmoConnection.robot_factory = IFTTTRobot
+
     try:
-        cozmo.connect(run)
+        sdk_conn = cozmo.connect_on_loop(app.loop)
+        # Wait for the robot to become available and add it to the app object.
+        app['robot'] = app.loop.run_until_complete(sdk_conn.wait_for_robot())
     except cozmo.ConnectionError as e:
         sys.exit("A connection error occurred: %s" % e)
+
+    # TODO Get this code working and turn on
+    #robot = app['robot']
+    #await robot.get_in_position().wait_for_completed()
+
+    web.run_app(app)
