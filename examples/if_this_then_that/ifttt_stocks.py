@@ -113,6 +113,9 @@ async def serve_stocks(request):
     robot = request.app['robot']
     try:
         async with robot.perform_operation_off_charger():
+            '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face.'''
+            await robot.get_in_position()
+
             # First, have Cozmo play animation "ID_pokedB", which tells
             # Cozmo to raise and lower his lift. To change the animation,
             # you may replace "ID_pokedB" with another animation. Run
@@ -146,9 +149,5 @@ if __name__ == '__main__':
         app['robot'] = app.loop.run_until_complete(sdk_conn.wait_for_robot())
     except cozmo.ConnectionError as e:
         sys.exit("A connection error occurred: %s" % e)
-
-    # TODO Get this code working and turn on
-    #robot = app['robot']
-    #await robot.get_in_position().wait_for_completed()
 
     web.run_app(app)

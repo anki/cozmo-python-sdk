@@ -41,9 +41,9 @@ except ImportError:
 class IFTTTRobot(cozmo.robot.Robot):
     '''Add some methods to the base Robot class.'''
     async def get_in_position(self):
-        '''If necessary, Move Cozmo'qs Head and Lift to make it easy to see Cozmo's face'''
+        '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face'''
         if (self.lift_height.distance_mm > 45) or (self.head_angle.degrees < 40):
-            with self.perform_operation_off_charger():
+            async with self.perform_operation_off_charger():
                 await self.set_lift_height(0.0).wait_for_completed()
                 await self.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
 
