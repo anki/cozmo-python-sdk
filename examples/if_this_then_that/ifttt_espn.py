@@ -108,6 +108,8 @@ def then_that_action(alert_body):
 
     try:
         with perform_operation_off_charger(robot):
+            '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face.'''
+            robot.get_in_position()
 
             # First, have Cozmo play animation "ID_pokedB", which tells
             # Cozmo to raise and lower his lift. To change the animation,
@@ -221,4 +223,3 @@ if __name__ == '__main__':
     except cozmo.ConnectionError as e:
         sys.exit("A connection error occurred: %s" % e)
 
-    #TODO call get_in_position
