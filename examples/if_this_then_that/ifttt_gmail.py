@@ -20,7 +20,7 @@
 This example demonstrates how "If This Then That" (http://ifttt.com) can be used
 make Cozmo respond when a Gmail account receives an email. Instructions below
 will lead you through setting up a "recipe" on the IFTTT website. When the recipe
-trigger is called (which sends a web request received by the flask server started
+trigger is called (which sends a web request received by the web server started
 in this example), Cozmo will play an animation, speak the email sender's name and
 show a mailbox image on his face.
 
@@ -36,8 +36,8 @@ Follow these steps to run the example:
 
         a) Follow instructions here to download and install:
             https://ngrok.com/download
-        b) Run this command to create a secure public URL for port 5000:
-            ./ngrok http 5000
+        b) Run this command to create a secure public URL for port 8080:
+            ./ngrok http 8080
         c) Note the HTTP forwarding address shown in the terminal (e.g., http://55e57164.ngrok.io).
             You will use this address in your recipe, below.
 
@@ -76,10 +76,15 @@ Follow these steps to run the example:
             his lift, announce the email, and then show a mailbox image on his face.
 '''
 
-import json
 import re
+import sys
 
-from aiohttp import web
+
+try:
+    from aiohttp import web
+except ImportError:
+    sys.exit("Cannot import from aiohttp. Do `pip3 install --user aiohttp` to install")
+
 import cozmo
 
 from common import IFTTTRobot
@@ -89,7 +94,12 @@ app = web.Application()
 
 
 async def serve_gmail(request):
-    '''Define an HTTP POST handler for receiving requests from IFTTT'''
+    '''Define an HTTP POST handler for receiving requests from If This Then That.
+
+    You may modify this method to change how Cozmo reacts to the email
+    being received.
+    '''
+
     json_object = await request.json()
 
     # Extract the name of the email sender.
@@ -109,7 +119,7 @@ async def serve_gmail(request):
             await robot.play_anim(name='ID_pokedB').wait_for_completed()
 
             # Next, have Cozmo speak the name of the email sender.
-            #await robot.say_text("Email from " + email_local_part).wait_for_completed()
+            await robot.say_text("Email from " + email_local_part).wait_for_completed()
 
             # Last, have Cozmo display an email image on his face.
             robot.display_image_file_on_face("../images/ifttt_gmail.png")
@@ -135,5 +145,9 @@ if __name__ == '__main__':
         app['robot'] = app.loop.run_until_complete(sdk_conn.wait_for_robot())
     except cozmo.ConnectionError as e:
         sys.exit("A connection error occurred: %s" % e)
+
+    # TODO Get this code working and turn on
+    #robot = app['robot']
+    #await robot.get_in_position().wait_for_completed()
 
     web.run_app(app)
