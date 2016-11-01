@@ -248,7 +248,7 @@ class USBMux(PlistProto):
             device_id (int): The id of the device to connect to
             port (int): The port to connect to on the target device
         Returns:
-            (dict, asyncio.Transport, asyncio.Protocol): The device infor,mation,
+            (dict, asyncio.Transport, asyncio.Protocol): The device information,
                 connected transport and protocol.
         Raises:
             A USBMuxError subclass instance such as ConnectionRefused
