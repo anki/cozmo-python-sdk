@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''If This Then That helper class
+'''If This Then That helper common code.
 
-Wrapper class for integrating Cozmo with If This Then That (http://ifttt.com).
-See ifttt_espn.py, ifttt_gmail.py and ifttt_stocks.py for examples of this
-class being used.
+This module include a subclass of Robot to add some helper methods that are
+useful to the IFTTT examples.
 
 This class includes the following:
     1) get_in_position moves Cozmo's lift down and face up if necessary.
@@ -25,14 +24,10 @@ This class includes the following:
     3) display_image_on_face and display_text_on_face methods display the
         requested image file or text, respectively, on his face after
         the If This Then That trigger has been received.
-    4) queue stores If This Then That trigger calls as they come in.
 '''
 
-from contextlib import contextmanager
-import queue
+import asyncio
 import sys
-import threading
-import time
 
 import cozmo
 
@@ -42,68 +37,34 @@ try:
 except ImportError:
     sys.exit("Cannot import from PIL: Do `pip3 install Pillow` to install")
 
-class IfThisThenThatHelper:
 
-    def __init__(self, coz):
-        self.cozmo = coz
-        self.queue = queue.Queue()
-
-        '''Start a separate thread to check if the queue contains an action to run.'''
-        threading.Thread(target=self.worker).start()
-
-        self.get_in_position()
-
-
-    def get_in_position(self):
+class IFTTTRobot(cozmo.robot.Robot):
+    '''Add some methods to the base Robot class.'''
+    async def get_in_position(self):
         '''If necessary, Move Cozmo'qs Head and Lift to make it easy to see Cozmo's face'''
-        if (self.cozmo.lift_height.distance_mm > 45) or (self.cozmo.head_angle.degrees < 40):
+        if (self.lift_height.distance_mm > 45) or (self.head_angle.degrees < 40):
             with self.perform_operation_off_charger():
-                self.cozmo.set_lift_height(0.0).wait_for_completed()
-                self.cozmo.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
+                await self.set_lift_height(0.0).wait_for_completed()
+                await self.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
 
-
-    def worker(self):
-        while True:
-            item = self.queue.get()
-            if item is None:
-                break
-            queued_action, action_args = item
-            queued_action(action_args)
-
-
-    def backup_onto_charger(self):
-        '''Attempts to reverse robot onto its charger
+    async def backup_onto_charger(self):
+        '''Attempts to reverse robot onto its charger.
 
         Assumes charger is directly behind Cozmo
         Keep driving straight back until charger is in contact
         '''
 
-        self.cozmo.drive_wheels(-30, -30)
+        await self.drive_wheels(-30, -30)
         time_waited = 0.0
-        while time_waited < 3.0 and not self.cozmo.is_on_charger:
+        while time_waited < 3.0 and not self.is_on_charger:
             sleep_time_s = 0.1
-            time.sleep(sleep_time_s)
+            await asyncio.sleep(sleep_time_s)
             time_waited += sleep_time_s
 
-        self.cozmo.stop_all_motors()
+        self.stop_all_motors()
 
-
-    @contextmanager
     def perform_operation_off_charger(self):
-        '''Perform a block of code with robot off the charger
-
-        Ensure robot is off charger before yielding
-        yield - (at which point any code in the caller's with block will run).
-        If Cozmo started on the charger then return it back afterwards.
-        '''
-        was_on_charger = self.cozmo.is_on_charger
-        self.cozmo.drive_off_charger_contacts().wait_for_completed()
-
-        yield self.cozmo
-
-        if was_on_charger:
-            self.backup_onto_charger()
-
+        return PerformOffCharger(self)
 
     def display_image_file_on_face(self, image_name):
         # load image and convert it for display on cozmo's face
@@ -113,7 +74,6 @@ class IfThisThenThatHelper:
         resized_image = image.resize(cozmo.oled_face.dimensions(), Image.NEAREST)
 
         self.display_image_on_face(resized_image, True)
-
 
     def display_text_on_face(self, text_to_draw, x, y):
         '''Make a PIL.Image with the given text printed on it
@@ -151,11 +111,26 @@ class IfThisThenThatHelper:
 
         return text_image
 
-
     def display_image_on_face(self, image, invert_image):
         # convert the image to the format used by the oled screen
         face_image = cozmo.oled_face.convert_image_to_screen_data(image,
                                                                   invert_image=invert_image)
 
         # display image for 5 seconds
-        self.cozmo.display_oled_face_image(face_image, 5000.0)
+        self.display_oled_face_image(face_image, 5000.0)
+
+
+class PerformOffCharger:
+    '''A helper class to provide a context manager to do operations while Cozmo is off charger.'''
+    def __init__(self, robot):
+        self.robot = robot
+
+    async def __aenter__(self):
+        self.was_on_charger = self.robot.is_on_charger
+        await self.robot.drive_off_charger_contacts().wait_for_completed()
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        if self.was_on_charger:
+            await self.robot.backup_onto_charger()
+        return False

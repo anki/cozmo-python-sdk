@@ -78,97 +78,62 @@ Follow these steps to run the example:
 
 import json
 import re
-import sys
-sys.path.append('../')
 
+from aiohttp import web
 import cozmo
-import flask_helpers
-import if_this_then_that_helpers
+
+from common import IFTTTRobot
 
 
-try:
-    from flask import Flask, request
-except ImportError:
-    sys.exit("Cannot import from flask: Do `pip3 install flask` to install")
+app = web.Application()
 
 
-flask_app = Flask(__name__)
-ifttt = None
-
-
-def then_that_action(email_local_part):
-    '''Controls how Cozmo responds to the email.
-
-    You may modify this method to change how Cozmo reacts to the email
-    being received.
-    '''
-
-    try:
-        with ifttt.perform_operation_off_charger():
-
-            # First, have Cozmo play animation "ID_pokedB", which tells
-            # Cozmo to raise and lower his lift. To change the animation,
-            # you may replace "ID_pokedB" with another animation. Run
-            # remote_control_cozmo.py to see a list of animations.
-            ifttt.cozmo.play_anim(name='ID_pokedB').wait_for_completed()
-
-            # Next, have Cozmo speak the name of the email sender.
-            ifttt.cozmo.say_text("Email from " + email_local_part).wait_for_completed()
-
-            # Last, have Cozmo display an email image on his face.
-            ifttt.display_image_file_on_face("../images/ifttt_gmail.png")
-
-    except cozmo.exceptions.RobotBusy:
-        pass
-
-
-@flask_app.route('/iftttGmail', methods=['POST'])
-def receive_ifttt_web_request():
-    '''Web request endpoint named "iftttGmail" for IFTTT to call when an email is received.
-
-        In the IFTTT web request, in the URL field, specify this method
-        as the endpoint. For instance, if your public url is http://my.url.com,
-        then in the IFTTT web request URL field put the following:
-        http://my.url.com/iftttGmail. Then, this endpoint will be called when
-        IFTTT checks and discovers that the Gmail account received email.
-    '''
-
-    # Retrieve the data passed by If This Then That in the web request body.
-    json_object = json.loads(request.data.decode("utf-8"))
+async def serve_gmail(request):
+    '''Define an HTTP POST handler for receiving requests from IFTTT'''
+    json_object = await request.json()
 
     # Extract the name of the email sender.
     from_email_address = json_object["FromAddress"]
 
     # Use a regular expression to break apart pieces of the email address
     match_object = re.search(r'([\w.]+)@([\w.]+)', from_email_address)
+    email_local_part = match_object.group(1)
 
-    if ifttt:
-        # Add this email to the queue of emails awaiting Cozmo's reaction.
-        ifttt.queue.put((then_that_action, match_object.group(1)))
+    robot = request.app['robot']
+    try:
+        async with robot.perform_operation_off_charger():
+            # First, have Cozmo play animation "ID_pokedB", which tells
+            # Cozmo to raise and lower his lift. To change the animation,
+            # you may replace "ID_pokedB" with another animation. Run
+            # remote_control_cozmo.py to see a list of animations.
+            await robot.play_anim(name='ID_pokedB').wait_for_completed()
 
-    # Return promptly so If This Then That knows that the web request was received
-    # successfully.
-    return ""
+            # Next, have Cozmo speak the name of the email sender.
+            #await robot.say_text("Email from " + email_local_part).wait_for_completed()
 
+            # Last, have Cozmo display an email image on his face.
+            robot.display_image_file_on_face("../images/ifttt_gmail.png")
 
-def run(sdk_conn):
-    robot = sdk_conn.wait_for_robot()
+    except cozmo.RobotBusy:
+        return web.Response(status=503, text="Cozmo is busy")
+    return web.Response(text="OK")
 
-    global ifttt
-    ifttt = if_this_then_that_helpers.IfThisThenThatHelper(robot)
-
-    # Start flask web server so that /iftttGmail can serve as endpoint.
-    flask_helpers.run_flask(flask_app, "127.0.0.1", 5000, False, False)
-
-    # Putting None on the queue stops the thread. This is called when the
-    # user hits Control C, which stops the run_flask call.
-    ifttt.queue.put(None)
+# Attach the function as an HTTP handler.
+app.router.add_post('/iftttGmail', serve_gmail)
 
 
 if __name__ == '__main__':
     cozmo.setup_basic_logging()
     cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
+
+    # Use our custom robot class with extra helper methods
+    cozmo.conn.CozmoConnection.robot_factory = IFTTTRobot
+
     try:
-        cozmo.connect(run)
+        sdk_conn = cozmo.connect_on_loop(app.loop)
+        # Wait for the robot to become available and add it to the app object.
+        app['robot'] = app.loop.run_until_complete(sdk_conn.wait_for_robot())
     except cozmo.ConnectionError as e:
         sys.exit("A connection error occurred: %s" % e)
+
+    web.run_app(app)
