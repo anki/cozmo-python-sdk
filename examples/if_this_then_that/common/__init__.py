@@ -43,7 +43,7 @@ class IFTTTRobot(cozmo.robot.Robot):
     async def get_in_position(self):
         '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face'''
         if (self.lift_height.distance_mm > 45) or (self.head_angle.degrees < 40):
-            async with self.perform_operation_off_charger():
+            async with self.perform_operation_off_charger_async():
                 await self.set_lift_height(0.0).wait_for_completed()
                 await self.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
 
@@ -63,8 +63,8 @@ class IFTTTRobot(cozmo.robot.Robot):
 
         self.stop_all_motors()
 
-    def perform_operation_off_charger(self):
-        return PerformOffCharger(self)
+    def perform_operation_off_charger_async(self):
+        return PerformOffChargerAsync(self)
 
     def display_image_file_on_face(self, image_name):
         # load image and convert it for display on cozmo's face
@@ -120,7 +120,7 @@ class IFTTTRobot(cozmo.robot.Robot):
         self.display_oled_face_image(face_image, 5000.0)
 
 
-class PerformOffCharger:
+class PerformOffChargerAsync:
     '''A helper class to provide a context manager to do operations while Cozmo is off charger.'''
     def __init__(self, robot):
         self.robot = robot

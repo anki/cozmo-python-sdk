@@ -111,7 +111,7 @@ async def serve_gmail(request):
 
     robot = request.app['robot']
     try:
-        async with robot.perform_operation_off_charger():
+        async with robot.perform_operation_off_charger_async():
             '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face.'''
             await robot.get_in_position()
 
