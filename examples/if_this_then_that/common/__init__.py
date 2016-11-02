@@ -72,12 +72,9 @@ class IFTTTRobot(cozmo.robot.Robot):
         # resize to fit on Cozmo's face screen
         resized_image = image.resize(cozmo.oled_face.dimensions(), Image.NEAREST)
 
-        self.display_image_on_face(resized_image, True)
-
-    def display_image_on_face(self, image, invert_image):
         # convert the image to the format used by the oled screen
-        face_image = cozmo.oled_face.convert_image_to_screen_data(image,
-                                                                  invert_image=invert_image)
+        face_image = cozmo.oled_face.convert_image_to_screen_data(resized_image,
+                                                                  invert_image=True)
 
         # display image for 5 seconds
         self.display_oled_face_image(face_image, 5000.0)
