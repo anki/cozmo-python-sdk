@@ -130,9 +130,20 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
         self._robots = {}
         self._primary_robot = None
 
-        #: An :class:`cozmo.anim.AnimationNames` object that references all 
+        #: A dict containing information about the device the connection is using.
+        self.device_info = {}
+
+        #: An :class:`cozmo.anim.AnimationNames` object that references all
         #: available animation names
         self.anim_names = self.anim_names_factory(self)
+
+
+    #### Private Methods ####
+
+    def __repr__(self):
+        info = ' '.join(['%s="%s"' % (k, self.device_info[k])
+            for k in sorted(self.device_info.keys())])
+        return '<%s %s>' % (self.__class__.__name__, info)
 
     def connection_made(self, transport):
         super().connection_made(transport)
