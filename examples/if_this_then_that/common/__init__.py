@@ -47,8 +47,8 @@ class IFTTTRobot(cozmo.robot.Robot):
                 await self.set_lift_height(0.0).wait_for_completed()
                 await self.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
 
-    async def backup_onto_charger(self):
-        '''Attempts to reverse robot onto its charger.
+    async def backup_onto_charger_async(self):
+        '''Attempts to reverse robot onto its charger. Asynchronous method.
 
         Assumes charger is directly behind Cozmo
         Keep driving straight back until charger is in contact
@@ -121,7 +121,7 @@ class IFTTTRobot(cozmo.robot.Robot):
 
 
 class PerformOffChargerAsync:
-    '''A helper class to provide a context manager to do operations while Cozmo is off charger.'''
+    '''An asynchronous helper class to provide a context manager to do operations while Cozmo is off charger.'''
     def __init__(self, robot):
         self.robot = robot
 
@@ -132,5 +132,6 @@ class PerformOffChargerAsync:
 
     async def __aexit__(self, exc_type, exc_value, traceback):
         if self.was_on_charger:
-            await self.robot.backup_onto_charger()
+            await self.robot.backup_onto_charger_async()
         return False
+
