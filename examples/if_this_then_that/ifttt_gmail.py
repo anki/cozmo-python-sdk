@@ -19,7 +19,7 @@
 
 This example demonstrates how "If This Then That" (http://ifttt.com) can be used
 make Cozmo respond when a Gmail account receives an email. Instructions below
-will lead you through setting up a "recipe" on the IFTTT website. When the recipe
+will lead you through setting up an applet on the IFTTT website. When the applet
 trigger is called (which sends a web request received by the web server started
 in this example), Cozmo will play an animation, speak the email sender's name and
 show a mailbox image on his face.
@@ -27,34 +27,32 @@ show a mailbox image on his face.
 Please place Cozmo on the charger for this example. When necessary, he will be
 rolled off and back on.
 
-Follow these steps to run the example:
+Follow these steps to set up and run the example:
     1) Provide a a static ip, URL or similar that can be reached from the If This
         Then That server. One easy way to do this is with ngrok, which sets up
         a secure tunnel to localhost running on your machine.
 
         To set up ngrok:
-
         a) Follow instructions here to download and install:
             https://ngrok.com/download
         b) Run this command to create a secure public URL for port 8080:
             ./ngrok http 8080
         c) Note the HTTP forwarding address shown in the terminal (e.g., http://55e57164.ngrok.io).
-            You will use this address in your recipe, below.
+            You will use this address in your applet, below.
 
-    2) Set up your recipe on the "If This Then That" website.
+    2) Set up your applet on the "If This Then That" website.
         a) Sign up and sign into https://ifttt.com
-        b) Create a recipe: https://ifttt.com/myrecipes/personal/new
+        b) Create an applet: https://ifttt.com/create
         c) Set up your trigger.
             1. Click "this".
-            2. Select "Gmail" as your trigger channel. If prompted, click "Connect",
+            2. Select "Gmail" as your service. If prompted, click "Connect",
                 select your Gmail account, and click “Allow” to provide permissions
                 to IFTTT for your email account. Click "Done".
-            3. Under "Choose a Trigger", click “Any new email in inbox", then click “Create Trigger".
+            3. Under "Choose a Trigger", select “Any new email in inbox".
         d) Set up your action.
             1. Click “that".
-            2. Click “Maker" to set it as your action channel. Connect to the Maker channel if prompted.
-            3. Click “Make a web request".
-            4. In section “Complete Action Fields”, fill out the fields as follows. Remember your publicly
+            2. Select “Maker" to set it as your action channel. Connect to the Maker channel if prompted.
+            3. Click “Make a web request" and fill out the fields as follows. Remember your publicly
                 accessible URL from above (e.g., http://55e57164.ngrok.io) and use it in the URL field,
                 followed by "/iftttGmail" as shown below:
 
@@ -63,14 +61,14 @@ Follow these steps to run the example:
                  Content Type: application/json
                  Body: {"FromAddress":"{{FromAddress}}"}
 
-            5. Click “Create Action" then “Create Recipe".
+            5. Click “Create Action" then “Finish".
 
-    3) Test your recipe
+    3) Test your applet.
         a) Run this script at the command line: ./ifttt_gmail.py
-        b) On ifttt.com, on your recipe page, click “Check now”. See that IFTTT confirms that the recipe
-            was checked successfully.
+        b) On ifttt.com, on your applet page, click “Check now”. See that IFTTT confirms that the applet
+            was checked.
         c) Send an email to the Gmail account in your recipe
-        d) On your IFTTT recipe webpage, click “Check now”. This should cause IFTTT to detect that
+        d) On your IFTTT applet webpage, again click “Check now”. This should cause IFTTT to detect that
             the email was received and send a web request to the ifttt_gmail.py script.
         e) In response to the ifttt web request, Cozmo should roll off the charger, raise and lower
             his lift, announce the email, and then show a mailbox image on his face.

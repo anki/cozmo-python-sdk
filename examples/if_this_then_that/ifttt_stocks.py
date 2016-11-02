@@ -19,7 +19,7 @@
 
 This example demonstrates how "If This Then That" (http://ifttt.com) can be used
 make Cozmo respond when a stock ticker symbol increases by 1% or more. Instructions
-below will lead you through setting up a "recipe" on the IFTTT website. When the recipe
+below will lead you through setting up an applet on the IFTTT website. When the applet
 trigger is called (which sends a web request received by the web server started
 in this example), Cozmo will play an animation, speak the company name and the
 percentage increase, and show a stock market image on his face.
@@ -27,26 +27,25 @@ percentage increase, and show a stock market image on his face.
 Please place Cozmo on the charger for this example. When necessary, he will be
 rolled off and back on.
 
-Follow these steps to run the example:
+Follow these steps to set up and run the example:
     1) Provide a a static ip, URL or similar that can be reached from the If This
         Then That server. One easy way to do this is with ngrok, which sets up
         a secure tunnel to localhost running on your machine.
 
         To set up ngrok:
-
         a) Follow instructions here to download and install:
             https://ngrok.com/download
         b) Run this command to create a secure public URL for port 8080:
             ./ngrok http 8080
         c) Note the HTTP forwarding address shown in the terminal (e.g., http://55e57164.ngrok.io).
-            You will use this address in your recipe, below.
+            You will use this address in your applet, below.
 
-    2) Set up your recipe on the "If This Then That" website.
+    2) Set up your applet on the "If This Then That" website.
         a) Sign up and sign into https://ifttt.com
-        b) Create a recipe: https://ifttt.com/myrecipes/personal/new
+        b) Create an applet: https://ifttt.com/create
         c) Set up your trigger.
             1. Click "this".
-            2. Select "Stocks" as  your trigger channel.
+            2. Select "Stocks" as your service.
             3. Under "Choose a Trigger", select “Today's price rises by percentage".
             4. In section "Complete Trigger Fields", enter your ticker symbol and desired percentage,
                 for instance:
@@ -58,9 +57,8 @@ Follow these steps to run the example:
 
         d) Set up your action.
             1. Click “that".
-            2. Click “Maker" to set it as your action channel. Connect to the Maker channel if prompted.
-            3. Click “Make a web request".
-            4. In section “Complete Action Fields”, fill out the fields as follows. Remember your publicly
+            2. Select “Maker" to set it as your action channel. Connect to the Maker channel if prompted.
+            3. Click “Make a web request" and fill out the fields as follows. Remember your publicly
                 accessible URL from above (e.g., http://55e57164.ngrok.io) and use it in the URL field,
                 followed by "/iftttStocks" as shown below:
 
@@ -69,12 +67,12 @@ Follow these steps to run the example:
                  Content Type: application/json
                  Body: {"PercentageChange":"{{PercentageChange}}"}
 
-            5. Click “Create Action" then “Create Recipe".
+            5. Click “Create Action" then “Finish".
 
-    3) Test your recipe
+    3) Test your applet.
         a) Run this script at the command line: ./ifttt_stocks.py
-        b) On ifttt.com, on your recipe page, click “Check now”. See that IFTTT confirms that the recipe
-            was checked successfully.
+        b) On ifttt.com, on your applet page, click “Check now”. See that IFTTT confirms that the applet
+            was checked.
         c) Wait for your stock to increase and see Cozmo react! Cozmo should roll off the charger, raise
             and lower his lift, announce the stock increase, and then show a stock market image on his face.
 '''
