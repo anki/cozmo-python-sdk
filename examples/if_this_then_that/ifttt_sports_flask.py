@@ -15,14 +15,14 @@
 # limitations under the License.
 
 
-'''"If This Then That" ESPN example
+'''"If This Then That" sports example
 
 This example demonstrates how "If This Then That" (http://ifttt.com) can be used
 make Cozmo respond when there is an in-game or final score update for the team
 you specify. Instructions below will lead you through setting up an applet on
 the IFTTT website. When the applet trigger is called (which sends a web request
 received by the flask server started in this example), Cozmo will play an animation,
-show "ESPN update" on his face, and speak the in-game update.
+show an image on his face, and speak the in-game update.
 
 Please place Cozmo on the charger for this example. When necessary, he will be
 rolled off and back on.
@@ -57,9 +57,9 @@ Follow these steps to set up and run the example:
             2. Select “Maker" to set it as your action channel. Connect to the Maker channel if prompted.
             3. Click “Make a web request" and fill out the fields as follows. Remember your publicly
                 accessible URL from above (e.g., http://55e57164.ngrok.io) and use it in the URL field,
-                followed by "/iftttESPN" as shown below:
+                followed by "/iftttSports" as shown below:
 
-                 URL: http://55e57164.ngrok.io/iftttESPN
+                 URL: http://55e57164.ngrok.io/iftttSports
                  Method: POST
                  Content Type: application/json
                  Body: {"AlertBody":"{{AlertBody}}"}
@@ -67,11 +67,11 @@ Follow these steps to set up and run the example:
             5. Click “Create Action" then “Finish".
 
     3) Test your applet.
-        a) Run this script at the command line: ./ifttt_espn.py
+        a) Run this script at the command line: ./ifttt_sports.py
         b) On ifttt.com, on your applet page, click “Check now”. See that IFTTT confirms that the applet
             was checked.
         c) Wait for new in-game updates for your team and see Cozmo react! Cozmo should roll off the charger, raise
-            and lower his lift, show "ESPN update" on his face and speak the in-game update.
+            and lower his lift, show an image on his face and speak the in-game update.
 '''
 
 from contextlib import contextmanager
@@ -104,7 +104,7 @@ def then_that_action(alert_body):
     '''Controls how Cozmo responds to the in-game update.
 
     You may modify this method to change how Cozmo reacts to
-    the update from ESPN.
+    the update from IFTTT.
     '''
 
     try:
@@ -122,7 +122,7 @@ def then_that_action(alert_body):
             robot.say_text(alert_body).wait_for_completed()
 
             # Last, have Cozmo display a sports image on his face.
-            robot.display_image_file_on_face("../images/ifttt_espn.png")
+            robot.display_image_file_on_face("../images/ifttt_sports.png")
 
 
     except cozmo.exceptions.RobotBusy:
@@ -163,15 +163,15 @@ def perform_operation_off_charger(robot):
         backup_onto_charger(robot)
 
 
-@flask_app.route('/iftttESPN', methods=['POST'])
+@flask_app.route('/iftttSports', methods=['POST'])
 def receive_ifttt_web_request():
-    '''Web request endpoint named "iftttESPN" for IFTTT to call when a new in-game
+    '''Web request endpoint named "iftttSports" for IFTTT to call when a new in-game
         update for your team is posted on ESPN.
 
         In the IFTTT web request, in the URL field, specify this method
         as the endpoint. For instance, if your public url is http://my.url.com,
         then in the IFTTT web request URL field put the following:
-        http://my.url.com/iftttESPN. Then, this endpoint will be called when
+        http://my.url.com/iftttSports. Then, this endpoint will be called when
         IFTTT checks and discovers that a new in-game update for your team is
         posted on ESPN.
     '''
@@ -205,7 +205,7 @@ def run(sdk_conn):
 
     threading.Thread(target=worker).start()
 
-    # Start flask web server so that /iftttESPN can serve as endpoint.
+    # Start flask web server so that /iftttSports can serve as endpoint.
     flask_helpers.run_flask(flask_app, "127.0.0.1", 8080, False, False)
 
     # Putting None on the queue stops the thread. This is called when the
