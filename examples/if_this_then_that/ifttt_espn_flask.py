@@ -40,6 +40,9 @@ Follow these steps to set up and run the example:
         c) Note the HTTP forwarding address shown in the terminal (e.g., http://55e57164.ngrok.io).
             You will use this address in your applet, below.
 
+        WARNING: Using ngrok exposes your local web server to the internet. See the ngrok
+        documentation for more information: https://ngrok.com/docs
+
     2) Set up your applet on the "If This Then That" website.
         a) Sign up and sign into https://ifttt.com
         b) Create an applet: https://ifttt.com/create
