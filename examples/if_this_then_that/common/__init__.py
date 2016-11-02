@@ -21,8 +21,7 @@ This class includes the following:
     1) get_in_position moves Cozmo's lift down and face up if necessary.
     2) perform_operation_off_charger and backup_onto_charger methods help
         Cozmo return to his charger between If This Then That trigger calls.
-    3) display_image_on_face and display_text_on_face methods display the
-        requested image file or text, respectively, on his face after
+    3) display_image_on_face displays the requested image file on his face after
         the If This Then That trigger has been received.
 '''
 
@@ -74,42 +73,6 @@ class IFTTTRobot(cozmo.robot.Robot):
         resized_image = image.resize(cozmo.oled_face.dimensions(), Image.NEAREST)
 
         self.display_image_on_face(resized_image, True)
-
-    def display_text_on_face(self, text_to_draw, x, y):
-        '''Make a PIL.Image with the given text printed on it
-
-        Args:
-            text_to_draw (string): the text to draw to the image
-            x (int): x pixel location
-            y (int): y pixel location
-            font (PIL.ImageFont): the font to use
-
-        Returns:
-            :class:(`PIL.Image.Image`): a PIL image with the text drawn on it
-        '''
-
-        # get a font - location depends on OS so try a couple of options
-        # failing that the default of None will just use a default font
-        font = None
-        try:
-            font = ImageFont.truetype("arial.ttf", 20)
-        except IOError:
-            try:
-                font = ImageFont.truetype("/Library/Fonts/Arial.ttf", 20)
-            except IOError:
-                pass
-
-        text_image = Image.new('RGBA', cozmo.oled_face.dimensions(), (0, 0, 0, 255))
-
-        # get a drawing context
-        dc = ImageDraw.Draw(text_image)
-
-        # draw the text
-        dc.text((x, y), text_to_draw, fill=(255, 255, 255, 255), font=font)
-
-        self.display_image_on_face(text_image, False)
-
-        return text_image
 
     def display_image_on_face(self, image, invert_image):
         # convert the image to the format used by the oled screen

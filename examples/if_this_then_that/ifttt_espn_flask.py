@@ -121,8 +121,9 @@ def then_that_action(alert_body):
             # Next, have Cozmo speak the text from the in-game update.
             robot.say_text(alert_body).wait_for_completed()
 
-            # Last, have Cozmo display "ESPN update" on his face.
-            robot.display_text_on_face("ESPN update", 8, 6)
+            # Last, have Cozmo display a sports image on his face.
+            robot.display_image_file_on_face("../images/ifttt_espn.png")
+
 
     except cozmo.exceptions.RobotBusy:
         pass
