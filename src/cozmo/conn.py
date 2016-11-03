@@ -154,7 +154,7 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
         self._is_connected = False
         if self._running:
             self.abort(exceptions.ConnectionAborted("Lost connection to the device"))
-            logger.error("Lost connection to the device: %s" % exc)
+            logger.error("Lost connection to the device: %s", exc)
 
     async def shutdown(self):
         '''Close the connection to the device.'''
@@ -168,7 +168,7 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
     def abort(self, exc):
         '''Abort the connection to the device.'''
         if self._running:
-            logger.info('Aborting connection: %s' % exc)
+            logger.info('Aborting connection: %s', exc)
             self._running = False
             # Allow any currently pending futures to complete before the
             # remainder are aborted.
@@ -285,7 +285,7 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
             return
 
         if msg.deviceID != 1:
-            logger.error('Unexpected Device Id %s' % msg.deviceID)
+            logger.error('Unexpected Device Id %s', msg.deviceID)
             return
 
         # Verify that engine and SDK are compatible
@@ -325,8 +325,8 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
                 pass
 
             if not build_versions_match:
-                logger.warning('Build versions do not match (SDK version %s != App version %s) - connection refused' % (
-                                cozmoclad.__build_version__, msg.buildVersion))
+                logger.warning('Build versions do not match (cozmoclad version %s != App version %s) - connection refused',
+                                cozmoclad.__build_version__, msg.buildVersion)
 
                 if cozmoclad.__build_version__ < msg.buildVersion:
                     # App is newer
@@ -356,7 +356,9 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
         self._is_ui_connected = True
         self.dispatch_event(EvtConnected, conn=self)
         self.anim_names.refresh()
-        logger.info("UI device connected")
+        logger.info('App connection established. sdk_version=%s '
+                'cozmoclad_version=%s app_build_version=%s',
+                version.__version__, cozmoclad.__version__, msg.buildVersion)
 
     def _recv_msg_image_chunk(self, evt, *, msg):
         if self._primary_robot:
