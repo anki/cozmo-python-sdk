@@ -22,23 +22,39 @@ import subprocess
 import sys
 
 sys.path.extend([os.path.abspath('../../src'), os.path.abspath('..')])
+here = os.path.abspath(os.path.dirname(__file__))
+sdk_base_dir = os.path.join(here, '..', '..')
 
 
-version = "dev"
+def fetch_sdk_version():
+    with open(os.path.join(sdk_base_dir, 'src', 'cozmo', 'version.py')) as f:
+        ns = {}
+        exec(f.read(), ns)
+        return ns
 
-try:
-    git_branch = subprocess.check_output(
-            ('git', 'symbolic-ref', '--short', 'HEAD'),
-            universal_newlines=True)
+version_data = fetch_sdk_version()
+sdk_version = version_data['__version__']
 
-    git_commit = subprocess.check_output(
-            ('git', 'rev-parse', 'HEAD'),
-            universal_newlines=True)
 
-    version = "%s - %s" % (git_branch, git_commit[:8])
+version = sdk_version
 
-except subprocess.CalledProcessError as e:
-    print("Failed to run git: %s" % e)
+if '.dev' in version:
+    try:
+        git_branch = subprocess.check_output(
+                ('git', 'symbolic-ref', '--short', 'HEAD'),
+                universal_newlines=True)
+
+        git_commit = subprocess.check_output(
+                ('git', 'rev-parse', 'HEAD'),
+                universal_newlines=True)
+
+        version = "%s - %s (%s)" % (git_branch, git_commit[:8], sdk_version)
+
+    except subprocess.CalledProcessError as e:
+        print("Failed to run git: %s" % e)
+
+
+
 
 
 # -- General configuration ------------------------------------------------
@@ -54,9 +70,13 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'custopoleon' # Customizes the Napoleon package
+    'ext.verlink', # build versioned links for example packages
+    'ext.custopoleon' # Customizes the Napoleon package
     #'sphinx.ext.napoleon'
 ]
+
+verlink_base_url = 'http://cozmosdk.anki.com/%s/' % sdk_version
+verlink_version = sdk_version
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3.5', None),

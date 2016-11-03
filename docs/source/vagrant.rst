@@ -33,7 +33,7 @@ Install
 4. Plug the mobile device containing the Cozmo app into your computer.
 5. For **Windows**:
 
-  a. Download `vagrant_bundle_***.zip <http://cozmosdk.anki.com/0.8.0/vagrant_bundle_0.8.0.zip>`_.
+  a. Download :verlink:`vagrant_bundle_0.0.0.zip <vagrant_bundle_0.0.0.zip>`.
   b. Unzip the ``vagrant_bundle_***.zip`` file into a folder of your choosing.
   c. Open a Command Prompt window.
 
@@ -64,7 +64,7 @@ Install
 
 6. For **macOS/Linux**:
 
-  a. Download `vagrant_bundle_***.tar.gz <http://cozmosdk.anki.com/0.8.0/vagrant_bundle_0.8.0.tar.gz>`_.
+  a. Download :verlink:`vagrant_bundle_0.0.0.tar.gz <vagrant_bundle_0.0.0.tar.gz>`.
   b. Open a Terminal window.
 
     1. Enter the following commands::

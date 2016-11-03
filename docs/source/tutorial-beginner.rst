@@ -27,7 +27,7 @@ The code for the Hello World program looks like this.
 
   Make Cozmo say 'Hello World' in this simple Cozmo SDK example program.
   '''
-  
+
   import sys
 
   import cozmo
@@ -77,7 +77,7 @@ To run a program for Cozmo:
 
 .. important:: The usbmuxd (USB Multiplexor Daemon) must be installed on any computer system paired with an iOS device before running any programs. Installing `iTunes <http://www.apple.com/itunes/download/>`_ will also install the usbmuxd on those systems. Linux users can install the usbmuxd module through the command line with `sudo apt-get install usbmuxd`.
 
-.. important:: Make sure adb (Android Debug Bridge) is installed on your system prior to running a program with an Android device. See the :ref:`Install page <install-guide>` for instructions.
+.. important:: Make sure adb (Android Debug Bridge) is installed on your system prior to running a program with an Android device. See the :ref:`Install page <initial>` for instructions.
 
 1. Plug the mobile device containing the Cozmo app into your computer.
 2. Open the Cozmo app on the device. Make sure Cozmo is on and connected to the app via WiFi.
