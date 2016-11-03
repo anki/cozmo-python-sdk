@@ -10,9 +10,9 @@ SDK Examples
 
 Download Python example scripts that use the Cozmo SDK.
 
-`macOS/Linux SDK Examples <http://cozmosdk.anki.com/0.8.0/cozmo_sdk_examples_0.8.0.tar.gz>`_
+:verlink:`macOS/Linux SDK Examples <cozmo_sdk_examples_0.0.0.tar.gz>`
 
-`Windows SDK Examples <http://cozmosdk.anki.com/0.8.0/cozmo_sdk_examples_0.8.0.zip>`_
+:verlink:`Windows SDK Examples <cozmo_sdk_examples_0.0.0.zip>`
 
 ------
 GitHub
@@ -26,9 +26,9 @@ Vagrant
 
 Download Vagrant files and follow :ref:`instructions <vagrant-guide>` to install a self-contained VM (Virtual Machine) inside VirtualBox.
 
-`macOS/Linux Vagrant bundle <http://cozmosdk.anki.com/0.8.0/vagrant_bundle_0.8.0.tar.gz>`_
+:verlink:`macOS/Linux Vagrant bundle <vagrant_bundle_0.0.0.tar.gz>`
 
-`Windows Vagrant bundle <http://cozmosdk.anki.com/0.8.0/vagrant_bundle_0.8.0.zip>`_
+:verlink:`Windows Vagrant bundle <vagrant_bundle_0.0.0.zip>`
 
 ----
 
