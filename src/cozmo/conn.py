@@ -356,7 +356,7 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
         self._is_ui_connected = True
         self.dispatch_event(EvtConnected, conn=self)
         self.anim_names.refresh()
-        logger.info('App connection established.  sdk_version=%s  '
+        logger.info('App connection established. sdk_version=%s '
                 'cozmoclad_version=%s app_build_version=%s',
                 version.__version__, cozmoclad.__version__, msg.buildVersion)
 
