@@ -308,13 +308,13 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
                 if cozmoclad.__build_version__ < msg.buildVersion:
                     # App is newer
                     logger.warning(
-                        'Your App is newer than your SDK: '
-                        'We recommend that you upgrade by calling command: '
-                        '"pip3 install --user --ignore-installed cozmo" '
+                        'Your app is newer than your SDK: '
+                        'We recommend that you upgrade your SDK by calling: '
+                        '"pip3 install --user --upgrade cozmo" '
                         'and downloading the latest examples from http://cozmosdk.anki.com/docs/downloads.html')
                 else:
                     logger.warning(
-                        'Your App is older than your SDK: '
+                        'Your app is older than your SDK: '
                         'We recommend that you download the latest app from the app store.')
 
         if clad_hashes_match and build_versions_match:
@@ -343,14 +343,14 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
                 pass
 
             if not build_versions_match:
-                logger.warning('Build versions do not match (cozmoclad version %s != App version %s) - connection refused',
+                logger.warning('Build versions do not match (cozmoclad version %s != app version %s) - connection refused',
                                 cozmoclad.__build_version__, msg.buildVersion)
 
                 if cozmoclad.__build_version__ < msg.buildVersion:
                     # App is newer
                     logger.error(
                         'Please update your SDK to the newest version by calling command: '
-                        '"pip3 install --user --ignore-installed cozmo" '
+                        '"pip3 install --user --upgrade cozmo" '
                         'and downloading the latest examples from http://cozmosdk.anki.com/docs/downloads.html')
                 else:
                     # SDK is newer
