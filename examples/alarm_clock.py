@@ -234,7 +234,7 @@ def alarm_clock(robot):
     if alarm_time:
         print("Alarm set for %s" % alarm_time)
     else:
-        print("No Alarm time provided - usage e.g: 'alarm.clock.py 17:23' to set alarm for 5:23pm (input uses the 24 hour clock)")
+        print("No Alarm time provided. Usage example: 'alarm_clock.py 17:23' to set alarm for 5:23 PM. (Input uses the 24-hour clock.)")
     print("Press CTRL-C to quit")
 
     get_in_position(robot)
