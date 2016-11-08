@@ -83,14 +83,11 @@ Follow these steps to set up and run the example:
             and lower his lift, show an image on his face and speak the in-game update.
 '''
 
-from contextlib import contextmanager
-
 import json
 import queue
 import sys
 sys.path.append('../')
 import threading
-import time
 
 import cozmo
 import flask_helpers
@@ -144,7 +141,7 @@ def then_that_action(alert_body):
     '''
 
     try:
-        with perform_operation_off_charger(robot):
+        with robot.perform_off_charger():
             '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face.'''
             robot.get_in_position()
 
@@ -171,40 +168,6 @@ def worker():
             break
         queued_action, action_args = item
         queued_action(action_args)
-
-
-def backup_onto_charger(robot):
-    '''Attempts to reverse robot onto its charger
-
-    Assumes charger is directly behind Cozmo
-    Keep driving straight back until charger is in contact
-    '''
-
-    robot.drive_wheels(-30, -30)
-    time_waited = 0.0
-    while time_waited < 3.0 and not robot.is_on_charger:
-        sleep_time_s = 0.1
-        time.sleep(sleep_time_s)
-        time_waited += sleep_time_s
-
-    robot.stop_all_motors()
-
-
-@contextmanager
-def perform_operation_off_charger(robot):
-    '''Perform a block of code with robot off the charger
-
-    Ensure robot is off charger before yielding
-    yield - (at which point any code in the caller's with block will run).
-    If Cozmo started on the charger then return it back afterwards'''
-
-    was_on_charger = robot.is_on_charger
-    robot.drive_off_charger_contacts().wait_for_completed()
-
-    yield robot
-
-    if was_on_charger:
-        backup_onto_charger(robot)
 
 
 def run(sdk_conn):

@@ -115,7 +115,7 @@ async def serve_stocks(request):
     robot = request.app['robot']
     async def read_name():
         try:
-            async with robot.perform_operation_off_charger_async():
+            async with robot.perform_off_charger():
                 '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face.'''
                 await robot.get_in_position()
 
