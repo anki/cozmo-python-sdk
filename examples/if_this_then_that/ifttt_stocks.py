@@ -68,7 +68,7 @@ Follow these steps to set up and run the example:
                  URL: http://55e57164.ngrok.io/iftttStocks
                  Method: POST
                  Content Type: application/json
-                 Body: {"PercentageChange":"{{PercentageChange}}"}
+                 Body: {"PercentageChange":"{{PercentageChange}}","StockName":"{{StockName}}"}
 
             5. Click “Create Action" then “Finish".
 
@@ -106,6 +106,9 @@ async def serve_stocks(request):
 
     json_object = await request.json()
 
+    # Extract the company name for the stock ticker symbol.
+    stock_name = json_object["StockName"]
+
     # Extract the percentage increase.
     percentage = str(json_object["PercentageChange"])
 
@@ -123,13 +126,13 @@ async def serve_stocks(request):
                 await robot.play_anim(name='ID_pokedB').wait_for_completed()
 
                 # Next, have Cozmo say that your stock is up by x percent.
-                await robot.say_text("Stock up " + percentage + " percent").wait_for_completed()
+                await robot.say_text(stock_name + " is up " + percentage + " percent").wait_for_completed()
 
                 # Last, have Cozmo display a stock market image on his face.
                 robot.display_image_file_on_face("../images/ifttt_stocks.png")
 
         except cozmo.RobotBusy:
-            cozmo.logger.warn("Robot was busy so didn't read stock update: 'Stock up " + percentage + " percent'.")
+            cozmo.logger.warn("Robot was busy so didn't read stock update: '"+ stock_name + " is up " + percentage + " percent'.")
 
     # Perform Cozmo's task in the background so the HTTP server responds immediately.
     asyncio.ensure_future(read_name())
