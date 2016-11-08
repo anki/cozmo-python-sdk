@@ -392,6 +392,25 @@ class TurnTowardsFace(action.Action):
             faceID=self.face.face_id)
 
 
+
+class PerformOffChargerContext(event.Dispatcher):
+    '''A helper class to provide a context manager to do operations while Cozmo is off charger.'''
+    def __init__(self, robot, **kw):
+        super().__init__(**kw)
+        self.robot = robot
+
+    async def __aenter__(self):
+        self.was_on_charger = self.robot.is_on_charger
+        if self.was_on_charger:
+            await self.robot.drive_off_charger_contacts().wait_for_completed()
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        if self.was_on_charger:
+            await self.robot.backup_onto_charger()
+        return False
+
+
 class Robot(event.Dispatcher):
     """The interface to a Cozmo robot.
 
@@ -480,6 +499,8 @@ class Robot(event.Dispatcher):
     #: callable: The factory function that returns a
     #: :class:`cozmo.camera.Camera` class or subclass instance.
     camera_factory = camera.Camera
+
+    perform_off_charger_factory = PerformOffChargerContext
 
     #: callable: The factory function that returns a
     #: :class:`cozmo.world.World` class or subclass instance.
@@ -1225,6 +1246,40 @@ class Robot(event.Dispatcher):
                 robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action)
         return action
+
+    async def backup_onto_charger(self, max_drive_time=2):
+        '''Attempts to reverse robot onto its charger.
+
+        This method assumes the charger is directly behind the robot and
+        will keep driving straight back until charger is in contact, or until
+        a timeout is reached.
+
+        Args:
+            max_drive_time (float): The maximum amount of time in seconds
+                to reverse the robot without detecting the charger.
+        '''
+
+        await self.drive_wheels(-30, -30)
+        timeout = util.Timeout(timeout=max_drive_time)
+        while not (timeout.is_timed_out or self.is_on_charger) :
+            await asyncio.sleep(0.1, loop=self.loop)
+
+        self.stop_all_motors()
+
+    def perform_off_charger(self):
+        '''Returns a context manager to move the robot off of and back onto the charger.
+
+        If the robot is on the charger, it will move a short distance off the contacts,
+        perform the code wrapped by the context and then move the robot back onto the
+        charger after the wrapped code completes.
+
+        For example::
+
+            async with robot.perform_off_charger():
+                action = robot.say_text("Hello")
+                await action.wait_for_completed()
+        '''
+        return self.perform_off_charger_factory(self)
 
     def drive_straight(self, distance, speed, should_play_anim=True):
         '''Tells Cozmo to drive in a straight line
