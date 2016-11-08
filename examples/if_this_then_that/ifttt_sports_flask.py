@@ -98,7 +98,7 @@ from common import IFTTTRobot
 try:
     from flask import Flask, request
 except ImportError:
-    sys.exit("Cannot import from flask: Do `pip3 install flask` to install")
+    sys.exit("Cannot import from flask: Do `pip3 install --user flask` to install")
 
 
 flask_app = Flask(__name__)
