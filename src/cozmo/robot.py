@@ -1247,7 +1247,7 @@ class Robot(event.Dispatcher):
         self._action_dispatcher._send_single_action(action)
         return action
 
-    async def backup_onto_charger(self, max_drive_time=2):
+    async def backup_onto_charger(self, max_drive_time=3):
         '''Attempts to reverse robot onto its charger.
 
         This method assumes the charger is directly behind the robot and
