@@ -86,10 +86,10 @@ Follow these steps to set up and run the example:
 import json
 import queue
 import sys
-sys.path.append('../')
 import threading
 
 import cozmo
+sys.path.append('../')
 import flask_helpers
 
 from common import IFTTTRobot
