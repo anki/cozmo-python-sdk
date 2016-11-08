@@ -198,6 +198,7 @@ def _to_coroutine(f):
         return f(*a, **kw)
     return wrap
 
+
 def _mkproxy(obj):
     '''Create a _SyncProxy for an object.'''
     # dynamically generate a class tailored for the wrapped object.
@@ -207,10 +208,16 @@ def _mkproxy(obj):
         if ((name.endswith('__') and name.startswith('__'))
             and name not in ('__class__', '__new__', '__init__', '__getattribute__', '__setattr__', '__repr__')):
                 d[name] = _mkpt(cls, name)
+
+    if hasattr(obj, '__aenter__'):
+        d['__enter__'] = lambda self: self.__wrapper__.__aenter__()
+        d['__exit__'] = lambda self, *a: self.__wrapper__.__aexit__(*a)
+
     cls = type("_proxy_"+obj.__class__.__name__, (_SyncProxy,), d)
     proxy = cls(obj)
     obj.__wrapper__ = proxy
     return proxy
+
 
 def _dispatch_coroutine(co, loop, abort_future):
     '''Execute a coroutine in a loop's thread and block till completion.

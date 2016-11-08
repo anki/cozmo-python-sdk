@@ -13,9 +13,12 @@
 # limitations under the License.
 
 __all__ = ('USBMuxError', 'ProtocolError', 'DeviceNotConnected',
-    'ConnectionRefused', 'ConnectionFailed', 'USBMux', 'connect_to_usbmux')
+    'ConnectionRefused', 'ConnectionFailed', 'QueueNotifyCM', 'USBMux',
+    'connect_to_usbmux')
 
 import asyncio
+import collections
+import contextlib
 import plistlib
 import socket
 import struct
@@ -28,6 +31,9 @@ DEFAULT_SOCKET_PORT = 27015
 DEFAULT_MAX_WAIT = 2
 
 PLIST_VERSION = 1
+
+ACTION_ATTACHED = 'attached'
+ACTION_DETACHED = 'detached'
 
 
 class USBMuxError(Exception): pass
@@ -163,11 +169,13 @@ class USBMux(PlistProto):
     ``device_detached`` methods called as devices are made available through
     the connected mux.
 
-    Alternatively call ``wait_for_attach`` to wait for a new device to
-    be made available.
+    Alternatively call :meth:`wait_for_attach` to wait for a new device to
+    be made available, or use the :meth:`attach_watcher` method to obtain
+    a context manager to iterate over all devices as they connect and
+    disconect.
 
     The ``connect`` call will open a TCP connection to a specific port
-    on a specific device.  ``connect_to_first`` can be used if it doesn't
+    on a specific device.  :meth:`connect_to_first` can be used if it doesn't
     matter which device is connected to, as long as the requested port is open.
     '''
     def __init__(self, loop, mux_socket_path=DEFAULT_SOCKET_PATH, mux_socket_port=DEFAULT_SOCKET_PORT):
@@ -176,7 +184,7 @@ class USBMux(PlistProto):
         self.loop = loop
         self.mux_socket_path = mux_socket_path
         self.mux_socket_port = mux_socket_port
-        self._attach_waiters = set()
+        self._attach_notify = QueueNotify(loop=loop)
 
     async def _connect_transport(self, protocol_factory):
         if sys.platform in ('win32', 'cygwin'):
@@ -188,7 +196,7 @@ class USBMux(PlistProto):
     async def connect(self):
         '''Opens a connection to the USBMux daemon on the local machine.
 
-        connect_to_usbmux provides a convenient wrapper to this method.
+        :func:`connect_to_usbmux` provides a convenient wrapper to this method.
         '''
         self._waiter = asyncio.Future(loop=self.loop)
         await self._connect_transport(lambda: self)
@@ -222,14 +230,14 @@ class USBMux(PlistProto):
             device_id = msg['Properties']['DeviceID']
             self.attached[device_id] = msg['Properties']
             self.device_attached(device_id, msg['Properties'])
-            for fut in self._attach_waiters:
-                fut.set_result(device_id)
-            self._attach_waiters.clear()
+            self._attach_notify.notify((ACTION_ATTACHED, device_id, msg['Properties']))
 
         elif mt == 'Detached':
             device_id = msg['DeviceID']
             if device_id in self.attached:
+                props = self.attached[device_id]
                 del(self.attached[device_id])
+                self._attach_notify.notify((ACTION_DETACHED, device_id, props))
             self.device_detached(device_id)
 
     async def connect_to_device(self, protocol_factory, device_id, port):
@@ -240,7 +248,8 @@ class USBMux(PlistProto):
             device_id (int): The id of the device to connect to
             port (int): The port to connect to on the target device
         Returns:
-            (asyncio.Transport, asyncio.Protocol) - The connected transport and protocol
+            (dict, asyncio.Transport, asyncio.Protocol): The device information,
+                connected transport and protocol.
         Raises:
             A USBMuxError subclass instance such as ConnectionRefused
         '''
@@ -252,52 +261,104 @@ class USBMux(PlistProto):
         await waiter
 
         app_protocol = switcher.switch_protocol(protocol_factory)
-        return transport, app_protocol
+        device_info = self.attached.get(device_id) or {}
+        return device_info, transport, app_protocol
 
-    async def connect_to_first_device(self, protocol_factory, port, max_wait=DEFAULT_MAX_WAIT):
+    async def wait_for_serial(self, serial, timeout=DEFAULT_MAX_WAIT):
+        '''Wait for a device with the specified serial number to attach.
+
+        Args:
+            serial (string): Serial number of the device to wait for.
+            timeout (float): The maximum amount of time in seconds to wait for a
+                matching device to be connected.
+                Set to None to wait indefinitely, or -1 to only check currently
+                connected devices.
+        Returns:
+            int: The device id of the connected device
+        Raises:
+            asyncio.TimeoutError if the device with the specified serial number doesn't appear.
+        '''
+        timeout = Timeout(timeout)
+        with self.attach_watcher(include_existing=True) as watcher:
+            while not timeout.expired:
+                action, device_id, info = await watcher.wait_for_next(timeout.remaining)
+                if action != ACTION_ATTACHED:
+                    continue
+                if info['SerialNumber'].lower() == serial.lower():
+                    return device_id
+
+        raise asyncio.TimeoutError("No devices matching serial number found")
+
+    async def connect_to_first_device(self, protocol_factory, port, timeout=DEFAULT_MAX_WAIT,
+            include=None, exclude=None):
         '''Open a TCP connection to the first device that has the requested port open.
 
         Args:
-            protocol_factory (callable): A callable that returns an asyncio.Protocol implementation
-            port (int): The port to connect to on the target device
-            max_wait (float): The maximum amount of time to wait for a suitable device to be connected
+            protocol_factory (callable): A callable that returns an asyncio.Protocol implementation.
+            port (int): The port to connect to on the target device.
+            timeout (float): The maximum amount of time to wait for a suitable device to be connected.
         Returns:
-            (asyncio.Transport, asyncio.Protocol) - The connected transport and protocol
+            (dict, asyncio.Transport, asyncio.Protocol): The device information,
+                connected transport and protocol.
         Raises:
-            asyncio.TimeoutError - If no devices with the requested port become available in the specified time
+            asyncio.TimeoutError if no devices with the requested port become
+                available in the specified time.
         '''
-        seen = set()
-
-        while max_wait is None or max_wait > 0:
-            ids = set(self.attached.keys()) - seen
-            for device_id in ids:
-                seen.add(device_id)
+        with self.attach_watcher(include_existing=True) as watcher:
+            timeout = Timeout(timeout)
+            while not timeout.expired:
+                action, device_id, info = await watcher.wait_for_next(timeout.remaining)
+                if action != ACTION_ATTACHED:
+                    continue
+                if exclude is not None and device_id in exclude:
+                    continue
+                if include is not None and device_id not in include:
+                    continue
                 try:
                     return await self.connect_to_device(protocol_factory, device_id, port)
                 except USBMuxError:
                     pass
-            start = time.time()
-            await self.wait_for_attach(max_wait)
-            max_wait -= (time.time() - start)
 
         raise asyncio.TimeoutError("No available devices")
 
     async def wait_for_attach(self, timeout=None):
-        '''Wait for the next device attachment event
+        '''Wait for the next device attachment event.
 
         Args:
             timeout (float): Maximum amount of time to wait for an event, or None for no timeout
         Returns:
-            int: The device id that was connected
+            int: The device id that attached.
         Raises:
-            asyncio.TimeoutError
+            asyncio.TimeoutError if no devices with the requested port become
+                available in the specified time.
         '''
-        fut = asyncio.Future(loop=self.loop)
-        self._attach_waiters.add(fut)
-        try:
-            return await asyncio.wait_for(fut, loop=self.loop, timeout=timeout)
-        finally:
-            self._attach_waiters.discard(fut)
+        timeout = Timeout(timeout)
+        with self.attach_watcher() as watcher:
+            while True:
+                action, device_id, info = await watcher.wait_for_next(timeout.remaining)
+                if action == ACTION_ATTACHED:
+                    return device_id
+
+    def attach_watcher(self, include_existing=False):
+        '''Returns a context manager that will record and make available all attach/detach notifications.
+
+        The context manager yields events consisting of (action, device_id, device_info) tuples,
+        where ``action`` is either :const:`ACTION_ATTACHED` or :const:`ACTION_DETACHED`
+        and ``device_info`` is a dictionary of information specific to that device,
+        such as the serial number.
+
+        Args:
+            include_existing (bool): If True then a stream of fake attached events
+                will be generated for all existing connected devices ahead of
+                monitoring for newly attached devices.
+        Returns:
+            :class:`QueueNotifyCM`
+        '''
+        initial_data = None
+        if include_existing:
+            initial_data = [(ACTION_ATTACHED, device_id, info)
+                    for (device_id, info) in self.attached.items()]
+        return self._attach_notify.get_contextmanager(initial_data=initial_data)
 
     def device_attached(self, device_id, properties):
         pass
@@ -324,3 +385,86 @@ async def connect_to_usbmux(mux_socket_path=DEFAULT_SOCKET_PATH, mux_socket_port
     mux = USBMux(loop, mux_socket_path=mux_socket_path, mux_socket_port=mux_socket_port)
     await mux.connect()
     return mux
+
+
+class QueueNotify:
+    '''Provide a context manager to queue and read asynchronous notifications.
+
+    While the context manager is active, all notifications are queued and
+    read by calling ``wait_for_next`` on the returned QueueNotifyCM
+    object.  If none are available, then the method will wait for the specified
+    amount of time for a new entry to arrive.
+
+    Multiple context managers can be active concurrently receiving the same
+    notifications.
+    '''
+    def __init__(self, loop=None):
+        self.loop = loop
+        self._active = set()
+
+    def notify(self, value):
+        for entry in self._active:
+            entry._notify(value)
+
+    def get_contextmanager(self, initial_data=None, max_qsize=None):
+        ctx = QueueNotifyCM(self, initial_data=initial_data, max_qsize=max_qsize, loop=self.loop)
+        self._active.add(ctx)
+        return ctx
+
+    def context_done(self, ctx):
+        self._active.discard(ctx)
+
+
+class QueueNotifyCM:
+    '''Helper class for QueueNotify.'''
+    def __init__(self, mgr, initial_data=None, max_qsize=None, loop=None):
+        self.loop = loop
+        self._mgr = mgr
+        self._wake = None
+        if initial_data is None:
+            initial_data = []
+        self._q = collections.deque(initial_data, max_qsize)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._mgr.context_done(self)
+        return False
+
+    def _notify(self, item):
+        self._q.append(item)
+        if self._wake is not None and not self._wake.done():
+            self._wake.set_result(True)
+            self._wake = None
+
+    async def wait_for_next(self, timeout=None):
+        '''Wait for the next available notification.
+
+        Will return immediately if entries are already waiting to be read,
+        else wait up to ``timeout`` seconds for a new entry to arrive.
+        '''
+        try:
+            return self._q.popleft()
+        except IndexError:
+            pass
+        self._wake = asyncio.Future(loop=self.loop)
+        await asyncio.wait_for(self._wake, loop=self.loop, timeout=timeout)
+        return self._q.popleft()
+
+
+class Timeout:
+    '''Helper class to track timeout state.'''
+    def __init__(self, timeout=None):
+        self.timeout = timeout
+        self.start = time.time()
+
+    @property
+    def remaining(self):
+        if self.timeout is None:
+            return None
+        return self.timeout - (time.time() - self.start)
+
+    @property
+    def expired(self):
+        return self.timeout is not None and self.remaining <= 0

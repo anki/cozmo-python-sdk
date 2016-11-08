@@ -27,7 +27,7 @@ The code for the Hello World program looks like this.
 
   Make Cozmo say 'Hello World' in this simple Cozmo SDK example program.
   '''
-  
+
   import sys
 
   import cozmo
@@ -77,7 +77,7 @@ To run a program for Cozmo:
 
 .. important:: The usbmuxd (USB Multiplexor Daemon) must be installed on any computer system paired with an iOS device before running any programs. Installing `iTunes <http://www.apple.com/itunes/download/>`_ will also install the usbmuxd on those systems. Linux users can install the usbmuxd module through the command line with `sudo apt-get install usbmuxd`.
 
-.. important:: Make sure adb (Android Debug Bridge) is installed on your system prior to running a program with an Android device. See the :ref:`Install page <install-guide>` for instructions.
+.. important:: Make sure adb (Android Debug Bridge) is installed on your system prior to running a program with an Android device. See the :ref:`Install page <initial>` for instructions.
 
 1. Plug the mobile device containing the Cozmo app into your computer.
 2. Open the Cozmo app on the device. Make sure Cozmo is on and connected to the app via WiFi.
@@ -104,7 +104,7 @@ Example 1 - Drive Straight
 
 For your first program, you will tell Cozmo to drive in a straight line for three seconds. This program will give you a simple overview of the programming process, as well as some of the building blocks necessary for the programs to work.
 
-1. In your source code editor, create a new document (*File -> New Document*).
+1. In your source code editor, create a new document (*File -> New Document*). Free source code editors, such as `PyCharm Community Edition <https://www.jetbrains.com/pycharm/>`_ , `Atom <https://atom.io>`_ , `Sublime <https://www.sublimetext.com>`_ , or `TextWrangler <http://www.barebones.com/products/textwrangler>`_ can be found online. Anki does not provide tech support for third-party source code editors.
 2. First, you need to tell the program to import some important information. Type the following lines into your document exactly as shown:
 
 .. code-block:: python

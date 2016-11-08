@@ -151,7 +151,7 @@ class AnimationNames(event.Dispatcher, set):
 
     def _recv_msg_end_of_message(self, evt, msg):
         if not self._loaded:
-            logger.info("%d animations loaded", len(self))
+            logger.debug("%d animations loaded", len(self))
             self._loaded = evt
             self.dispatch_event(EvtAnimationsLoaded)
 
