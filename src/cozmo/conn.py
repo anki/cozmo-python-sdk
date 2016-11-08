@@ -222,7 +222,8 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
         if robot_id > 1:
             # One day we might support multiple robots.. if we see a robot_id != 1
             # currently though, it's an error.
-            logger.error('INVALID ROBOT_ID SEEN robot_id=%s event=%s msg=%s', robot_id, evttype, msg.__str__())
+            # Note: MsgRobotPoked always sends the wrong id through currently
+            logger.debug('INVALID ROBOT_ID SEEN robot_id=%s event=%s msg=%s', robot_id, evttype, msg.__str__())
             robot_id = 1 # XXX remove when errant messages have been fixed
 
         robot = self._robots.get(robot_id)
