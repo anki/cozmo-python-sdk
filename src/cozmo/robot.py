@@ -1276,8 +1276,8 @@ class Robot(event.Dispatcher):
         Synchronous example::
 
             with robot.perform_off_charger():
-		        action = robot.say_text("Hello")
-		        action.wait_for_completed()
+                action = robot.say_text("Hello")
+                action.wait_for_completed()
 
         Asynchronous example::
 
