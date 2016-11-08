@@ -77,6 +77,7 @@ Follow these steps to set up and run the example:
             his lift, announce the email, and then show a mailbox image on his face.
 '''
 
+import asyncio
 import re
 import sys
 
@@ -111,25 +112,30 @@ async def serve_gmail(request):
     email_local_part = match_object.group(1)
 
     robot = request.app['robot']
-    try:
-        async with robot.perform_operation_off_charger_async():
-            '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face.'''
-            await robot.get_in_position()
+    async def read_name():
+        try:
+            async with robot.perform_operation_off_charger_async():
+                '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face.'''
+                await robot.get_in_position()
 
-            # First, have Cozmo play animation "ID_pokedB", which tells
-            # Cozmo to raise and lower his lift. To change the animation,
-            # you may replace "ID_pokedB" with another animation. Run
-            # remote_control_cozmo.py to see a list of animations.
-            await robot.play_anim(name='ID_pokedB').wait_for_completed()
+                # First, have Cozmo play animation "ID_pokedB", which tells
+                # Cozmo to raise and lower his lift. To change the animation,
+                # you may replace "ID_pokedB" with another animation. Run
+                # remote_control_cozmo.py to see a list of animations.
+                await robot.play_anim(name='ID_pokedB').wait_for_completed()
 
-            # Next, have Cozmo speak the name of the email sender.
-            await robot.say_text("Email from " + email_local_part).wait_for_completed()
+                # Next, have Cozmo speak the name of the email sender.
+                await robot.say_text("Email from " + email_local_part).wait_for_completed()
 
-            # Last, have Cozmo display an email image on his face.
-            robot.display_image_file_on_face("../images/ifttt_gmail.png")
+                # Last, have Cozmo display an email image on his face.
+                robot.display_image_file_on_face("../images/ifttt_gmail.png")
 
-    except cozmo.RobotBusy:
-        return web.Response(status=503, text="Cozmo is busy")
+        except cozmo.RobotBusy:
+            cozmo.logger.warn("Robot was busy so didn't read email address: "+ from_email_address)
+
+    # Perform Cozmo's task in the background so the HTTP server responds immediately.
+    asyncio.ensure_future(read_name())
+
     return web.Response(text="OK")
 
 # Attach the function as an HTTP handler.

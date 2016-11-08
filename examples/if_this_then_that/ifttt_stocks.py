@@ -80,6 +80,7 @@ Follow these steps to set up and run the example:
             and lower his lift, announce the stock increase, and then show a stock market image on his face.
 '''
 
+import asyncio
 import sys
 
 
@@ -109,25 +110,30 @@ async def serve_stocks(request):
     percentage = str(json_object["PercentageChange"])
 
     robot = request.app['robot']
-    try:
-        async with robot.perform_operation_off_charger_async():
-            '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face.'''
-            await robot.get_in_position()
+    async def read_name():
+        try:
+            async with robot.perform_operation_off_charger_async():
+                '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face.'''
+                await robot.get_in_position()
 
-            # First, have Cozmo play animation "ID_pokedB", which tells
-            # Cozmo to raise and lower his lift. To change the animation,
-            # you may replace "ID_pokedB" with another animation. Run
-            # remote_control_cozmo.py to see a list of animations.
-            await robot.play_anim(name='ID_pokedB').wait_for_completed()
+                # First, have Cozmo play animation "ID_pokedB", which tells
+                # Cozmo to raise and lower his lift. To change the animation,
+                # you may replace "ID_pokedB" with another animation. Run
+                # remote_control_cozmo.py to see a list of animations.
+                await robot.play_anim(name='ID_pokedB').wait_for_completed()
 
-            # Next, have Cozmo say that your stock is up by x percent.
-            await robot.say_text("Stock up " + percentage + " percent").wait_for_completed()
+                # Next, have Cozmo say that your stock is up by x percent.
+                await robot.say_text("Stock up " + percentage + " percent").wait_for_completed()
 
-            # Last, have Cozmo display a stock market image on his face.
-            robot.display_image_file_on_face("../images/ifttt_stocks.png")
+                # Last, have Cozmo display a stock market image on his face.
+                robot.display_image_file_on_face("../images/ifttt_stocks.png")
 
-    except cozmo.RobotBusy:
-        return web.Response(status=503, text="Cozmo is busy")
+        except cozmo.RobotBusy:
+            cozmo.logger.warn("Robot was busy so didn't read stock update: 'Stock up " + percentage + " percent'.")
+
+    # Perform Cozmo's task in the background so the HTTP server responds immediately.
+    asyncio.ensure_future(read_name())
+
     return web.Response(text="OK")
 
 # Attach the function as an HTTP handler.
