@@ -58,6 +58,7 @@ flask_app = Flask(__name__)
 remote_control_cozmo = None
 _default_camera_image = create_default_image(320, 240)
 _is_mouse_look_enabled_by_default = False
+_display_debug_annotations = True
 
 
 def remap_to_range(x, x_min, x_max, out_min, out_max):
@@ -95,27 +96,10 @@ class RemoteControlCozmo:
         all_anim_names.sort()
         self.anim_names = []
 
-        # temp workaround - remove any of the animations known to misbehave
+        # Hide a few specific test animations that don't behave well
         bad_anim_names = [
             "ANIMATION_TEST",
-            "ID_AlignToObject_Content_Drive",
-            "ID_AlignToObject_Content_Start",
-            "ID_AlignToObject_Content_Stop",
-            "ID_AlignToObject_Frustrated_Drive",
-            "ID_AlignToObject_Frustrated_Start",
-            "ID_AlignToObject_Frustrated_Stop",
-            "ID_catch_start",
-            "ID_end",
-            "ID_reactTppl_Surprise",
-            "ID_test",
-            "ID_wake_openEyes",
-            "ID_wake_sleeping",
-            "LiftEffortPickup",
-            "LiftEffortPlaceHigh",
-            "LiftEffortPlaceLow",
-            "LiftEffortRoll",
-            "soundTestAnim",
-            "testSound"]
+            "soundTestAnim"]
 
         for anim_name in all_anim_names:
             if anim_name not in bad_anim_names:
@@ -422,6 +406,7 @@ def handle_index_page():
                         <h3>General:</h3>
                         <b>Shift</b> : Hold to Move Faster (Driving, Head and Lift)<br>
                         <b>Alt</b> : Hold to Move Slower (Driving, Head and Lift)<br>
+                        <b>P</b> : Toggle Debug Annotations: <button id="debugAnnotationsId" onClick=onDebugAnnotationsButtonClicked(this) style="font-size: 14px">Default</button><br>
                         <h3>Play Animations</h3>
                         <b>0 .. 9</b> : Play Animation mapped to that key<br>
                         <h3>Talk</h3>
@@ -439,6 +424,7 @@ def handle_index_page():
                 var gLastClientX = -1
                 var gLastClientY = -1
                 var gIsMouseLookEnabled = '''+ to_js_bool_string(_is_mouse_look_enabled_by_default) + '''
+                var gAreDebugAnnotationsEnabled = '''+ to_js_bool_string(_display_debug_annotations) + '''
 
                 function postHttpRequest(url, dataSet)
                 {
@@ -487,7 +473,16 @@ def handle_index_page():
                     postHttpRequest("setMouseLookEnabled", {isMouseLookEnabled})
                 }
 
+                function onDebugAnnotationsButtonClicked(button)
+                {
+                    gAreDebugAnnotationsEnabled = !gAreDebugAnnotationsEnabled;
+                    updateButtonEnabledText(button, gAreDebugAnnotationsEnabled);
+                    areDebugAnnotationsEnabled = gAreDebugAnnotationsEnabled
+                    postHttpRequest("setAreDebugAnnotationsEnabled", {areDebugAnnotationsEnabled})
+                }
+
                 updateButtonEnabledText(document.getElementById("mouseLookId"), gIsMouseLookEnabled);
+                updateButtonEnabledText(document.getElementById("debugAnnotationsId"), gAreDebugAnnotationsEnabled);
 
                 function handleDropDownSelect(selectObject)
                 {
@@ -503,10 +498,18 @@ def handle_index_page():
                     var hasCtrl  = (e.ctrlKey  ? 1 : 0)
                     var hasAlt   = (e.altKey   ? 1 : 0)
 
-                    if ((actionType=="keyup") && (keyCode == 81)) // 'Q'
+                    if (actionType=="keyup")
                     {
-                        // Simulate a click of the mouse look button
-                        onMouseLookButtonClicked(document.getElementById("mouseLookId"))
+                        if (keyCode == 80) // 'P'
+                        {
+                            // Simulate a click of the debug annotations button
+                            onDebugAnnotationsButtonClicked(document.getElementById("debugAnnotationsId"))
+                        }
+                        else if (keyCode == 81) // 'Q'
+                        {
+                            // Simulate a click of the mouse look button
+                            onMouseLookButtonClicked(document.getElementById("mouseLookId"))
+                        }
                     }
 
                     postHttpRequest(actionType, {keyCode, hasShift, hasCtrl, hasAlt})
@@ -575,7 +578,12 @@ def handle_cozmoImage():
     if remote_control_cozmo:
         image = remote_control_cozmo.cozmo.world.latest_image
         if image:
-            return flask_helpers.serve_pil_image(image.raw_image)
+            if _display_debug_annotations:
+                image = image.annotate_image(scale=2)
+            else:
+                image = image.raw_image
+
+            return flask_helpers.serve_pil_image(image)
     return flask_helpers.serve_pil_image(_default_camera_image)
 
 
@@ -601,10 +609,19 @@ def handle_mousemove():
 
 @flask_app.route('/setMouseLookEnabled', methods=['POST'])
 def handle_setMouseLookEnabled():
-    '''Called from Javascript whenever mouse moves'''
+    '''Called from Javascript whenever mouse-look mode is toggled'''
     message = json.loads(request.data.decode("utf-8"))
     if remote_control_cozmo:
         remote_control_cozmo.set_mouse_look_enabled(is_mouse_look_enabled=message['isMouseLookEnabled'])
+    return ""
+
+
+@flask_app.route('/setAreDebugAnnotationsEnabled', methods=['POST'])
+def handle_setAreDebugAnnotationsEnabled():
+    '''Called from Javascript whenever debug-annotations mode is toggled'''
+    message = json.loads(request.data.decode("utf-8"))
+    global _display_debug_annotations
+    _display_debug_annotations = message['areDebugAnnotationsEnabled']
     return ""
 
 
@@ -671,6 +688,7 @@ def run(sdk_conn):
 
 if __name__ == '__main__':
     cozmo.setup_basic_logging()
+    cozmo.robot.Robot.drive_off_charger_on_connect = False  # RC can drive off charger if required
     try:
         cozmo.connect(run)
     except cozmo.ConnectionError as e:
