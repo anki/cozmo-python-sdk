@@ -17,12 +17,21 @@
 
 '''"If This Then That" sports example
 
-This example demonstrates how "If This Then That" (http://ifttt.com) can be used
-make Cozmo respond when there is an in-game or final score update for the team
-you specify. Instructions below will lead you through setting up an applet on
-the IFTTT website. When the applet trigger is called (which sends a web request
-received by the flask server started in this example), Cozmo will play an animation,
-show an image on his face, and speak the in-game update.
+This IFTTT example uses the Flask web framework and is synchronous, unlike the other
+IFTTT examples which are asynchronous and use aiohttp. In this example, IFTTT web
+requests are received by function receive_ifttt_web_request. Each web request that comes
+into that method is added to Queue ifttt_queue and an HTTP status code of 200 or 503 is
+immediately returned to IFTTT. The queue is checked by the worker function, which is
+running on a background thread (started by the run function). When a new request is
+found on the queue by the worker function, the request is removed from the queue and
+processed in method then_that_action.
+
+Like the ifttt_sports.py example, this example demonstrates how "If This Then That"
+(http://ifttt.com) can be used make Cozmo respond when there is an in-game or final
+score update for the team you specify. Instructions below will lead you through setting
+up an applet on the IFTTT website. When the applet trigger is called (which sends a web
+request received by the flask server started in this example), Cozmo will play an
+animation, show an image on his face, and speak the in-game update.
 
 Please place Cozmo on the charger for this example. When necessary, he will be
 rolled off and back on.
@@ -100,6 +109,33 @@ ifttt_queue = queue.Queue()
 robot = None
 
 
+@flask_app.route('/iftttSports', methods=['POST'])
+def receive_ifttt_web_request():
+    '''Web request endpoint named "iftttSports" for IFTTT to call when a new in-game
+        update for your team is posted on ESPN.
+
+        In the IFTTT web request, in the URL field, specify this method
+        as the endpoint. For instance, if your public url is http://my.url.com,
+        then in the IFTTT web request URL field put the following:
+        http://my.url.com/iftttSports. Then, this endpoint will be called when
+        IFTTT checks and discovers that a new in-game update for your team is
+        posted on ESPN.
+    '''
+
+    # Retrieve the data passed by If This Then That in the web request body.
+    json_object = json.loads(request.data.decode("utf-8"))
+
+    # Extract the text for the in-game update.
+    alert_body = json_object["AlertBody"]
+
+    # Add this request to the queue of in-game updates awaiting Cozmo's reaction.
+    ifttt_queue.put((then_that_action, alert_body))
+
+    # Return promptly so If This Then That knows that the web request was received
+    # successfully.
+    return ""
+
+
 def then_that_action(alert_body):
     '''Controls how Cozmo responds to the in-game update.
 
@@ -124,9 +160,17 @@ def then_that_action(alert_body):
             # Last, have Cozmo display a sports image on his face.
             robot.display_image_file_on_face("../images/ifttt_sports.png")
 
-
     except cozmo.exceptions.RobotBusy:
         pass
+
+
+def worker():
+    while True:
+        item = ifttt_queue.get()
+        if item is None:
+            break
+        queued_action, action_args = item
+        queued_action(action_args)
 
 
 def backup_onto_charger(robot):
@@ -161,42 +205,6 @@ def perform_operation_off_charger(robot):
 
     if was_on_charger:
         backup_onto_charger(robot)
-
-
-@flask_app.route('/iftttSports', methods=['POST'])
-def receive_ifttt_web_request():
-    '''Web request endpoint named "iftttSports" for IFTTT to call when a new in-game
-        update for your team is posted on ESPN.
-
-        In the IFTTT web request, in the URL field, specify this method
-        as the endpoint. For instance, if your public url is http://my.url.com,
-        then in the IFTTT web request URL field put the following:
-        http://my.url.com/iftttSports. Then, this endpoint will be called when
-        IFTTT checks and discovers that a new in-game update for your team is
-        posted on ESPN.
-    '''
-
-    # Retrieve the data passed by If This Then That in the web request body.
-    json_object = json.loads(request.data.decode("utf-8"))
-
-    # Extract the text for the in-game update.
-    alert_body = json_object["AlertBody"]
-
-    # Add this email to the queue of emails awaiting Cozmo's reaction.
-    ifttt_queue.put((then_that_action, alert_body))
-
-    # Return promptly so If This Then That knows that the web request was received
-    # successfully.
-    return ""
-
-
-def worker():
-    while True:
-        item = ifttt_queue.get()
-        if item is None:
-            break
-        queued_action, action_args = item
-        queued_action(action_args)
 
 
 def run(sdk_conn):
