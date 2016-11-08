@@ -170,7 +170,7 @@ class ObservableObject(event.Dispatcher):
         if len(extra) > 0:
             extra = ' '+extra
 
-        return '<%s id=%s is_visible=%s pose=%s%s>' % (self.__class__.__name__,
+        return '<%s object_id=%s is_visible=%s pose=%s%s>' % (self.__class__.__name__,
                 self._object_id, self.is_visible, self.pose, extra)
 
     def _repr_values(self):

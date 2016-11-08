@@ -41,12 +41,14 @@ def run(sdk_conn):
         current_action = robot.pickup_object(cubes[0])
         current_action.wait_for_completed()
         if current_action.failed:
-            print("Pickup Cube failed: code=%s reason=%s" % current_action.failure_reason)
+            code, reason = current_action.failure_reason
+            print("Pickup Cube failed: code=%s reason=%s" % (code, reason))
 
         current_action = robot.place_on_object(cubes[1])
         current_action.wait_for_completed()
         if current_action.failed:
-            print("Place On Cube failed: code=%s reason=%s" % current_action.failure_reason)
+            code, reason = current_action.failure_reason
+            print("Place On Cube failed: code=%s reason=%s" % (code, reason))
 
 if __name__ == '__main__':
     cozmo.setup_basic_logging()

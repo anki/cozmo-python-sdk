@@ -148,12 +148,12 @@ class Action(event.Dispatcher):
         return self._state in (ACTION_SUCCEEDED, ACTION_FAILED)
 
     @property
-    def succeeded(self):
+    def has_succeeded(self):
         '''bool: True if the action has succeeded.'''
         return self._state == ACTION_SUCCEEDED
 
     @property
-    def failed(self):
+    def has_failed(self):
         '''bool: True if the action has failed.'''
         return self._state == ACTION_FAILED
 

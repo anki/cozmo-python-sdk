@@ -350,23 +350,18 @@ class World(event.Dispatcher):
                 return visible_object
         return None
 
-    def _find_visible_face(self):
-        for visible_face in self.visible_faces:
-            return visible_face
-        return None
-
-    async def wait_for_observed_light_cube(self, timeout=None, include_already_visible=True):
+    async def wait_for_observed_light_cube(self, timeout=None, include_existing=True):
         '''Waits for one of the light cubes to be observed by the robot.
 
         Args:
             timeout (float): Number of seconds to wait for a cube to be
                 observed, or None for indefinite
-            include_already_visible (bool): whether or not to include light cubes
+            include_existing (bool): Specifies whether to include light cubes
                 that are already visible.
         Returns:
             The :class:`cozmo.objects.LightCube` object that was observed.
         '''
-        if include_already_visible:
+        if include_existing:
             obj = self._find_visible_object(objects.LightCube)
             if obj:
                 return obj
@@ -376,19 +371,19 @@ class World(event.Dispatcher):
         evt = await self.wait_for(filter, timeout=timeout)
         return evt.obj
 
-    async def wait_for_observed_face(self, timeout=None, include_already_visible=True):
+    async def wait_for_observed_face(self, timeout=None, include_existing=True):
         '''Waits for a face to be observed by the robot.
 
         Args:
             timeout (float): Number of seconds to wait for a face to be
                 observed, or None for indefinite
-            include_already_visible (bool): whether or not to include faces
+            include_existing (bool): Specifies whether to include faces
                 that are already visible.
         Returns:
             The :class:`cozmo.faces.Face` object that was observed.
         '''
-        if include_already_visible:
-            face = self._find_visible_face()
+        if include_existing:
+            face = next(self.visible_faces, None)
             if face:
                 return face
 
@@ -396,18 +391,18 @@ class World(event.Dispatcher):
         evt = await self.wait_for(filter, timeout=timeout)
         return evt.face
 
-    async def wait_for_observed_charger(self, timeout=None, include_already_visible=True):
+    async def wait_for_observed_charger(self, timeout=None, include_existing=True):
         '''Waits for a charger to be observed by the robot.
 
         Args:
             timeout (float): Number of seconds to wait for a charger to be
                 observed, or None for indefinite
-            include_already_visible (bool): whether or not to include chargers
+            include_existing (bool): Specifies whether to include chargers
                 that are already visible.
         Returns:
             The :class:`cozmo.objects.Charger` object that was observed.
         '''
-        if include_already_visible:
+        if include_existing:
             obj = self._find_visible_object(objects.Charger)
             if obj:
                 return obj
@@ -418,7 +413,7 @@ class World(event.Dispatcher):
         return evt.obj
 
     async def wait_until_observe_num_objects(self, num, object_type=None, timeout=None,
-                                             include_already_visible=True):
+                                             include_existing=True):
         '''Waits for a certain number of unique objects to be seen at least once.
 
         This method waits for a number of unique objects to be seen, but not
@@ -435,7 +430,7 @@ class World(event.Dispatcher):
                 this will cause only the selected object types to be counted.
             timeout (float): Maximum amount of time in seconds to wait for the
                 requested number of objects to be observed.
-            include_already_visible (bool): whether or not to include objects
+            include_existing (bool): Specifies whether to include objects
                 that are already visible.
         Returns:
             A list of length <= num of the unique objects
@@ -451,7 +446,7 @@ class World(event.Dispatcher):
 
         objs_seen = set()
         # If requested, add any objects that can already be seen (they won't create observed events)
-        if include_already_visible:
+        if include_existing:
             for visible_object in self.visible_objects:
                 if (object_type is None) or isinstance(visible_object, object_type):
                     objs_seen.add(visible_object)
