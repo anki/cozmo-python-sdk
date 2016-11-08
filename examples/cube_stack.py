@@ -38,8 +38,15 @@ def run(sdk_conn):
     if len(cubes) < 2:
         print("Error: need 2 Cubes but only found", len(cubes), "Cube(s)")
     else:
-        robot.pickup_object(cubes[0]).wait_for_completed()
-        robot.place_on_object(cubes[1]).wait_for_completed()
+        current_action = robot.pickup_object(cubes[0])
+        current_action.wait_for_completed()
+        if current_action.failed:
+            print("Pickup Cube failed: code=%s reason=%s" % current_action.failure_reason)
+
+        current_action = robot.place_on_object(cubes[1])
+        current_action.wait_for_completed()
+        if current_action.failed:
+            print("Place On Cube failed: code=%s reason=%s" % current_action.failure_reason)
 
 if __name__ == '__main__':
     cozmo.setup_basic_logging()
