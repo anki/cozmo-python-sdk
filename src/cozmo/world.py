@@ -348,10 +348,12 @@ class World(event.Dispatcher):
         for visible_object in self.visible_objects:
             if (object_type is None) or isinstance(visible_object, object_type):
                 return visible_object
+        return None
 
     def _find_visible_face(self):
         for visible_face in self.visible_faces:
             return visible_face
+        return None
 
     async def wait_for_observed_light_cube(self, timeout=None, include_already_visible=True):
         '''Waits for one of the light cubes to be observed by the robot.
