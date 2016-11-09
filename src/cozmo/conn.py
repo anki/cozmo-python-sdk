@@ -130,9 +130,20 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
         self._robots = {}
         self._primary_robot = None
 
-        #: An :class:`cozmo.anim.AnimationNames` object that references all 
+        #: A dict containing information about the device the connection is using.
+        self.device_info = {}
+
+        #: An :class:`cozmo.anim.AnimationNames` object that references all
         #: available animation names
         self.anim_names = self.anim_names_factory(self)
+
+
+    #### Private Methods ####
+
+    def __repr__(self):
+        info = ' '.join(['%s="%s"' % (k, self.device_info[k])
+            for k in sorted(self.device_info.keys())])
+        return '<%s %s>' % (self.__class__.__name__, info)
 
     def connection_made(self, transport):
         super().connection_made(transport)
@@ -143,7 +154,7 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
         self._is_connected = False
         if self._running:
             self.abort(exceptions.ConnectionAborted("Lost connection to the device"))
-            logger.error("Lost connection to the device: %s" % exc)
+            logger.error("Lost connection to the device: %s", exc)
 
     async def shutdown(self):
         '''Close the connection to the device.'''
@@ -157,7 +168,7 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
     def abort(self, exc):
         '''Abort the connection to the device.'''
         if self._running:
-            logger.info('Aborting connection: %s' % exc)
+            logger.info('Aborting connection: %s', exc)
             self._running = False
             # Allow any currently pending futures to complete before the
             # remainder are aborted.
@@ -211,7 +222,8 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
         if robot_id > 1:
             # One day we might support multiple robots.. if we see a robot_id != 1
             # currently though, it's an error.
-            logger.error('INVALID ROBOT_ID SEEN robot_id=%s event=%s msg=%s', robot_id, evttype, msg.__str__())
+            # Note: MsgRobotPoked always sends the wrong id through currently
+            logger.debug('INVALID ROBOT_ID SEEN robot_id=%s event=%s msg=%s', robot_id, evttype, msg.__str__())
             robot_id = 1 # XXX remove when errant messages have been fixed
 
         robot = self._robots.get(robot_id)
@@ -274,7 +286,7 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
             return
 
         if msg.deviceID != 1:
-            logger.error('Unexpected Device Id %s' % msg.deviceID)
+            logger.error('Unexpected Device Id %s', msg.deviceID)
             return
 
         # Verify that engine and SDK are compatible
@@ -287,6 +299,24 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
 
         build_versions_match = (cozmoclad.__build_version__ == '00000.00000.00000'
             or cozmoclad.__build_version__ == msg.buildVersion)
+
+        if clad_hashes_match and not build_versions_match:
+            # If CLAD hashes match, and this is only a minor version change, allow connection but recommend user upgrades
+            sdk_major_version = cozmoclad.__build_version__.split(".")[0:2]
+            build_major_version = msg.buildVersion.split(".")[0:2]
+            build_versions_match = (sdk_major_version == build_major_version)
+            if build_versions_match:
+                if cozmoclad.__build_version__ < msg.buildVersion:
+                    # App is newer
+                    logger.warning(
+                        'Your app is newer than your SDK: '
+                        'We recommend that you upgrade your SDK by calling: '
+                        '"pip3 install --user --upgrade cozmo" '
+                        'and downloading the latest examples from http://cozmosdk.anki.com/docs/downloads.html')
+                else:
+                    logger.warning(
+                        'Your app is older than your SDK: '
+                        'We recommend that you download the latest app from the app store.')
 
         if clad_hashes_match and build_versions_match:
             connection_success_msg = _clad_to_engine_iface.UiDeviceConnectionSuccess(
@@ -314,14 +344,15 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
                 pass
 
             if not build_versions_match:
-                logger.warning('Build versions do not match (SDK version %s != App version %s) - connection refused' % (
-                                cozmoclad.__build_version__, msg.buildVersion))
+                logger.warning('Build versions do not match (cozmoclad version %s != app version %s) - connection refused',
+                                cozmoclad.__build_version__, msg.buildVersion)
 
                 if cozmoclad.__build_version__ < msg.buildVersion:
                     # App is newer
                     logger.error(
                         'Please update your SDK to the newest version by calling command: '
-                        '"pip3 install --user --ignore-installed cozmo"')
+                        '"pip3 install --user --upgrade cozmo" '
+                        'and downloading the latest examples from http://cozmosdk.anki.com/docs/downloads.html')
                 else:
                     # SDK is newer
                     logger.error("Please update your app to the most recent version on the app store.")
@@ -345,7 +376,9 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
         self._is_ui_connected = True
         self.dispatch_event(EvtConnected, conn=self)
         self.anim_names.refresh()
-        logger.info("UI device connected")
+        logger.info('App connection established. sdk_version=%s '
+                'cozmoclad_version=%s app_build_version=%s',
+                version.__version__, cozmoclad.__version__, msg.buildVersion)
 
     def _recv_msg_image_chunk(self, evt, *, msg):
         if self._primary_robot:

@@ -219,44 +219,10 @@ def extract_time_from_args():
     return None
 
 
-def backup_onto_charger(robot):
-    '''Attempts to reverse robot onto its charger
-
-    Assumes charger is directly behind Cozmo
-    Keep driving straight back until charger is in contact
-    '''
-
-    robot.drive_wheels(-30, -30)
-    time_waited = 0.0
-    while time_waited < 3.0 and not robot.is_on_charger:
-        sleep_time_s = 0.1
-        time.sleep(sleep_time_s)
-        time_waited += sleep_time_s
-
-    robot.stop_all_motors()
-
-
-@contextmanager
-def perform_operation_off_charger(robot):
-    '''Perform a block of code with robot off the charger
-
-    Ensure robot is off charger before yielding
-    yield - (at which point any code in the caller's with block will run).
-    If Cozmo started on the charger then return it back afterwards'''
-
-    was_on_charger = robot.is_on_charger
-    robot.drive_off_charger_contacts().wait_for_completed()
-
-    yield robot
-
-    if was_on_charger:
-        backup_onto_charger(robot)
-
-
 def get_in_position(robot):
     '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face'''
     if (robot.lift_height.distance_mm > 45) or (robot.head_angle.degrees < 40):
-        with perform_operation_off_charger(robot):
+        with robot.perform_off_charger():
             robot.set_lift_height(0.0).wait_for_completed()
             robot.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
 
@@ -268,7 +234,8 @@ def alarm_clock(robot):
     if alarm_time:
         print("Alarm set for %s" % alarm_time)
     else:
-        print("No Alarm time provided")
+        print("No Alarm time provided. Usage example: 'alarm_clock.py 17:23' to set alarm for 5:23 PM. (Input uses the 24-hour clock.)")
+    print("Press CTRL-C to quit")
 
     get_in_position(robot)
 
@@ -288,7 +255,7 @@ def alarm_clock(robot):
 
         if do_alarm:
             # Speak The Time (off the charger as it's an animation)
-            with perform_operation_off_charger(robot):
+            with robot.perform_off_charger():
                 short_time_string = str(current_time.hour) + ":" + str(current_time.minute)
                 robot.say_text("Wake up lazy human! it's " + short_time_string).wait_for_completed()
         else:

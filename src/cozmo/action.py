@@ -100,6 +100,8 @@ class Action(event.Dispatcher):
         extra = self._repr_values()
         if len(extra) > 0:
             extra = ' '+extra
+        if self._state == ACTION_FAILED:
+            extra += " failure_reason=%s failure_code=%s" % (self._failure_reason, self._failure_code)
         return '<%s state=%s%s>' % (self.__class__.__name__, self.state, extra)
 
     def _repr_values(self):
@@ -144,6 +146,16 @@ class Action(event.Dispatcher):
     def is_completed(self):
         '''bool: True if the action has completed (either succeeded or failed).'''
         return self._state in (ACTION_SUCCEEDED, ACTION_FAILED)
+
+    @property
+    def has_succeeded(self):
+        '''bool: True if the action has succeeded.'''
+        return self._state == ACTION_SUCCEEDED
+
+    @property
+    def has_failed(self):
+        '''bool: True if the action has failed.'''
+        return self._state == ACTION_FAILED
 
     @property
     def failure_reason(self):

@@ -28,14 +28,20 @@ except ImportError:
 import cozmo
 
 
+def get_in_position(robot):
+    '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face'''
+    if (robot.lift_height.distance_mm > 45) or (robot.head_angle.degrees < 40):
+        with robot.perform_off_charger():
+            robot.set_lift_height(0.0).wait_for_completed()
+            robot.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
+
+
 def run(sdk_conn):
     '''The run method runs once Cozmo is connected.'''
 
     robot = sdk_conn.wait_for_robot()
 
-    # move head and lift to make it easy to see Cozmo's face
-    robot.set_lift_height(0.0).wait_for_completed()
-    robot.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
+    get_in_position(robot)
 
     # load some images and convert them for display cozmo's face
     image_settings = [("images/cozmosdk.png", Image.BICUBIC),
@@ -59,6 +65,8 @@ def run(sdk_conn):
     num_loops = 10
     duration_s = 2.0
 
+    print("Press CTRL-C to quit (or wait %s seconds to complete)" % int(num_loops*duration_s) )
+
     for _ in range(num_loops):
         for image in face_images:
             robot.display_oled_face_image(image, duration_s * 1000.0)
@@ -67,6 +75,7 @@ def run(sdk_conn):
 
 if __name__ == '__main__':
     cozmo.setup_basic_logging()
+    cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
     try:
         cozmo.connect(run)
     except cozmo.ConnectionError as e:

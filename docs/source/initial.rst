@@ -22,9 +22,9 @@ SDK Example Programs
 
 Anki provides example programs for novice and advanced users to run with the SDK. Download the SDK example programs here:
 
-  * `macOS/Linux SDK Examples <http://cozmosdk.anki.com/0.8.0/cozmo_sdk_examples_0.8.0.tar.gz>`_
+  * :verlink:`macOS/Linux SDK Examples <cozmo_sdk_examples_0.0.0.tar.gz>`
 
-  * `Windows SDK Examples <http://cozmosdk.anki.com/0.8.0/cozmo_sdk_examples_0.8.0.zip>`_
+  * :verlink:`Windows SDK Examples <cozmo_sdk_examples_0.0.0.zip>`
 
 Once downloaded, extract the packaged files to a new directory.
 
