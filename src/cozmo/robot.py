@@ -1273,7 +1273,13 @@ class Robot(event.Dispatcher):
         perform the code wrapped by the context and then move the robot back onto the
         charger after the wrapped code completes.
 
-        For example::
+        Synchronous example::
+
+            with robot.perform_off_charger():
+                action = robot.say_text("Hello")
+                action.wait_for_completed()
+
+        Asynchronous example::
 
             async with robot.perform_off_charger():
                 action = robot.say_text("Hello")
