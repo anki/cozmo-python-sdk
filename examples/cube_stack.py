@@ -40,13 +40,13 @@ def run(sdk_conn):
     else:
         current_action = robot.pickup_object(cubes[0])
         current_action.wait_for_completed()
-        if current_action.failed:
+        if current_action.has_failed:
             code, reason = current_action.failure_reason
             print("Pickup Cube failed: code=%s reason=%s" % (code, reason))
 
         current_action = robot.place_on_object(cubes[1])
         current_action.wait_for_completed()
-        if current_action.failed:
+        if current_action.has_failed:
             code, reason = current_action.failure_reason
             print("Place On Cube failed: code=%s reason=%s" % (code, reason))
 
