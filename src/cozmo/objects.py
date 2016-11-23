@@ -279,7 +279,7 @@ class ObservableObject(event.Dispatcher):
         self.last_observed_robot_timestamp = msg.timestamp
         self.last_event_time = time.time()
 
-        image_box = util.ImageBox(msg.img_topLeft_x, msg.img_topLeft_y, msg.img_width, msg.img_height)
+        image_box = util.ImageBox(msg.img_rect.x_topLeft, msg.img_rect.y_topLeft, msg.img_rect.width, msg.img_rect.height)
         self.last_observed_image_box = image_box
 
         self._reset_observed_timeout_handler()
