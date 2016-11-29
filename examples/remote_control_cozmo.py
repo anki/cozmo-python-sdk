@@ -37,6 +37,11 @@ except ImportError:
     sys.exit("Cannot import from PIL: Do `pip3 install --user Pillow` to install")
 
 
+DEBUG_ANNOTATIONS_DISABLED = 0
+DEBUG_ANNOTATIONS_ENABLED_VISION = 1
+DEBUG_ANNOTATIONS_ENABLED_ALL = 2
+
+
 # Annotator for displaying RobotState (position, etc.) on top of the camera feed
 class RobotStateDisplay(cozmo.annotate.Annotator):
     def apply(self, image, scale):
@@ -45,7 +50,6 @@ class RobotStateDisplay(cozmo.annotate.Annotator):
         bounds = [3, 0, image.width, image.height]
 
         def print_line(text_line):
-            nonlocal bounds
             text = cozmo.annotate.ImageText(text_line, position=cozmo.annotate.TOP_LEFT, color='lightblue')
             text.render(d, bounds)
             TEXT_HEIGHT = 11
@@ -63,7 +67,7 @@ class RobotStateDisplay(cozmo.annotate.Annotator):
 
         # Display the Accelerometer and Gyro data for the robot
 
-        print_line('Acclrm: <%.1f, %.1f, %.1f>' % robot.accelerometer.x_y_z)
+        print_line('Accel: <%.1f, %.1f, %.1f>' % robot.accelerometer.x_y_z)
         print_line('Gyro: <%.1f, %.1f, %.1f>' % robot.gyro.x_y_z)
 
 
@@ -89,9 +93,6 @@ remote_control_cozmo = None
 _default_camera_image = create_default_image(320, 240)
 _is_mouse_look_enabled_by_default = False
 
-DEBUG_ANNOTATIONS_DISABLED = 0
-DEBUG_ANNOTATIONS_ENABLED_VISION = 1
-DEBUG_ANNOTATIONS_ENABLED_ALL = 2
 _display_debug_annotations = DEBUG_ANNOTATIONS_ENABLED_ALL
 
 

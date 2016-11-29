@@ -273,6 +273,23 @@ class Pose:
 
     Use the :func:'pose_z_angle' to return pose in the form of
     position and rotation defined by rotation about the z axis
+
+    When the engine is initialized, and whenever Cozmo is de-localized (i.e.
+    whenever Cozmo no longer knows where he is - e.g. when he's picked up)
+    Cozmo creates a new pose starting at (0,0,0) with no rotation, with
+    origin_id incremented to show that these poses cannot be compared with
+    earlier ones. As Cozmo drives around, his pose (and the pose of other
+    objects he observes - e.g. faces, cubes etc.) is relative to this initial
+    position and orientation.
+
+    The coordinate space is relative to Cozmo, where Cozmo's origin is the
+    point on the ground between Cozmo's two front wheels:
+
+    The X axis is Cozmo's forward direction
+    The Y axis is to Cozmo's left
+    The Z axis is up
+
+    Only poses of the same origin_id can safely be compared or operated on
     '''
 
     __slots__ = ('_position', '_rotation', '_origin_id')

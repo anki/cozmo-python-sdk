@@ -638,9 +638,7 @@ class Robot(event.Dispatcher):
 
     @property
     def pose(self):
-        """:class:`cozmo.util.Pose`: The current pose of cozmo relative to where it started
-        (when the engine was initialized, or any delocalizations since - e.g. whenever Cozmo is picked up)
-        Coordinates are in x=forward, y=left, z=up space, following the right hand rule.
+        """:class:`cozmo.util.Pose`: The current pose (position and orientation) of Cozmo
         """
         return self._pose
 
@@ -762,19 +760,19 @@ class Robot(event.Dispatcher):
         self._pose_angle = util.radians(msg.poseAngle_rad) # heading in X-Y plane
         self._pose_pitch = util.radians(msg.posePitch_rad)
         self._head_angle = util.radians(msg.headAngle_rad)
-        self.left_wheel_speed  = util.speed_mmps(msg.leftWheelSpeed_mmps)
+        self.left_wheel_speed = util.speed_mmps(msg.leftWheelSpeed_mmps)
         self.right_wheel_speed = util.speed_mmps(msg.rightWheelSpeed_mmps)
-        self.lift_height       = util.distance_mm(msg.liftHeight_mm)
+        self.lift_height = util.distance_mm(msg.liftHeight_mm)
         self.battery_voltage = msg.batteryVoltage
         self.accelerometer = util.Vector3(msg.accel.x, msg.accel.y, msg.accel.z)
         self.gyro = util.Vector3(msg.gyro.x, msg.gyro.y, msg.gyro.z)
-        self.carrying_object_id        = msg.carryingObjectID      # int_32 will be -1 if not carrying object
-        self.carrying_object_on_top_id = msg.carryingObjectOnTopID # int_32 will be -1 if no object on top of object being carried
-        self.head_tracking_object_id   = msg.headTrackingObjectID  # int_32 will be -1 if head is not tracking to any object
-        self.localized_to_object_id    = msg.localizedToObjectID   # int_32 Will be -1 if not localized to any object
+        self.carrying_object_id = msg.carryingObjectID  # int_32 will be -1 if not carrying object
+        self.carrying_object_on_top_id = msg.carryingObjectOnTopID  # int_32 will be -1 if no object on top of object being carried
+        self.head_tracking_object_id = msg.headTrackingObjectID  # int_32 will be -1 if head is not tracking to any object
+        self.localized_to_object_id = msg.localizedToObjectID  # int_32 Will be -1 if not localized to any object
         self.last_image_robot_timestamp = msg.lastImageTimeStamp
-        self._robot_status_flags       = msg.status     # uint_16 as bitflags - See _clad_to_game_cozmo.RobotStatusFlag
-        self._game_status_flags        = msg.gameStatus # uint_8  as bitflags - See _clad_to_game_cozmo.GameStatusFlag
+        self._robot_status_flags = msg.status  # uint_16 as bitflags - See _clad_to_game_cozmo.RobotStatusFlag
+        self._game_status_flags = msg.gameStatus  # uint_8  as bitflags - See _clad_to_game_cozmo.GameStatusFlag
 
         if msg.robotID != self.robot_id:
             logger.error("robot ID changed mismatch (msg=%s, self=%s)", msg.robotID, self.robot_id )
