@@ -67,7 +67,7 @@ class RobotStateDisplay(cozmo.annotate.Annotator):
 
         # Display the Accelerometer and Gyro data for the robot
 
-        print_line('Accel: <%.1f, %.1f, %.1f>' % robot.accelerometer.x_y_z)
+        print_line('Accelmtr: <%.1f, %.1f, %.1f>' % robot.accelerometer.x_y_z)
         print_line('Gyro: <%.1f, %.1f, %.1f>' % robot.gyro.x_y_z)
 
 
