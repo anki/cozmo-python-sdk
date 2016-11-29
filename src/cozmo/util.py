@@ -487,15 +487,13 @@ def angle_z_to_quaternion(angle_z):
     return q0,q1,q2,q3
 
 
-class Position:
-    '''Represents the position of an object in the world.
-
-    A position consists of its x, y and z values in millimeters.
+class Vector3:
+    '''Represents a 3D Vector (type/units aren't specified)
 
     Args:
-        x (float): X position in millimeters
-        y (float): Y position in millimeters
-        z (float): Z position in millimeters
+        x (float): X component
+        y (float): Y component
+        z (float): Z component
     '''
 
     __slots__ = ('_x', '_y', '_z')
@@ -507,46 +505,58 @@ class Position:
 
     @property
     def x(self):
-        '''float: The x value of this position in millimeters (mm).'''
+        '''float: The x component.'''
         return self._x
 
     @property
     def y(self):
-        '''float: The y value of this position in millimeters (mm).'''
+        '''float: The y component.'''
         return self._y
 
     @property
     def z(self):
-        '''float: The z value of this position in millimeters (mm).'''
+        '''float: The z component.'''
         return self._z
 
     @property
     def x_y_z(self):
-        '''tuple (float, float, float): The X, Y, Z elements of the position (x,y,z)'''
-        return self._x,self._y,self._z
+        '''tuple (float, float, float): The X, Y, Z elements of the Vector3 (x,y,z)'''
+        return self._x, self._y, self._z
 
     def __repr__(self):
         return "<%s x: %.2f y: %.2f z: %.2f>" % (self.__class__.__name__, self.x, self.y, self.z)
 
     def __add__(self, other):
-        if not isinstance(other, Position):
-            raise TypeError("Unsupported operand for + expected Position")
-        return Position(self.x+other.x, self.y+other.y, self.z+other.z)
+        if not isinstance(other, Vector3):
+            raise TypeError("Unsupported operand for + expected Vector3")
+        return Vector3(self.x + other.x, self.y + other.y, self.z + other.z)
 
     def __sub__(self, other):
-        if not isinstance(other, Position):
-            raise TypeError("Unsupported operand for - expected Position")
-        return Position(self.x-other.x, self.y-other.y, self.z-other.z)
+        if not isinstance(other, Vector3):
+            raise TypeError("Unsupported operand for - expected Vector3")
+        return Vector3(self.x - other.x, self.y - other.y, self.z - other.z)
 
     def __mul__(self, other):
         if not isinstance(other, (int, float)):
             raise TypeError("Unsupported operand for * expected number")
-        return Position(self.x*other, self.y*other, self.z*other)
+        return Vector3(self.x * other, self.y * other, self.z * other)
 
     def __truediv__(self, other):
         if not isinstance(other, (int, float)):
             raise TypeError("Unsupported operand for / expected number")
-        return Position(self.x/other, self.y/other, self.z/other)
+        return Vector3(self.x / other, self.y / other, self.z / other)
+
+
+class Position(Vector3):
+    '''Represents the position of an object in the world.
+
+    A position consists of its x, y and z values in millimeters.
+
+    Args:
+        x (float): X position in millimeters
+        y (float): Y position in millimeters
+        z (float): Z position in millimeters
+    '''
 
 
 class Timeout:

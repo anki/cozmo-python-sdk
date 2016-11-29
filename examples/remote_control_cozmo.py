@@ -32,9 +32,39 @@ except ImportError:
     sys.exit("Cannot import from flask: Do `pip3 install --user flask` to install")
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageDraw
 except ImportError:
     sys.exit("Cannot import from PIL: Do `pip3 install --user Pillow` to install")
+
+
+# Annotator for displaying RobotState (position, etc.) on top of the camera feed
+class RobotStateDisplay(cozmo.annotate.Annotator):
+    def apply(self, image, scale):
+        d = ImageDraw.Draw(image)
+
+        bounds = [3, 0, image.width, image.height]
+
+        def print_line(text_line):
+            nonlocal bounds
+            text = cozmo.annotate.ImageText(text_line, position=cozmo.annotate.TOP_LEFT, color='lightblue')
+            text.render(d, bounds)
+            TEXT_HEIGHT = 11
+            bounds[1] += TEXT_HEIGHT
+
+        robot = self.world.robot
+
+        # Display the Pose info for the robot
+
+        pose = robot.pose
+        print_line('Pose: Pos = <%.1f, %.1f, %.1f>' % pose.position.x_y_z)
+        print_line('Pose: Rot quat = <%.1f, %.1f, %.1f, %.1f>' % pose.rotation.q0_q1_q2_q3)
+        print_line('Pose: angle_z = %.1f' % pose.rotation.angle_z.degrees)
+        print_line('Pose: origin_id: %s' % pose.origin_id)
+
+        # Display the Accelerometer and Gyro data for the robot
+
+        print_line('Acclrm: <%.1f, %.1f, %.1f>' % robot.accelerometer.x_y_z)
+        print_line('Gyro: <%.1f, %.1f, %.1f>' % robot.gyro.x_y_z)
 
 
 def create_default_image(image_width, image_height, do_gradient=False):
@@ -58,7 +88,11 @@ flask_app = Flask(__name__)
 remote_control_cozmo = None
 _default_camera_image = create_default_image(320, 240)
 _is_mouse_look_enabled_by_default = False
-_display_debug_annotations = True
+
+DEBUG_ANNOTATIONS_DISABLED = 0
+DEBUG_ANNOTATIONS_ENABLED_VISION = 1
+DEBUG_ANNOTATIONS_ENABLED_ALL = 2
+_display_debug_annotations = DEBUG_ANNOTATIONS_ENABLED_ALL
 
 
 def remap_to_range(x, x_min, x_max, out_min, out_max):
@@ -105,13 +139,13 @@ class RemoteControlCozmo:
             if anim_name not in bad_anim_names:
                 self.anim_names.append(anim_name)
 
-        default_anims_for_keys = ["anim_bored_01", # 0
-                                  "anim_freeplay_falloffcliff", # 1
-                                  "id_poked_giggle", # 2
-                                  "anim_pounce_success_02", # 3
-                                  "anim_bored_event_02",  # 4
-                                  "anim_bored_event_03",  # 5
-                                  "anim_sparking_reacttoface_01",  # 6
+        default_anims_for_keys = ["anim_bored_01",  # 0
+                                  "id_poked_giggle",  # 1
+                                  "anim_pounce_success_02",  # 2
+                                  "anim_bored_event_02",  # 3
+                                  "anim_bored_event_03",  # 4
+                                  "anim_petdetection_cat_01",  # 5
+                                  "anim_petdetection_dog_03",  # 6
                                   "anim_reacttoface_unidentified_02",  # 7
                                   "anim_upgrade_reaction_lift_01",  # 8
                                   "anim_speedtap_wingame_intensity02_01"  # 9
@@ -327,7 +361,8 @@ class RemoteControlCozmo:
         if (drive_dir > 0.1) and self.cozmo.is_on_charger:
             # cozmo is stuck on the charger, and user is trying to drive off - issue an explicit drive off action
             try:
-                self.cozmo.drive_off_charger_contacts().wait_for_completed()
+                # don't wait for action to complete - we don't want to block the other updates (camera etc.)
+                self.cozmo.drive_off_charger_contacts()
             except cozmo.exceptions.RobotBusy:
                 # Robot is busy doing another action - try again next time we get a drive impulse
                 pass
@@ -362,7 +397,9 @@ def get_anim_sel_drop_down(selectorIndex):
 def get_anim_sel_drop_downs():
     html_text = ""
     for i in range(10):
-        html_text += str(i) + ''': ''' + get_anim_sel_drop_down(i) + '''<br>'''
+        # list keys 1..9,0 as that's the layout on the keyboard
+        key = i+1 if (i<9) else 0
+        html_text += str(key) + ''': ''' + get_anim_sel_drop_down(key) + '''<br>'''
     return html_text
 
 
@@ -424,7 +461,7 @@ def handle_index_page():
                 var gLastClientX = -1
                 var gLastClientY = -1
                 var gIsMouseLookEnabled = '''+ to_js_bool_string(_is_mouse_look_enabled_by_default) + '''
-                var gAreDebugAnnotationsEnabled = '''+ to_js_bool_string(_display_debug_annotations) + '''
+                var gAreDebugAnnotationsEnabled = '''+ str(_display_debug_annotations) + '''
 
                 function postHttpRequest(url, dataSet)
                 {
@@ -473,16 +510,41 @@ def handle_index_page():
                     postHttpRequest("setMouseLookEnabled", {isMouseLookEnabled})
                 }
 
+                function updateDebugAnnotationButtonEnabledText(button, isEnabled)
+                {
+                    switch(gAreDebugAnnotationsEnabled)
+                    {
+                    case 0:
+                        button.firstChild.data = "Disabled";
+                        break;
+                    case 1:
+                        button.firstChild.data = "Enabled (vision)";
+                        break;
+                    case 2:
+                        button.firstChild.data = "Enabled (all)";
+                        break;
+                    default:
+                        button.firstChild.data = "ERROR";
+                        break;
+                    }
+                }
+
                 function onDebugAnnotationsButtonClicked(button)
                 {
-                    gAreDebugAnnotationsEnabled = !gAreDebugAnnotationsEnabled;
-                    updateButtonEnabledText(button, gAreDebugAnnotationsEnabled);
+                    gAreDebugAnnotationsEnabled += 1;
+                    if (gAreDebugAnnotationsEnabled > 2)
+                    {
+                        gAreDebugAnnotationsEnabled = 0
+                    }
+
+                    updateDebugAnnotationButtonEnabledText(button, gAreDebugAnnotationsEnabled)
+
                     areDebugAnnotationsEnabled = gAreDebugAnnotationsEnabled
                     postHttpRequest("setAreDebugAnnotationsEnabled", {areDebugAnnotationsEnabled})
                 }
 
                 updateButtonEnabledText(document.getElementById("mouseLookId"), gIsMouseLookEnabled);
-                updateButtonEnabledText(document.getElementById("debugAnnotationsId"), gAreDebugAnnotationsEnabled);
+                updateDebugAnnotationButtonEnabledText(document.getElementById("debugAnnotationsId"), gAreDebugAnnotationsEnabled);
 
                 function handleDropDownSelect(selectObject)
                 {
@@ -578,7 +640,7 @@ def handle_cozmoImage():
     if remote_control_cozmo:
         image = remote_control_cozmo.cozmo.world.latest_image
         if image:
-            if _display_debug_annotations:
+            if _display_debug_annotations != DEBUG_ANNOTATIONS_DISABLED:
                 image = image.annotate_image(scale=2)
             else:
                 image = image.raw_image
@@ -622,6 +684,11 @@ def handle_setAreDebugAnnotationsEnabled():
     message = json.loads(request.data.decode("utf-8"))
     global _display_debug_annotations
     _display_debug_annotations = message['areDebugAnnotationsEnabled']
+    if remote_control_cozmo:
+        if _display_debug_annotations == DEBUG_ANNOTATIONS_ENABLED_ALL:
+            remote_control_cozmo.cozmo.world.image_annotator.enable_annotator('robotState')
+        else:
+            remote_control_cozmo.cozmo.world.image_annotator.disable_annotator('robotState')
     return ""
 
 
@@ -677,6 +744,7 @@ def handle_getDebugInfo():
 
 def run(sdk_conn):
     robot = sdk_conn.wait_for_robot()
+    robot.world.image_annotator.add_annotator('robotState', RobotStateDisplay)
 
     global remote_control_cozmo
     remote_control_cozmo = RemoteControlCozmo(robot)
