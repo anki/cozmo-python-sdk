@@ -91,7 +91,7 @@ class EvtFaceObserved(event.Event):
 
 
 class EvtFaceAppeared(event.Event):
-    '''Triggered whenever an object is first visually identified by a robot.
+    '''Triggered whenever a face is first visually identified by a robot.
 
     This differs from EvtFaceObserved in that it's only triggered when
     a face initially becomes visible.  If it disappears for more than

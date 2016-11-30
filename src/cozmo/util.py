@@ -38,10 +38,10 @@ from ._clad import _clad_to_engine_anki
 class ImageBox(collections.namedtuple('ImageBox', 'top_left_x top_left_y width height')):
     '''Defines a bounding box within an image frame.
 
-    This is used when objects and faces are observed to denote where in
-    the robot's camera view the object or face actually appears.  It's then
+    This is used when objects, faces and pets are observed to denote where in
+    the robot's camera view the object, face or pet actually appears.  It's then
     used by the :mod:`cozmo.annotate` module to show an outline of a box around
-    the object or face.
+    the object, face or pet.
     '''
 
     def __mul__(self, other):

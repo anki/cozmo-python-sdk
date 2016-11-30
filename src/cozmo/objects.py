@@ -245,7 +245,7 @@ class ObservableObject(event.Dispatcher):
 
     @property
     def time_since_last_seen(self):
-        '''float: time since this face was last seen (math.inf if never)'''
+        '''float: time since this object was last seen (math.inf if never)'''
         if self.last_observed_time is None:
             return float(math.inf)
         return time.time() - self.last_observed_time

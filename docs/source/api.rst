@@ -19,6 +19,7 @@ The API
     cozmo.oled_face
     cozmo.lights
     cozmo.objects
+    cozmo.pets
     cozmo.robot
     cozmo.run
     cozmo.tkview
