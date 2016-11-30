@@ -542,6 +542,19 @@ class Robot(event.Dispatcher):
         self.lift_height = None
         #: float: The current battery voltage (not linear, but < 3.5 is low)
         self.battery_voltage = None
+
+        #: :class:`cozmo.util.Vector3`: The current accelerometer reading (x,y,z)
+        #: In mm/s^2, measured in Cozmo's head (e.g. x=0 when Cozmo's head is level
+        #: but x = z = ~7000 mm/s^2 when Cozmo's head is angled 45 degrees up)
+        self.accelerometer = None
+
+        #: :class:`cozmo.util.Vector3`: The current gyro reading (x,y,z)
+        #: In radians/s, measured in Cozmo's head.
+        #: Therefore a large value in a given component would indicate Cozmo is
+        #: being rotated around that axis (where x=forward, y=left, z=up), e.g.
+        #: y = -5 would indicate that Cozmo is being rolled onto his back
+        self.gyro = None
+
         #: int: The ID of the object currently being carried (-1 if none)
         self.carrying_object_id = -1
         #: int: The ID of the object on top of the object currently being carried (-1 if none)
@@ -625,7 +638,7 @@ class Robot(event.Dispatcher):
 
     @property
     def pose(self):
-        """:class:`cozmo.util.Pose`: The current pose of cozmo relative to where he started when the engine was initialized.
+        """:class:`cozmo.util.Pose`: The current pose (position and orientation) of Cozmo
         """
         return self._pose
 
@@ -747,17 +760,19 @@ class Robot(event.Dispatcher):
         self._pose_angle = util.radians(msg.poseAngle_rad) # heading in X-Y plane
         self._pose_pitch = util.radians(msg.posePitch_rad)
         self._head_angle = util.radians(msg.headAngle_rad)
-        self.left_wheel_speed  = util.speed_mmps(msg.leftWheelSpeed_mmps)
+        self.left_wheel_speed = util.speed_mmps(msg.leftWheelSpeed_mmps)
         self.right_wheel_speed = util.speed_mmps(msg.rightWheelSpeed_mmps)
-        self.lift_height       = util.distance_mm(msg.liftHeight_mm)
-        self.battery_voltage           = msg.batteryVoltage
-        self.carrying_object_id        = msg.carryingObjectID      # int_32 will be -1 if not carrying object
-        self.carrying_object_on_top_id = msg.carryingObjectOnTopID # int_32 will be -1 if no object on top of object being carried
-        self.head_tracking_object_id   = msg.headTrackingObjectID  # int_32 will be -1 if head is not tracking to any object
-        self.localized_to_object_id    = msg.localizedToObjectID   # int_32 Will be -1 if not localized to any object
+        self.lift_height = util.distance_mm(msg.liftHeight_mm)
+        self.battery_voltage = msg.batteryVoltage
+        self.accelerometer = util.Vector3(msg.accel.x, msg.accel.y, msg.accel.z)
+        self.gyro = util.Vector3(msg.gyro.x, msg.gyro.y, msg.gyro.z)
+        self.carrying_object_id = msg.carryingObjectID  # int_32 will be -1 if not carrying object
+        self.carrying_object_on_top_id = msg.carryingObjectOnTopID  # int_32 will be -1 if no object on top of object being carried
+        self.head_tracking_object_id = msg.headTrackingObjectID  # int_32 will be -1 if head is not tracking to any object
+        self.localized_to_object_id = msg.localizedToObjectID  # int_32 Will be -1 if not localized to any object
         self.last_image_robot_timestamp = msg.lastImageTimeStamp
-        self._robot_status_flags       = msg.status     # uint_16 as bitflags - See _clad_to_game_cozmo.RobotStatusFlag
-        self._game_status_flags        = msg.gameStatus # uint_8  as bitflags - See _clad_to_game_cozmo.GameStatusFlag
+        self._robot_status_flags = msg.status  # uint_16 as bitflags - See _clad_to_game_cozmo.RobotStatusFlag
+        self._game_status_flags = msg.gameStatus  # uint_8  as bitflags - See _clad_to_game_cozmo.GameStatusFlag
 
         if msg.robotID != self.robot_id:
             logger.error("robot ID changed mismatch (msg=%s, self=%s)", msg.robotID, self.robot_id )
