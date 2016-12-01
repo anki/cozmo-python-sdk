@@ -24,11 +24,11 @@ observable events whenever the pet is observed, etc.
 
 If a pet goes off-screen, it will be assigned a new object_id (and
 therefore Pet object) when it returns. This is because the system can
-only tell if something appears to be a cat or a dog; it cannot recognise
-a specific pet, or e.g. tell the difference between two dogs.
+only tell if something appears to be a cat or a dog; it cannot recognize
+a specific pet or, for instance, tell the difference between two dogs.
 
 Note that these pet-specific events are also passed up to the
-:class:`cozmo.world.World` object, so events for all known pets can be
+:class:`cozmo.world.World` object, so events for all pets can be
 observed by adding handlers there.
 '''
 
@@ -56,11 +56,11 @@ PET_VISIBILITY_TIMEOUT = objects.OBJECT_VISIBILITY_TIMEOUT
 
 # Pet types that Cozmo can distinguish
 #: Pet Type reported by Cozmo when unsure of type of pet
-PET_TYPE_UNKOWN = "Unknown"
+PET_TYPE_UNKOWN = "unknown"
 #: Pet Type reported by Cozmo when he thinks it's a cat
-PET_TYPE_CAT = "Cat"
+PET_TYPE_CAT = "cat"
 #: Pet Type reported by Cozmo when he thinks it's a dog
-PET_TYPE_DOG = "Dog"
+PET_TYPE_DOG = "dog"
 
 
 class EvtPetObserved(event.Event):
@@ -78,9 +78,9 @@ class EvtPetObserved(event.Event):
 
 
 class EvtPetAppeared(event.Event):
-    '''Triggered whenever an object is first visually identified by a robot.
+    '''Triggered whenever a pet is first visually identified by a robot.
 
-    This differs from Evt{etObserved in that it's only triggered when
+    This differs from EvtPetObserved in that it's only triggered when
     a pet initially becomes visible.  If it disappears for more than
     PET_VISIBILITY_TIMEOUT (0.2) seconds and then is seen again, a
     EvtPetDisappeared will be dispatched, followed by another
@@ -111,7 +111,7 @@ def _clad_pet_type_to_pet_type(clad_pet_type):
 
 
 class Pet(event.Dispatcher):
-    '''A single pet (face) that Cozmo has detected.
+    '''A single pet that Cozmo has detected.
     '''
 
     def __init__(self, conn, world, robot, pet_id=None, **kw):

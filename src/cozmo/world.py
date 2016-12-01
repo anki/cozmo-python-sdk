@@ -329,7 +329,6 @@ class World(event.Dispatcher):
         pet = self._pets.get(msg.petID)
         if not pet:
             pet = self._allocate_pet_from_msg(msg)
-            print("alloc pet %s" % pet)
         if pet:
             pet.dispatch_event(evt)
 
