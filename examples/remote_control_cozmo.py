@@ -444,6 +444,7 @@ def handle_index_page():
                         <h3>General:</h3>
                         <b>Shift</b> : Hold to Move Faster (Driving, Head and Lift)<br>
                         <b>Alt</b> : Hold to Move Slower (Driving, Head and Lift)<br>
+                        <b>L</b> : Toggle IR Headlight: <button id="headlightId" onClick=onHeadlightButtonClicked(this) style="font-size: 14px">Default</button><br>
                         <b>P</b> : Toggle Debug Annotations: <button id="debugAnnotationsId" onClick=onDebugAnnotationsButtonClicked(this) style="font-size: 14px">Default</button><br>
                         <h3>Play Animations</h3>
                         <b>0 .. 9</b> : Play Animation mapped to that key<br>
@@ -463,6 +464,7 @@ def handle_index_page():
                 var gLastClientY = -1
                 var gIsMouseLookEnabled = '''+ to_js_bool_string(_is_mouse_look_enabled_by_default) + '''
                 var gAreDebugAnnotationsEnabled = '''+ str(_display_debug_annotations) + '''
+                var gIsHeadlightEnabled = false
 
                 function postHttpRequest(url, dataSet)
                 {
@@ -544,7 +546,16 @@ def handle_index_page():
                     postHttpRequest("setAreDebugAnnotationsEnabled", {areDebugAnnotationsEnabled})
                 }
 
+                function onHeadlightButtonClicked(button)
+                {
+                    gIsHeadlightEnabled = !gIsHeadlightEnabled;
+                    updateButtonEnabledText(button, gIsHeadlightEnabled);
+                    isHeadlightEnabled = gIsHeadlightEnabled
+                    postHttpRequest("setHeadlightEnabled", {isHeadlightEnabled})
+                }
+
                 updateButtonEnabledText(document.getElementById("mouseLookId"), gIsMouseLookEnabled);
+                updateButtonEnabledText(document.getElementById("headlightId"), gIsHeadlightEnabled);
                 updateDebugAnnotationButtonEnabledText(document.getElementById("debugAnnotationsId"), gAreDebugAnnotationsEnabled);
 
                 function handleDropDownSelect(selectObject)
@@ -563,7 +574,12 @@ def handle_index_page():
 
                     if (actionType=="keyup")
                     {
-                        if (keyCode == 80) // 'P'
+                        if (keyCode == 76) // 'L'
+                        {
+                            // Simulate a click of the headlight button
+                            onHeadlightButtonClicked(document.getElementById("headlightId"))
+                        }
+                        else if (keyCode == 80) // 'P'
                         {
                             // Simulate a click of the debug annotations button
                             onDebugAnnotationsButtonClicked(document.getElementById("debugAnnotationsId"))
@@ -676,6 +692,15 @@ def handle_setMouseLookEnabled():
     message = json.loads(request.data.decode("utf-8"))
     if remote_control_cozmo:
         remote_control_cozmo.set_mouse_look_enabled(is_mouse_look_enabled=message['isMouseLookEnabled'])
+    return ""
+
+
+@flask_app.route('/setHeadlightEnabled', methods=['POST'])
+def handle_setHeadlightEnabled():
+    '''Called from Javascript whenever headlight is toggled on/off'''
+    message = json.loads(request.data.decode("utf-8"))
+    if remote_control_cozmo:
+        remote_control_cozmo.cozmo.set_head_light(enable=message['isHeadlightEnabled'])
     return ""
 
 

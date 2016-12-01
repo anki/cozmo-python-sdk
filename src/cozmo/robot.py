@@ -920,6 +920,20 @@ class Robot(event.Dispatcher):
         light_arr = [ lights.off_light ] * 5
         self.set_backpack_lights(*light_arr)
 
+    def set_head_light(self, enable):
+        '''Turn Cozmo's IR headlight on or off.
+
+        The headlight is on the front of Cozmo's chassis, between his two
+        front wheels, underneath his head. Cozmo's camera is IR sensitive
+        so although you cannot see the IR light with the naked eye you will
+        see it in Cozmo's camera feed.
+
+        Args:
+            enable (bool): True turns the light on, False turns it off.
+        '''
+        msg = _clad_to_engine_iface.SetHeadlight(enable=enable)
+        self.conn.send_msg(msg)
+
     def set_head_angle(self, angle, accel=10.0, max_speed=10.0, duration=0.0):
         '''Tell Cozmo's head to turn to a given angle.
 
