@@ -38,10 +38,10 @@ online documentation.  They will be detected as :class:`CustomObject` instances.
 
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['OBJECT_VISIBILITY_TIMEOUT',
-           'EvtObjectTapped', 'EvtObjectAppeared', 'EvtObjectAvailable',
+           'EvtObjectAppeared', 'EvtObjectAvailable', 'EvtObjectTapped',
            'EvtObjectConnectChanged', 'EvtObjectDisappeared', 'EvtObjectObserved',
-           'ObservableObject', 'LightCube', 'Charger', 'CustomObject',
-           'FixedCustomObject']
+           'ObservableElement', 'ObservableObject', 'LightCube', 'Charger',
+           'CustomObject', 'FixedCustomObject']
 
 
 import collections
@@ -126,57 +126,57 @@ class EvtObjectConnectChanged(event.Event):
     connected = 'True if the object connected, False if it disconnected'
 
 
+class ObservableElement(event.Dispatcher):
+    '''The base type for anything Cozmo can see.'''
 
-class ObservableObject(event.Dispatcher):
-    '''The base type for objects in Cozmo's world.'''
+    #: Length of time in seconds to go without receiving an observed event before
+    #: assuming that Cozmo can no longer see an element. Can be overridden in sub
+    #: classes.
+    visibility_timeout = OBJECT_VISIBILITY_TIMEOUT
 
-    #: bool: True if this type of object can be physically picked up by Cozmo
-    pickupable = False
-    place_objects_on_this = False
-
-    def __init__(self, conn, world, object_id=None, **kw):
+    def __init__(self, conn, world, robot, **kw):
         super().__init__(**kw)
-        self._object_id = object_id
+        self._robot = robot
         self._pose = None
         self.conn = conn
-        #: :class:`cozmo.world.World`: The robot's world in which the object belongs.
+        #: :class:`cozmo.world.World`: instance in which this element is located.
         self.world = world
-        self._robot = None # the robot controlling this object (if an active object)
 
         #: float: The time the last event was received.
         #: ``None`` if no events have yet been received.
         self.last_event_time = None
 
-        #: float: The time the object was last observed by the robot.
-        #: ``None`` if the object has not yet been observed.
+        #: float: The time the element was last observed by the robot.
+        #: ``None`` if the element has not yet been observed.
         self.last_observed_time = None
 
         #: int: The robot's timestamp of the last observed event.
-        #: ``None`` if the object has not yet been observed.
+        #: ``None`` if the element has not yet been observed.
         #: In milliseconds relative to robot epoch.
         self.last_observed_robot_timestamp = None
 
         #: :class:`~cozmo.util.ImageBox`: The ImageBox defining where the
         #: object was last visible within Cozmo's camera view.
-        #: ``None`` if the object has not yet been observed.
+        #: ``None`` if the element has not yet been observed.
         self.last_observed_image_box = None
 
         self._is_visible = False
         self._observed_timeout_handler = None
 
-
     def __repr__(self):
         extra = self._repr_values()
         if len(extra) > 0:
             extra = ' '+extra
+        if self.pose:
+            extra += ' pose=%s' % self.pose
 
-        return '<%s object_id=%s is_visible=%s pose=%s%s>' % (self.__class__.__name__,
-                self._object_id, self.is_visible, self.pose, extra)
+        return '<%s%s is_visible=%s>' % (self.__class__.__name__,
+                                         extra, self.is_visible)
+
+    #### Private Methods ####
 
     def _repr_values(self):
         return ''
-
-    #### Private Methods ####
 
     def _update_field(self, changed, field_name, new_value):
         # Set only changed fields and update the passed in changed set
@@ -189,13 +189,104 @@ class ObservableObject(event.Dispatcher):
         if self._observed_timeout_handler is not None:
             self._observed_timeout_handler.cancel()
         self._observed_timeout_handler = self._loop.call_later(
-                OBJECT_VISIBILITY_TIMEOUT, self._observed_timeout)
+            self.visibility_timeout, self._observed_timeout)
 
     def _observed_timeout(self):
-        # triggered when the object is no longer considered "visible"
-        # ie. OBJECT_VISIBILITY_TIMEOUT seconds after the last
-        # object observed event
+        # triggered when the element is no longer considered "visible"
+        # ie. visibility_timeout seconds after the last observed event
         self._is_visible = False
+        self._dispatch_disappeared_event()
+
+    def _dispatch_observed_event(self, changed_fields, image_box):
+        # Override in subclass if there is a specific event for that type
+        pass
+
+    def _dispatch_appeared_event(self, changed_fields, image_box):
+        # Override in subclass if there is a specific event for that type
+        pass
+
+    def _dispatch_disappeared_event(self):
+        # Override in subclass if there is a specific event for that type
+        pass
+
+    def _on_observed(self, image_box, timestamp, changed_fields):
+        # Called from subclasses on their corresponding observed messages
+        newly_visible = self._is_visible == False
+        self._is_visible = True
+
+        changed_fields |= {'last_observed_time', 'last_observed_robot_timestamp',
+                           'last_event_time', 'last_observed_image_box'}
+
+        now = time.time()
+        self.last_observed_time = now
+        self.last_observed_robot_timestamp = timestamp
+        self.last_event_time = now
+
+        self.last_observed_image_box = image_box
+
+        self._reset_observed_timeout_handler()
+
+        self._dispatch_observed_event(changed_fields, image_box)
+
+        if newly_visible:
+            self._dispatch_appeared_event(changed_fields, image_box)
+
+    #### Properties ####
+
+    @property
+    def pose(self):
+        ''':class:`cozmo.util.Pose`: The pose of the element in the world.
+
+        Is ``None`` for elements that don't have pose information.
+        '''
+        return self._pose
+
+    @property
+    def time_since_last_seen(self):
+        '''float: time since this element was last seen (math.inf if never)'''
+        if self.last_observed_time is None:
+            return math.inf
+        return time.time() - self.last_observed_time
+
+    @property
+    def is_visible(self):
+        '''bool: True if the element has been observed recently.
+
+        "recently" is defined as :attr:`visibility_timeout` seconds.
+        '''
+        return self._is_visible
+
+
+class ObservableObject(ObservableElement):
+    '''The base type for objects in Cozmo's world.
+
+    See parent class :class:`ObservableElement` for additional properties
+    and methods.
+    '''
+
+    #: bool: True if this type of object can be physically picked up by Cozmo
+    pickupable = False
+    #: bool: True if this type of object can have objects physically placed on it by Cozmo
+    place_objects_on_this = False
+
+    def __init__(self, conn, world, object_id=None, **kw):
+        super().__init__(conn, world, robot=None, **kw)
+        self._object_id = object_id
+
+    #### Private Methods ####
+
+    def _repr_values(self):
+        return 'object_id=%s' % self.object_id
+
+    def _dispatch_observed_event(self, changed_fields, image_box):
+        self.dispatch_event(EvtObjectObserved, obj=self,
+                updated=changed_fields, image_box=image_box, pose=self._pose)
+
+    def _dispatch_appeared_event(self, changed_fields, image_box):
+        self.dispatch_event(EvtObjectAppeared, obj=self,
+                updated=changed_fields, image_box=image_box, pose=self._pose)
+
+    def _dispatch_disappeared_event(self):
         self.dispatch_event(EvtObjectDisappeared, obj=self)
 
     def _handle_available_object(self, available_object):
@@ -238,27 +329,6 @@ class ObservableObject(event.Dispatcher):
         logger.debug("Updated object_id for %s from %s to %s", self.__class__, self._object_id, value)
         self._object_id = value
 
-    @property
-    def pose(self):
-        ''':class:`cozmo.util.Pose`: The pose of this object in the world.'''
-        return self._pose
-
-    @property
-    def time_since_last_seen(self):
-        '''float: time since this object was last seen (math.inf if never)'''
-        if self.last_observed_time is None:
-            return float(math.inf)
-        return time.time() - self.last_observed_time
-
-    @property
-    def is_visible(self):
-        '''bool: True if the object has been observed recently.
-
-        "recently" is defined as :const:`OBJECT_VISIBILITY_TIMEOUT` seconds.
-        '''
-        return self._is_visible
-
-
     #### Private Event Handlers ####
 
     def _recv_msg_object_connection_state(self, _, *, msg):
@@ -267,30 +337,12 @@ class ObservableObject(event.Dispatcher):
             self.dispatch_event(EvtObjectConnectChanged, obj=self, connected=self.connected)
 
     def _recv_msg_robot_observed_object(self, evt, *, msg):
-        changed_fields = {'last_observed_time', 'last_observed_robot_timestamp',
-                'last_observed_image_box', 'last_event_time', 'pose'}
-        newly_visible = self._is_visible == False
-        self._is_visible = True
-        self._pose = util.Pose(msg.pose.x, msg.pose.y, msg.pose.z,
-                               q0=msg.pose.q0, q1=msg.pose.q1,
-                               q2=msg.pose.q2, q3=msg.pose.q3,
-                               origin_id=msg.pose.originID)
-        self.last_observed_time = time.time()
-        self.last_observed_robot_timestamp = msg.timestamp
-        self.last_event_time = time.time()
 
-        image_box = util.ImageBox(msg.img_rect.x_topLeft, msg.img_rect.y_topLeft, msg.img_rect.width, msg.img_rect.height)
-        self.last_observed_image_box = image_box
+        changed_fields = {'pose'}
+        self._pose = util.Pose._create_from_clad(msg.pose)
 
-        self._reset_observed_timeout_handler()
-        self.dispatch_event(EvtObjectObserved, obj=self,
-                updated=changed_fields, image_box=image_box, pose=self._pose)
-
-        if newly_visible:
-            self.dispatch_event(EvtObjectAppeared, obj=self,
-                    updated=changed_fields, image_box=image_box, pose=self._pose)
-
-
+        image_box = util.ImageBox._create_from_clad_rect(msg.img_rect)
+        self._on_observed(image_box, msg.timestamp, changed_fields)
 
     #### Public Event Handlers ####
 
@@ -305,7 +357,11 @@ LightCube3Id = _clad_to_game_cozmo.ObjectType.Block_LIGHTCUBE3
 
 
 class LightCube(ObservableObject):
-    '''A light cube object has four LEDs that Cozmo can actively manipulate and communicate with.'''
+    '''A light cube object has four LEDs that Cozmo can actively manipulate and communicate with.
+
+    See parent class :class:`ObservableObject` for additional properties
+    and methods.
+    '''
     #TODO investigate why the top marker orientation of a cube is a bit strange
 
     pickupable = True
@@ -400,7 +456,11 @@ class LightCube(ObservableObject):
 
 
 class Charger(ObservableObject):
-    '''Cozmo's charger object, which the robot can observe and drive toward.'''
+    '''Cozmo's charger object, which the robot can observe and drive toward.
+
+    See parent class :class:`ObservableObject` for additional properties
+    and methods.
+    '''
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
@@ -413,6 +473,9 @@ class CustomObject(ObservableObject):
     of the markers on the object are also defined. We get an
     :class:`cozmo.objects.EvtObjectObserved` message when the robot sees these
     markers.
+
+    See parent class :class:`ObservableObject` for additional properties
+    and methods.
     '''
 
     def __init__(self, conn, world, object_type,

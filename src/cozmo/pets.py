@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Pet recognition.
+'''Pet detection.
 
 Cozmo is capable of detecting pet faces (cats and dogs).
 
@@ -110,70 +110,38 @@ def _clad_pet_type_to_pet_type(clad_pet_type):
         raise ValueError("Unexpected pet type %s" % clad_pet_type)
 
 
-class Pet(event.Dispatcher):
+class Pet(objects.ObservableElement):
     '''A single pet that Cozmo has detected.
+
+    See parent class :class:`~cozmo.objects.ObservableElement` for additional properties
+    and methods.
     '''
 
-    def __init__(self, conn, world, robot, pet_id=None, **kw):
-        super().__init__(**kw)
-        self._pet_id = pet_id
-        self._robot = robot
-        self._name = ''
-        self._pose = None
-        self.conn = conn
-        #: :class:`cozmo.world.World`: instance in which this pet is located.
-        self.world = world
+    #: Length of time in seconds to go without receiving an observed event before
+    #: assuming that Cozmo can no longer see a pet.
+    visibility_timeout = PET_VISIBILITY_TIMEOUT
 
+    def __init__(self, conn, world, robot, pet_id=None, **kw):
+        super().__init__(conn, world, robot, **kw)
+        self._pet_id = pet_id
         #: The type of Pet (PET_TYPE_CAT, PET_TYPE_DOG or PET_TYPE_UNKNOWN)
         self.pet_type = None
 
-        #: float: The time the event was received.
-        #: ``None`` if no events have yet been received.
-        self.last_event_time = None
-
-        #: float: The time the pet was last observed by the robot.
-        #: ``None`` if the pet has not yet been observed.
-        self.last_observed_time = None
-
-        #: int: The robot's timestamp of the last observed event.
-        #: ``None`` if the pet has not yet been observed.
-        #: In milliseconds relative to robot epoch.
-        self.last_observed_robot_timestamp = None
-
-        #: :class:`~cozmo.util.ImageBox`: The ImageBox defining where the
-        #: object was last visible within Cozmo's camera view.
-        #: ``None`` if the pet has not yet been observed.
-        self.last_observed_image_box = None
-
-        self._is_visible = False
-        self._observed_timeout_handler = None
-
-    def __repr__(self):
-        return '<%s pet_id=%s is_visible=%s pet_type=%s>' % (
-            self.__class__.__name__, self.pet_id, self.is_visible, self.pet_type)
+    def _repr_values(self):
+        return 'pet_id=%s pet_type=%s' % (self.pet_id, self.pet_type)
 
     #### Private Methods ####
 
-    def _update_field(self, changed, field_name, new_value):
-        # Set only changed fields and update the passed in changed set
-        current = getattr(self, field_name)
-        if current != new_value:
-            setattr(self, field_name, new_value)
-            changed.add(field_name)
+    def _dispatch_observed_event(self, changed_fields, image_box):
+        self.dispatch_event(EvtPetObserved, pet=self,
+                updated=changed_fields, image_box=image_box)
 
-    def _reset_observed_timeout_handler(self):
-        if self._observed_timeout_handler is not None:
-            self._observed_timeout_handler.cancel()
-        self._observed_timeout_handler = self._loop.call_later(
-                PET_VISIBILITY_TIMEOUT, self._observed_timeout)
+    def _dispatch_appeared_event(self, changed_fields, image_box):
+        self.dispatch_event(EvtPetAppeared, pet=self,
+                            updated=changed_fields, image_box=image_box)
 
-    def _observed_timeout(self):
-        # triggered when the object is no longer considered "visible"
-        # ie. PET_VISIBILITY_TIMEOUT seconds after the last
-        # object observed event
-        self._is_visible = False
+    def _dispatch_disappeared_event(self):
         self.dispatch_event(EvtPetDisappeared, pet=self)
-
 
     #### Properties ####
 
@@ -195,56 +163,18 @@ class Pet(event.Dispatcher):
     #### Private Event Handlers ####
 
     def _recv_msg_robot_observed_pet(self, evt, *, msg):
-        changed_fields = {'last_observed_time', 'last_observed_robot_timestamp',
-                'last_event_time', 'last_observed_image_box'}
-        newly_visible = self._is_visible == False
-        self._is_visible = True
 
+        changed_fields = set()
         pet_type = _clad_pet_type_to_pet_type(msg.petType)
         if pet_type != self.pet_type:
             self.pet_type = pet_type
             changed_fields.add('pet_type')
 
-        self.last_observed_time = time.time()
-        self.last_observed_robot_timestamp = msg.timestamp
-        self.last_event_time = time.time()
-
-        image_box = util.ImageBox(msg.img_rect.x_topLeft, msg.img_rect.y_topLeft, msg.img_rect.width, msg.img_rect.height)
-        self.last_observed_image_box = image_box
-
-        self._reset_observed_timeout_handler()
-
-        self.dispatch_event(EvtPetObserved, pet=self,
-                updated=changed_fields, image_box=image_box)
-
-        if newly_visible:
-            self.dispatch_event(EvtPetAppeared, pet=self,
-                    updated=changed_fields, image_box=image_box)
+        image_box = util.ImageBox._create_from_clad_rect(msg.img_rect)
+        self._on_observed(image_box, msg.timestamp, changed_fields)
 
     #### Public Event Handlers ####
 
     #### Event Wrappers ####
 
     #### Commands ####
-
-    @property
-    def time_since_last_seen(self):
-        '''float: time since this pet was last seen (math.inf if never)'''
-        if self.last_observed_time is None:
-            return math.inf
-        return time.time() - self.last_observed_time
-
-    @property
-    def time_since_last_seen(self):
-        '''float: time since this pet was last seen (math.inf if never)'''
-        if self.last_observed_time is None:
-            return math.inf
-        return time.time() - self.last_observed_time
-
-    @property
-    def is_visible(self):
-        '''bool: True if the pet has been observed recently.
-
-        "recently" is defined as :const:`PET_VISIBILITY_TIMEOUT` seconds.
-        '''
-        return self._is_visible

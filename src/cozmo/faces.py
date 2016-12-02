@@ -179,7 +179,7 @@ class EnrollNamedFace(action.Action):
                                                      sequence=_clad_to_engine_cozmo.FaceEnrollmentSequence.Simple)
 
 
-class Face(event.Dispatcher):
+class Face(objects.ObservableElement):
     '''A single face that Cozmo has detected.
 
     May represent a face that has previously been enrolled, in which case
@@ -188,70 +188,41 @@ class Face(event.Dispatcher):
     Each Face instance has a :attr:`face_id` integer - This may change if
     Cozmo later gets an improved view and makes a different prediction about
     which face it is looking at.
+
+    See parent class :class:`~cozmo.objects.ObservableElement` for additional properties
+    and methods.
     '''
+
+    #: Length of time in seconds to go without receiving an observed event before
+    #: assuming that Cozmo can no longer see a face.
+    visibility_timeout = FACE_VISIBILITY_TIMEOUT
 
     #: callable: The factory function to return an :class:`EnrollNamedFace`
     #: class or subclass instance.
     enroll_named_face_factory = EnrollNamedFace
 
     def __init__(self, conn, world, robot, face_id=None, **kw):
-        super().__init__(**kw)
+        super().__init__(conn, world, robot, **kw)
         self._face_id = face_id
         self._updated_face_id = None
-        self._robot = robot
         self._name = ''
-        self._pose = None
-        self.conn = conn
-        #: :class:`cozmo.world.World`: instance in which this face is located.
-        self.world = world
 
-        #: float: The time the event was received.
-        #: ``None`` if no events have yet been received.
-        self.last_event_time = None
-
-        #: float: The time the face was last observed by the robot.
-        #: ``None`` if the face has not yet been observed.
-        self.last_observed_time = None
-
-        #: int: The robot's timestamp of the last observed event.
-        #: ``None`` if the face has not yet been observed.
-        #: In milliseconds relative to robot epoch.
-        self.last_observed_robot_timestamp = None
-
-        #: :class:`~cozmo.util.ImageBox`: The ImageBox defining where the
-        #: object was last visible within Cozmo's camera view.
-        #: ``None`` if the face has not yet been observed.
-        self.last_observed_image_box = None
-
-        self._is_visible = False
-        self._observed_timeout_handler = None
-
-    def __repr__(self):
-        return '<%s face_id=%s,%s is_visible=%s name=%s pose=%s>' % (self.__class__.__name__, self.face_id, self.updated_face_id,
-                                                      self.is_visible, self.name, self.pose)
+    def _repr_values(self):
+        return 'face_id=%s,%s name=%s' % (self.face_id, self.updated_face_id,
+                                          self.name)
 
     #### Private Methods ####
 
-    def _update_field(self, changed, field_name, new_value):
-        # Set only changed fields and update the passed in changed set
-        current = getattr(self, field_name)
-        if current != new_value:
-            setattr(self, field_name, new_value)
-            changed.add(field_name)
+    def _dispatch_observed_event(self, changed_fields, image_box):
+        self.dispatch_event(EvtFaceObserved, face=self, name=self._name,
+                updated=changed_fields, image_box=image_box, pose=self._pose)
 
-    def _reset_observed_timeout_handler(self):
-        if self._observed_timeout_handler is not None:
-            self._observed_timeout_handler.cancel()
-        self._observed_timeout_handler = self._loop.call_later(
-                FACE_VISIBILITY_TIMEOUT, self._observed_timeout)
+    def _dispatch_appeared_event(self, changed_fields, image_box):
+        self.dispatch_event(EvtFaceAppeared, face=self,
+                updated=changed_fields, image_box=image_box, pose=self._pose)
 
-    def _observed_timeout(self):
-        # triggered when the object is no longer considered "visible"
-        # ie. FACE_VISIBILITY_TIMEOUT seconds after the last
-        # object observed event
-        self._is_visible = False
+    def _dispatch_disappeared_event(self):
         self.dispatch_event(EvtFaceDisappeared, face=self)
-
 
     #### Properties ####
 
@@ -284,11 +255,6 @@ class Face(event.Dispatcher):
             return self.face_id
 
     @property
-    def pose(self):
-        ''':class:`cozmo.util.Pose`: The pose of the face in the world.'''
-        return self._pose
-
-    @property
     def name(self):
         '''string: The name Cozmo has associated with the face in his memory.
 
@@ -299,30 +265,13 @@ class Face(event.Dispatcher):
     #### Private Event Handlers ####
 
     def _recv_msg_robot_observed_face(self, evt, *, msg):
-        changed_fields = {'last_observed_time', 'last_observed_robot_timestamp',
-                'last_event_time', 'last_observed_image_box', 'pose'}
-        newly_visible = self._is_visible == False
-        self._is_visible = True
-        self._pose = util.Pose(msg.pose.x, msg.pose.y, msg.pose.z,
-                               q0=msg.pose.q0, q1=msg.pose.q1,
-                               q2=msg.pose.q2, q3=msg.pose.q3,
-                               origin_id=msg.pose.originID)
+
+        changed_fields = {'pose'}
+        self._pose = util.Pose._create_from_clad(msg.pose)
         self._name = msg.name
-        self.last_observed_time = time.time()
-        self.last_observed_robot_timestamp = msg.timestamp
-        self.last_event_time = time.time()
 
-        image_box = util.ImageBox(msg.img_rect.x_topLeft, msg.img_rect.y_topLeft, msg.img_rect.width, msg.img_rect.height)
-        self.last_observed_image_box = image_box
-
-        self._reset_observed_timeout_handler()
-
-        self.dispatch_event(EvtFaceObserved, face=self, name=self._name,
-                updated=changed_fields, image_box=image_box, pose=self._pose)
-
-        if newly_visible:
-            self.dispatch_event(EvtFaceAppeared, face=self,
-                    updated=changed_fields, image_box=image_box, pose=self._pose)
+        image_box = util.ImageBox._create_from_clad_rect(msg.img_rect)
+        self._on_observed(image_box, msg.timestamp, changed_fields)
 
     def _recv_msg_robot_changed_observed_face_id(self, evt, *, msg):
         self._updated_face_id = msg.newID
@@ -373,24 +322,4 @@ class Face(event.Dispatcher):
         '''
         erase_enrolled_face_by_id(self.conn, self.face_id)
 
-    @property
-    def time_since_last_seen(self):
-        '''float: time since this face was last seen (math.inf if never)'''
-        if self.last_observed_time is None:
-            return math.inf
-        return time.time() - self.last_observed_time
 
-    @property
-    def time_since_last_seen(self):
-        '''float: time since this face was last seen (math.inf if never)'''
-        if self.last_observed_time is None:
-            return math.inf
-        return time.time() - self.last_observed_time
-
-    @property
-    def is_visible(self):
-        '''bool: True if the face has been observed recently.
-
-        "recently" is defined as :const:`FACE_VISIBILITY_TIMEOUT` seconds.
-        '''
-        return self._is_visible
