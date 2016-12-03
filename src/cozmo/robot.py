@@ -1167,9 +1167,7 @@ class Robot(event.Dispatcher):
         self.conn.send_msg(msg)
 
         self._is_freeplay_mode_active = False
-
         self._stop_behavior()
-
         self.abort_all_actions()
 
     ## Object Commands ##
