@@ -1146,7 +1146,7 @@ class Robot(event.Dispatcher):
         and does stuff based on his mood and environment.
 
         You shouldn't attempt to drive Cozmo during this, as it will clash
-        with whatever the behaviors are attempting to do internally.
+        with whatever the current behavior is attempting to do.
         '''
         msg = _clad_to_engine_iface.ActivateBehaviorChooser(
             _clad_to_engine_cozmo.BehaviorChooserType.Freeplay)
@@ -1158,8 +1158,8 @@ class Robot(event.Dispatcher):
     def stop_freeplay_behaviors(self):
         '''Stop running freeplay behaviors on Cozmo
 
-        Puts Cozmo back into the None behavior, out of Freeplay mode and
-        cancels any actions that were in progress.
+        Forces Cozmo out of Freeplay mode and stops any currently running
+        behaviors and actions.
         '''
 
         msg = _clad_to_engine_iface.ActivateBehaviorChooser(
