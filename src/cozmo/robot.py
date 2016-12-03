@@ -513,6 +513,9 @@ class Robot(event.Dispatcher):
     # as the SDK connects to the engine.  Defaults to True.
     drive_off_charger_on_connect = True  # Required for most movement actions
 
+    _is_behavior_running = False
+    _is_freeplay_mode_active = False
+
     def __init__(self, conn, robot_id, is_primary, **kw):
         super().__init__(**kw)
         #: :class:`cozmo.conn.CozmoConnectoin`: The active connection to the engine.
@@ -736,6 +739,28 @@ class Robot(event.Dispatcher):
     def head_angle(self):
         ''':class:`cozmo.util.Angle`: Cozmo's head angle (up/down).'''
         return self._head_angle
+
+    @property
+    def is_behavior_running(self):
+        '''bool: True if Cozmo is currently running a behavior.
+
+        When Cozmo is running a behavior he will behave fairly autonomously
+        (playing animations and other actions as desired). Attempting to drive
+        Cozmo whilst in this mode will likely have unexpected behavior on
+        the robot and confuse Cozmo.
+        '''
+        return self._is_behavior_running
+
+    @property
+    def is_freeplay_mode_active(self):
+        '''bool: True if Cozmo is in freeplay mode.
+
+        When Cozmo is in freeplay mode he will behave autonomously (playing
+        behaviors, animations and other actions as desired). Attempting to
+        drive Cozmo whilst in this mode will likely have unexpected behavior
+        on the robot and confuse Cozmo.
+        '''
+        return self._is_freeplay_mode_active
 
     #### Private Event Handlers ####
 
@@ -1088,6 +1113,7 @@ class Robot(event.Dispatcher):
         msg = _clad_to_engine_iface.ExecuteBehaviorByExecutableType(
                 behaviorType=behavior_type.id)
         self.conn.send_msg(msg)
+        self._is_behavior_running = True
         return b
 
     async def run_timed_behavior(self, behavior_type, active_time):
@@ -1106,6 +1132,45 @@ class Robot(event.Dispatcher):
         await asyncio.sleep(active_time, loop=self._loop)
         b.stop()
 
+    def _stop_behavior(self):
+        # Internal helper method called from Behavior.stop etc.
+        msg = _clad_to_engine_iface.ExecuteBehaviorByExecutableType(
+                behaviorType=_clad_to_engine_cozmo.ExecutableBehaviorType.NoneBehavior)
+        self.conn.send_msg(msg)
+        self._is_behavior_running = False
+
+    def start_freeplay_behaviors(self):
+        '''Start running freeplay behaviors on Cozmo
+
+        Puts Cozmo into a freeplay mode where he autonomously drives around
+        and does stuff based on his mood and environment.
+
+        You shouldn't attempt to drive Cozmo during this, as it will clash
+        with whatever the behaviors are attempting to do internally.
+        '''
+        msg = _clad_to_engine_iface.ActivateBehaviorChooser(
+            _clad_to_engine_cozmo.BehaviorChooserType.Freeplay)
+        self.conn.send_msg(msg)
+
+        self._is_behavior_running = True  # The chooser will run them automatically
+        self._is_freeplay_mode_active = True
+
+    def stop_freeplay_behaviors(self):
+        '''Stop running freeplay behaviors on Cozmo
+
+        Puts Cozmo back into the None behavior, out of Freeplay mode and
+        cancels any actions that were in progress.
+        '''
+
+        msg = _clad_to_engine_iface.ActivateBehaviorChooser(
+            _clad_to_engine_cozmo.BehaviorChooserType.Selection)
+        self.conn.send_msg(msg)
+
+        self._is_freeplay_mode_active = False
+
+        self._stop_behavior()
+
+        self.abort_all_actions()
 
     ## Object Commands ##
 

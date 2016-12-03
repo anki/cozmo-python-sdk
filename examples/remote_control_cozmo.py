@@ -445,7 +445,8 @@ def handle_index_page():
                         <b>Shift</b> : Hold to Move Faster (Driving, Head and Lift)<br>
                         <b>Alt</b> : Hold to Move Slower (Driving, Head and Lift)<br>
                         <b>L</b> : Toggle IR Headlight: <button id="headlightId" onClick=onHeadlightButtonClicked(this) style="font-size: 14px">Default</button><br>
-                        <b>P</b> : Toggle Debug Annotations: <button id="debugAnnotationsId" onClick=onDebugAnnotationsButtonClicked(this) style="font-size: 14px">Default</button><br>
+                        <b>O</b> : Toggle Debug Annotations: <button id="debugAnnotationsId" onClick=onDebugAnnotationsButtonClicked(this) style="font-size: 14px">Default</button><br>
+                        <b>P</b> : Toggle Free Play mode: <button id="freeplayId" onClick=onFreeplayButtonClicked(this) style="font-size: 14px">Default</button><br>
                         <h3>Play Animations</h3>
                         <b>0 .. 9</b> : Play Animation mapped to that key<br>
                         <h3>Talk</h3>
@@ -465,6 +466,7 @@ def handle_index_page():
                 var gIsMouseLookEnabled = '''+ to_js_bool_string(_is_mouse_look_enabled_by_default) + '''
                 var gAreDebugAnnotationsEnabled = '''+ str(_display_debug_annotations) + '''
                 var gIsHeadlightEnabled = false
+                var gIsFreeplayEnabled = false
 
                 function postHttpRequest(url, dataSet)
                 {
@@ -554,9 +556,18 @@ def handle_index_page():
                     postHttpRequest("setHeadlightEnabled", {isHeadlightEnabled})
                 }
 
+                function onFreeplayButtonClicked(button)
+                {
+                    gIsFreeplayEnabled = !gIsFreeplayEnabled;
+                    updateButtonEnabledText(button, gIsFreeplayEnabled);
+                    isFreeplayEnabled = gIsFreeplayEnabled
+                    postHttpRequest("setFreeplayEnabled", {isFreeplayEnabled})
+                }
+
                 updateButtonEnabledText(document.getElementById("mouseLookId"), gIsMouseLookEnabled);
                 updateButtonEnabledText(document.getElementById("headlightId"), gIsHeadlightEnabled);
                 updateDebugAnnotationButtonEnabledText(document.getElementById("debugAnnotationsId"), gAreDebugAnnotationsEnabled);
+                updateButtonEnabledText(document.getElementById("freeplayId"), gIsFreeplayEnabled);
 
                 function handleDropDownSelect(selectObject)
                 {
@@ -579,10 +590,15 @@ def handle_index_page():
                             // Simulate a click of the headlight button
                             onHeadlightButtonClicked(document.getElementById("headlightId"))
                         }
-                        else if (keyCode == 80) // 'P'
+                        else if (keyCode == 79) // 'O'
                         {
                             // Simulate a click of the debug annotations button
                             onDebugAnnotationsButtonClicked(document.getElementById("debugAnnotationsId"))
+                        }
+                        else if (keyCode == 80) // 'P'
+                        {
+                            // Simulate a click of the debug annotations button
+                            onFreeplayButtonClicked(document.getElementById("freeplayId"))
                         }
                         else if (keyCode == 81) // 'Q'
                         {
@@ -715,6 +731,19 @@ def handle_setAreDebugAnnotationsEnabled():
             remote_control_cozmo.cozmo.world.image_annotator.enable_annotator('robotState')
         else:
             remote_control_cozmo.cozmo.world.image_annotator.disable_annotator('robotState')
+    return ""
+
+
+@flask_app.route('/setFreeplayEnabled', methods=['POST'])
+def handle_setFreeplayEnabled():
+    '''Called from Javascript whenever freeplay mode is toggled on/off'''
+    message = json.loads(request.data.decode("utf-8"))
+    if remote_control_cozmo:
+        isFreeplayEnabled = message['isFreeplayEnabled']
+        if isFreeplayEnabled:
+            remote_control_cozmo.cozmo.start_freeplay_behaviors()
+        else:
+            remote_control_cozmo.cozmo.stop_freeplay_behaviors()
     return ""
 
 
