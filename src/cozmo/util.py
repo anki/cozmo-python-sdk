@@ -38,11 +38,16 @@ from ._clad import _clad_to_engine_anki
 class ImageBox(collections.namedtuple('ImageBox', 'top_left_x top_left_y width height')):
     '''Defines a bounding box within an image frame.
 
-    This is used when objects and faces are observed to denote where in
-    the robot's camera view the object or face actually appears.  It's then
+    This is used when objects, faces and pets are observed to denote where in
+    the robot's camera view the object, face or pet actually appears.  It's then
     used by the :mod:`cozmo.annotate` module to show an outline of a box around
-    the object or face.
+    the object, face or pet.
     '''
+
+    @classmethod
+    def _create_from_clad_rect(cls, img_rect):
+        return cls(img_rect.x_topLeft, img_rect.y_topLeft,
+                   img_rect.width, img_rect.height)
 
     def __mul__(self, other):
         return ImageBox(self[0] * other, self[1] * other, self[2] * other, self[3] * other)
@@ -298,6 +303,12 @@ class Pose:
         self._position = Position(x,y,z)
         self._rotation = Rotation(q0,q1,q2,q3,angle_z)
         self._origin_id = origin_id
+
+    @classmethod
+    def _create_from_clad(cls, pose):
+        return cls(pose.x, pose.y, pose.z,
+                   q0=pose.q0, q1=pose.q1, q2=pose.q2, q3=pose.q3,
+                   origin_id=pose.originID)
 
     def __repr__(self):
         return "<%s %s %s origin_id=%d>" % (self.__class__.__name__, self.position, self.rotation, self.origin_id)

@@ -19,7 +19,7 @@
 This module defines an :class:`ImageAnnotator` class used by
 :class:`cozmo.world.World` to add annotations to camera images received by Cozmo.
 
-This can include the location of cubes and faces that Cozmo currently sees,
+This can include the location of cubes, faces and pets that Cozmo currently sees,
 along with user-defined custom annotations.
 
 The ImageAnnotator instance can be accessed as
@@ -30,7 +30,7 @@ The ImageAnnotator instance can be accessed as
 __all__ = ['DEFAULT_OBJECT_COLORS',
            'TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT',
            'ImageText', 'Annotator', 'ObjectAnnotator', 'FaceAnnotator',
-           'TextAnnotator', 'ImageAnnotator',
+           'PetAnnotator', 'TextAnnotator', 'ImageAnnotator',
            'annotator', 'add_img_box_to_image']
 
 
@@ -249,6 +249,36 @@ class FaceAnnotator(Annotator):
         return ImageText('(unknown face %d)' % obj.face_id)
 
 
+class PetAnnotator(Annotator):
+    '''Adds annotations of currently detected pets to a camera image.
+
+    This handles the display of :class:`cozmo.pets.Pet` objects.
+    '''
+    priority = 100
+    box_color = 'lightgreen'
+
+    def __init__(self, img_annotator, box_color=None):
+        super().__init__(img_annotator)
+        if box_color is not None:
+            self.box_color = box_color
+
+    def apply(self, image, scale):
+        d = ImageDraw.Draw(image)
+        for obj in self.world.visible_pets:
+            text = self.label_for_pet(obj)
+            box = obj.last_observed_image_box
+            if scale != 1:
+                box *= scale
+            add_img_box_to_image(image, box, self.box_color, text=text)
+
+    def label_for_pet(self, obj):
+        '''Fetch a label to display for the pet.
+
+        Override or replace to customize.
+        '''
+        return ImageText('%d: %s' % (obj.pet_id, obj.pet_type))
+
+
 class TextAnnotator(Annotator):
     '''Adds simple text annotations to a camera image.
     '''
@@ -290,10 +320,11 @@ class ImageAnnotator(event.Dispatcher):
     This is instantiated by :class:`cozmo.world.World` and is accessible as
     :class:`cozmo.world.World.image_annotator`.
 
-    By default it defines two active annotators named ``objects`` and ``faces``.
+    By default it defines three active annotators named ``objects``, ``faces`` and ``pets``.
 
     The ``objects`` annotator adds a box around each object (such as light cubes)
-    that Cozmo can see.  The ``faces`` annotators adds a box around each person's
+    that Cozmo can see.  The ``faces`` annotator adds a box around each person's
+    face that Cozmo can recognize. The ``pets`` annotator adds a box around each pet
     face that Cozmo can recognize.
 
     Custom annotations can be defined by calling :meth:`add_annotator` with
@@ -322,6 +353,7 @@ class ImageAnnotator(event.Dispatcher):
         self._sorted_annotators = []
         self.add_annotator('objects', ObjectAnnotator(self))
         self.add_annotator('faces', FaceAnnotator(self))
+        self.add_annotator('pets', PetAnnotator(self))
 
         #: If this attribute is set to false, the :meth:`annotate_image` method
         #: will continue to provide a scaled image, but will not apply any annotations.
