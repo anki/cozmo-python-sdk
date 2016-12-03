@@ -139,7 +139,7 @@ class ObservableElement(event.Dispatcher):
         self._robot = robot
         self._pose = None
         self.conn = conn
-        #: :class:`cozmo.world.World`: instance in which this element is located.
+        #: :class:`cozmo.world.World`: The robot's world in which this element is located.
         self.world = world
 
         #: float: The time the last event was received.
@@ -221,11 +221,8 @@ class ObservableElement(event.Dispatcher):
         self.last_observed_time = now
         self.last_observed_robot_timestamp = timestamp
         self.last_event_time = now
-
         self.last_observed_image_box = image_box
-
         self._reset_observed_timeout_handler()
-
         self._dispatch_observed_event(changed_fields, image_box)
 
         if newly_visible:
