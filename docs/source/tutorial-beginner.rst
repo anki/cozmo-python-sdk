@@ -224,7 +224,7 @@ Now that you have written your first program, you're ready to write a more compl
 ..
 
   a. ``robot.turn_in_place`` directs Cozmo to turn in place.
-  b. ``(degrees(90))`` sets how far he turns in relation to where he is. Cozmo's initial position is assumed to be 0 degrees; he will turn 90 degrees, or directly to his left. The number of degrees goes from 0 - 180, where 0 will not move him and 179.99 moves him in almost a semi-circle going anti-clockwise. To make Cozmo turn clockwise, enter a negative number. For example, entering -90 makes Cozmo turn 90 degrees to the right.
+  b. ``(degrees(90))`` sets how far he turns in relation to where he is. Cozmo's initial position is assumed to be 0 degrees; he will turn 90 degrees, or directly to his left. The number of degrees goes from 0 - 180, where 0 will not move him and 179.99 moves him in almost a semi-circle going counter-clockwise. To make Cozmo turn clockwise, enter a negative number. For example, entering -90 makes Cozmo turn 90 degrees to the right.
   c. ``wait_for_completed()`` makes sure Cozmo completes his turn before performing his next action.
 
 5. Next, type in:
