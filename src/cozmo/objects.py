@@ -352,7 +352,7 @@ class ObservableObject(ObservableElement):
 LightCube1Id = _clad_to_game_cozmo.ObjectType.Block_LIGHTCUBE1
 #: LightCube2Id's markers look a bit like a lamp
 LightCube2Id = _clad_to_game_cozmo.ObjectType.Block_LIGHTCUBE2
-#: LightCube3Id's markers look a bit like the letters ab over T
+#: LightCube3Id's markers look a bit like the letters 'ab' over 'T'
 LightCube3Id = _clad_to_game_cozmo.ObjectType.Block_LIGHTCUBE3
 
 

@@ -381,13 +381,13 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
                 'cozmoclad_version=%s app_build_version=%s',
                 version.__version__, cozmoclad.__version__, msg.buildVersion)
 
-        # We RequestAvailableObjects before the animation names as this ensures
-        # that we will receive the responses before we mark the robot as ready
+        # We send RequestAvailableObjects before refreshing the animation names
+        # as this ensures that we will receive the responses before we mark the
+        # robot as ready
         msg = _clad_to_engine_iface.RequestAvailableObjects()
         self.send_msg(msg)
 
         self.anim_names.refresh()
-
 
     def _recv_msg_image_chunk(self, evt, *, msg):
         if self._primary_robot:
