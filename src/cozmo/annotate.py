@@ -31,7 +31,7 @@ __all__ = ['DEFAULT_OBJECT_COLORS',
            'TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT',
            'ImageText', 'Annotator', 'ObjectAnnotator', 'FaceAnnotator',
            'PetAnnotator', 'TextAnnotator', 'ImageAnnotator',
-           'annotator', 'add_img_box_to_image']
+           'annotator', 'add_img_box_to_image', 'add_polygon_to_image']
 
 
 import collections
@@ -146,6 +146,35 @@ def add_img_box_to_image(image, box, color, text=None):
             text.render(d, (x1, y1, x2, y2))
 
 
+def add_polygon_to_image(image, poly_points, scale, line_color, fill_color=None):
+    '''Draw a polygon on an image
+
+    This will draw a polygon on the passed in image in the specified
+    colors and scale.
+
+    Args:
+        image (:class:`PIL.Image.Image`): The image to draw on
+        poly_points: A sequence of points representing the the polygon,
+            where each point has float members (x, y)
+        scale (float): Scale to multiply each point by to match the image scaling
+        line_color (string): The color for the outline of the polygon, string
+            must be a color string suitable for use with PIL - see :mod:`PIL.ImageColor`
+        fill_color (string): The color for the inside of the polygon, string
+            must be a color string suitable for use with PIL - see :mod:`PIL.ImageColor`
+    '''
+    if len(poly_points) < 2:
+        # Need at least 2 points to draw any lines
+        return
+    d = ImageDraw.Draw(image)
+
+    # Convert poly_points to the PIL format and scale them to the image
+    pil_poly_points = []
+    for pt in poly_points:
+        pil_poly_points.append((pt.x * scale, pt.y * scale))
+
+    d.polygon(pil_poly_points, fill=fill_color, outline=line_color)
+
+
 def _find_key_for_cls(d, cls):
     for cls in cls.__mro__:
         result = d.get(cls, None)
@@ -238,15 +267,22 @@ class FaceAnnotator(Annotator):
             if scale != 1:
                 box *= scale
             add_img_box_to_image(image, box, self.box_color, text=text)
+            add_polygon_to_image(image, obj.left_eye, scale, self.box_color)
+            add_polygon_to_image(image, obj.right_eye, scale, self.box_color)
+            add_polygon_to_image(image, obj.nose, scale, self.box_color)
+            add_polygon_to_image(image, obj.mouth, scale, self.box_color)
 
     def label_for_face(self, obj):
         '''Fetch a label to display for the face.
 
         Override or replace to customize.
         '''
+        expression = obj.known_expression
+        if len(expression) > 0:
+            expression += " "
         if obj.name:
-            return ImageText(obj.name)
-        return ImageText('(unknown face %d)' % obj.face_id)
+            return ImageText('%s%s (%d)' % (expression, obj.name, obj.face_id))
+        return ImageText('(unknown%s face %d)' % (expression, obj.face_id))
 
 
 class PetAnnotator(Annotator):

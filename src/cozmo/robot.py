@@ -835,6 +835,23 @@ class Robot(event.Dispatcher):
                                                  actionType=_clad_to_engine_cozmo.RobotActionType.UNKNOWN)
         self.conn.send_msg(msg)
 
+    def enable_facial_expression_estimation(self, enable=True):
+        '''Enable or Disable facial expression estimation
+
+        Cozmo can optionally estimate the facial expression for human faces to
+        see if he thinks they're happy, sad, etc.
+
+        Args:
+            enable (bool): True to enable facial expression estimation, False to
+                disable it. By default Cozmo starts with it disabled to save on
+                processing time.
+        '''
+
+        msg = _clad_to_engine_iface.EnableVisionMode(
+            mode=_clad_to_engine_cozmo.VisionMode.EstimatingFacialExpression,
+            enable=enable)
+        self.conn.send_msg(msg)
+
     ### Low-Level Commands ###
 
     async def drive_wheels(self, l_wheel_speed, r_wheel_speed,

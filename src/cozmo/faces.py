@@ -31,6 +31,8 @@ observed by adding handlers there.
 
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['FACE_VISIBILITY_TIMEOUT',
+           'FACIAL_EXPRESSION_UNKNOWN', 'FACIAL_EXPRESSION_NEUTRAL', 'FACIAL_EXPRESSION_HAPPY',
+           'FACIAL_EXPRESSION_SURPRISED', 'FACIAL_EXPRESSION_ANGRY', 'FACIAL_EXPRESSION_SAD',
            'EvtErasedEnrolledFace', 'EvtFaceAppeared', 'EvtFaceDisappeared',
            'EvtFaceIdChanged', 'EvtFaceObserved', 'EvtFaceRenamed',
            'EnrollNamedFace', 'Face',
@@ -49,11 +51,27 @@ from . import objects
 from . import util
 
 from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo
+from ._clad import _clad_to_game_anki
 
 
 #: Length of time to go without receiving an observed event before
 #: assuming that Cozmo can no longer see a face.
 FACE_VISIBILITY_TIMEOUT = objects.OBJECT_VISIBILITY_TIMEOUT
+
+# Facial expressions that Cozmo can distinguish
+#: Facial expression not recognized.
+#: Call :func:`cozmo.robot.Robot.enable_facial_expression_estimation` to enable recognition.
+FACIAL_EXPRESSION_UNKNOWN = "unknown"
+#: Facial expression neutral
+FACIAL_EXPRESSION_NEUTRAL = "neutral"
+#: Facial expression happy
+FACIAL_EXPRESSION_HAPPY = "happy"
+#: Facial expression surprised
+FACIAL_EXPRESSION_SURPRISED = "surprised"
+#: Facial expression angry
+FACIAL_EXPRESSION_ANGRY = "angry"
+#: Facial expression sad
+FACIAL_EXPRESSION_SAD = "sad"
 
 
 class EvtErasedEnrolledFace(event.Event):
@@ -179,6 +197,23 @@ class EnrollNamedFace(action.Action):
                                                      sequence=_clad_to_engine_cozmo.FaceEnrollmentSequence.Simple)
 
 
+def _clad_facial_expression_to_facial_expression(clad_expression_type):
+    if clad_expression_type == _clad_to_game_anki.Vision.FacialExpression.Unknown:
+        return FACIAL_EXPRESSION_UNKNOWN
+    elif clad_expression_type == _clad_to_game_anki.Vision.FacialExpression.Neutral:
+        return FACIAL_EXPRESSION_NEUTRAL
+    elif clad_expression_type == _clad_to_game_anki.Vision.FacialExpression.Happiness:
+        return FACIAL_EXPRESSION_HAPPY
+    elif clad_expression_type == _clad_to_game_anki.Vision.FacialExpression.Surprise:
+        return FACIAL_EXPRESSION_SURPRISED
+    elif clad_expression_type == _clad_to_game_anki.Vision.FacialExpression.Anger:
+        return FACIAL_EXPRESSION_ANGRY
+    elif clad_expression_type == _clad_to_game_anki.Vision.FacialExpression.Sadness:
+        return FACIAL_EXPRESSION_SAD
+    else:
+        raise ValueError("Unexpected facial expression type %s" % clad_expression_type)
+
+
 class Face(objects.ObservableElement):
     '''A single face that Cozmo has detected.
 
@@ -206,6 +241,11 @@ class Face(objects.ObservableElement):
         self._face_id = face_id
         self._updated_face_id = None
         self._name = ''
+        self._expression = None
+        self._left_eye = None
+        self._right_eye = None
+        self._nose = None
+        self._mouth = None
 
     def _repr_values(self):
         return 'face_id=%s,%s name=%s' % (self.face_id, self.updated_face_id,
@@ -262,13 +302,67 @@ class Face(objects.ObservableElement):
         '''
         return self._name
 
+    @property
+    def expression(self):
+        '''string: The facial expression Cozmo has recognized on the face.
+
+        Will be `FACIAL_EXPRESSION_UNKNOWN` by default if you haven't called
+        :meth:`cozmo.robot.enable_facial_expression_estimation` to enable
+        the facial expression estimation. Otherwise it will be equal to one of:
+        `FACIAL_EXPRESSION_NEUTRAL`, `FACIAL_EXPRESSION_HAPPY`,
+        `FACIAL_EXPRESSION_SURPRISED`, `FACIAL_EXPRESSION_ANGRY`,
+        or `FACIAL_EXPRESSION_SAD`.
+        '''
+        return self._expression
+
+    @property
+    def known_expression(self):
+        '''string: The known facial expression Cozmo has recognized on the face.
+
+        Like :meth:`expression` but returns an empty string for the unknown expression
+        '''
+        expression = self.expression
+        if expression == FACIAL_EXPRESSION_UNKNOWN:
+            return ""
+        return expression
+
+    @property
+    def left_eye(self):
+        '''sequence of tuples of float (x,y): points representing the outline of the left eye'''
+        return self._left_eye
+
+    @property
+    def right_eye(self):
+        '''sequence of tuples of float (x,y): points representing the outline of the right eye'''
+        return self._right_eye
+
+    @property
+    def nose(self):
+        '''sequence of tuples of float (x,y): points representing the outline of the nose'''
+        return self._nose
+
+    @property
+    def mouth(self):
+        '''sequence of tuples of float (x,y): points representing the outline of the mouth'''
+        return self._mouth
+
     #### Private Event Handlers ####
 
     def _recv_msg_robot_observed_face(self, evt, *, msg):
 
-        changed_fields = {'pose'}
+        changed_fields = {'pose', 'left_eye', 'right_eye', 'nose', 'mouth'}
         self._pose = util.Pose._create_from_clad(msg.pose)
         self._name = msg.name
+
+        expression = _clad_facial_expression_to_facial_expression(msg.expression)
+        if expression != self._expression:
+            self._expression = expression
+            changed_fields.add('expression')
+
+        self._left_eye = msg.leftEye
+        self._right_eye = msg.rightEye
+        self._nose = msg.nose
+        self._mouth = msg.mouth
 
         image_box = util.ImageBox._create_from_clad_rect(msg.img_rect)
         self._on_observed(image_box, msg.timestamp, changed_fields)

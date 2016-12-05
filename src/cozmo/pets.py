@@ -33,7 +33,7 @@ observed by adding handlers there.
 '''
 
 # __all__ should order by constants, event classes, other classes, functions.
-__all__ = ['PET_VISIBILITY_TIMEOUT', 'PET_TYPE_UNKOWN', 'PET_TYPE_CAT', 'PET_TYPE_DOG',
+__all__ = ['PET_VISIBILITY_TIMEOUT', 'PET_TYPE_UNKNOWN', 'PET_TYPE_CAT', 'PET_TYPE_DOG',
            'EvtPetAppeared', 'EvtPetDisappeared', 'EvtPetObserved',
            'Pet']
 
@@ -56,7 +56,7 @@ PET_VISIBILITY_TIMEOUT = objects.OBJECT_VISIBILITY_TIMEOUT
 
 # Pet types that Cozmo can distinguish
 #: Pet Type reported by Cozmo when unsure of type of pet
-PET_TYPE_UNKOWN = "unknown"
+PET_TYPE_UNKNOWN = "unknown"
 #: Pet Type reported by Cozmo when he thinks it's a cat
 PET_TYPE_CAT = "cat"
 #: Pet Type reported by Cozmo when he thinks it's a dog
@@ -101,7 +101,7 @@ class EvtPetDisappeared(event.Event):
 
 def _clad_pet_type_to_pet_type(clad_pet_type):
     if clad_pet_type == _clad_to_game_anki.Vision.PetType.Unknown:
-        return PET_TYPE_UNKOWN
+        return PET_TYPE_UNKNOWN
     elif clad_pet_type == _clad_to_game_anki.Vision.PetType.Cat:
         return PET_TYPE_CAT
     elif clad_pet_type == _clad_to_game_anki.Vision.PetType.Dog:
