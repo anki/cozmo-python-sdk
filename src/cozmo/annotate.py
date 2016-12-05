@@ -31,7 +31,7 @@ __all__ = ['DEFAULT_OBJECT_COLORS',
            'TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT',
            'ImageText', 'Annotator', 'ObjectAnnotator', 'FaceAnnotator',
            'PetAnnotator', 'TextAnnotator', 'ImageAnnotator',
-           'annotator', 'add_img_box_to_image', 'add_polygon_to_image']
+           'add_img_box_to_image', 'add_polygon_to_image', 'annotator']
 
 
 import collections
@@ -149,17 +149,17 @@ def add_img_box_to_image(image, box, color, text=None):
 def add_polygon_to_image(image, poly_points, scale, line_color, fill_color=None):
     '''Draw a polygon on an image
 
-    This will draw a polygon on the passed in image in the specified
+    This will draw a polygon on the passed-in image in the specified
     colors and scale.
 
     Args:
         image (:class:`PIL.Image.Image`): The image to draw on
-        poly_points: A sequence of points representing the the polygon,
+        poly_points: A sequence of points representing the polygon,
             where each point has float members (x, y)
-        scale (float): Scale to multiply each point by to match the image scaling
-        line_color (string): The color for the outline of the polygon, string
+        scale (float): Scale to multiply each point to match the image scaling
+        line_color (string): The color for the outline of the polygon. The string value
             must be a color string suitable for use with PIL - see :mod:`PIL.ImageColor`
-        fill_color (string): The color for the inside of the polygon, string
+        fill_color (string): The color for the inside of the polygon. The string value
             must be a color string suitable for use with PIL - see :mod:`PIL.ImageColor`
     '''
     if len(poly_points) < 2:

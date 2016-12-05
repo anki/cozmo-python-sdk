@@ -33,7 +33,7 @@ observed by adding handlers there.
 '''
 
 # __all__ should order by constants, event classes, other classes, functions.
-__all__ = ['PET_VISIBILITY_TIMEOUT', 'PET_TYPE_UNKNOWN', 'PET_TYPE_CAT', 'PET_TYPE_DOG',
+__all__ = ['PET_VISIBILITY_TIMEOUT', 'PET_TYPE_CAT', 'PET_TYPE_DOG', 'PET_TYPE_UNKNOWN',
            'EvtPetAppeared', 'EvtPetDisappeared', 'EvtPetObserved',
            'Pet']
 
