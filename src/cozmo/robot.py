@@ -598,9 +598,6 @@ class Robot(event.Dispatcher):
             await self.world.delete_all_custom_objects()
             self._reset_behavior_state()
 
-            msg = _clad_to_engine_iface.RequestAvailableObjects()
-            self.conn.send_msg(msg)
-
             # wait for animations to load
             await self.conn.anim_names.wait_for_loaded()
 
