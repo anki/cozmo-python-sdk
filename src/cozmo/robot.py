@@ -1309,7 +1309,8 @@ class Robot(event.Dispatcher):
         '''Turn the robot around its current position.
 
         Args:
-            angle: (:class:`cozmo.util.Angle`): The angle to turn.
+            angle: (:class:`cozmo.util.Angle`): The angle to turn. Positive
+                values turn to the left, negative values to the right.
         Returns:
             A :class:`cozmo.robot.TurnInPlace` action object which can be
                 queried to see when it is complete.
