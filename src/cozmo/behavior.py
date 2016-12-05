@@ -82,9 +82,7 @@ class Behavior(event.Dispatcher):
         '''
         if not self._is_active:
             return
-        msg = _clad_to_engine_iface.ExecuteBehaviorByExecutableType(
-                behaviorType=_clad_to_engine_cozmo.ExecutableBehaviorType.NoneBehavior)
-        self.robot.conn.send_msg(msg)
+        self.robot._stop_behavior()
         self._is_active = False
         self.dispatch_event(EvtBehaviorStopped, behavior=self, behavior_type_name=self.type.name)
 

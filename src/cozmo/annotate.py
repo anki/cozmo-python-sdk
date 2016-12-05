@@ -19,7 +19,7 @@
 This module defines an :class:`ImageAnnotator` class used by
 :class:`cozmo.world.World` to add annotations to camera images received by Cozmo.
 
-This can include the location of cubes and faces that Cozmo currently sees,
+This can include the location of cubes, faces and pets that Cozmo currently sees,
 along with user-defined custom annotations.
 
 The ImageAnnotator instance can be accessed as
@@ -30,8 +30,8 @@ The ImageAnnotator instance can be accessed as
 __all__ = ['DEFAULT_OBJECT_COLORS',
            'TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT',
            'ImageText', 'Annotator', 'ObjectAnnotator', 'FaceAnnotator',
-           'TextAnnotator', 'ImageAnnotator',
-           'annotator', 'add_img_box_to_image']
+           'PetAnnotator', 'TextAnnotator', 'ImageAnnotator',
+           'add_img_box_to_image', 'add_polygon_to_image', 'annotator']
 
 
 import collections
@@ -146,6 +146,35 @@ def add_img_box_to_image(image, box, color, text=None):
             text.render(d, (x1, y1, x2, y2))
 
 
+def add_polygon_to_image(image, poly_points, scale, line_color, fill_color=None):
+    '''Draw a polygon on an image
+
+    This will draw a polygon on the passed-in image in the specified
+    colors and scale.
+
+    Args:
+        image (:class:`PIL.Image.Image`): The image to draw on
+        poly_points: A sequence of points representing the polygon,
+            where each point has float members (x, y)
+        scale (float): Scale to multiply each point to match the image scaling
+        line_color (string): The color for the outline of the polygon. The string value
+            must be a color string suitable for use with PIL - see :mod:`PIL.ImageColor`
+        fill_color (string): The color for the inside of the polygon. The string value
+            must be a color string suitable for use with PIL - see :mod:`PIL.ImageColor`
+    '''
+    if len(poly_points) < 2:
+        # Need at least 2 points to draw any lines
+        return
+    d = ImageDraw.Draw(image)
+
+    # Convert poly_points to the PIL format and scale them to the image
+    pil_poly_points = []
+    for pt in poly_points:
+        pil_poly_points.append((pt.x * scale, pt.y * scale))
+
+    d.polygon(pil_poly_points, fill=fill_color, outline=line_color)
+
+
 def _find_key_for_cls(d, cls):
     for cls in cls.__mro__:
         result = d.get(cls, None)
@@ -238,15 +267,52 @@ class FaceAnnotator(Annotator):
             if scale != 1:
                 box *= scale
             add_img_box_to_image(image, box, self.box_color, text=text)
+            add_polygon_to_image(image, obj.left_eye, scale, self.box_color)
+            add_polygon_to_image(image, obj.right_eye, scale, self.box_color)
+            add_polygon_to_image(image, obj.nose, scale, self.box_color)
+            add_polygon_to_image(image, obj.mouth, scale, self.box_color)
 
     def label_for_face(self, obj):
         '''Fetch a label to display for the face.
 
         Override or replace to customize.
         '''
+        expression = obj.known_expression
+        if len(expression) > 0:
+            expression += " "
         if obj.name:
-            return ImageText(obj.name)
-        return ImageText('(unknown face %d)' % obj.face_id)
+            return ImageText('%s%s (%d)' % (expression, obj.name, obj.face_id))
+        return ImageText('(unknown%s face %d)' % (expression, obj.face_id))
+
+
+class PetAnnotator(Annotator):
+    '''Adds annotations of currently detected pets to a camera image.
+
+    This handles the display of :class:`cozmo.pets.Pet` objects.
+    '''
+    priority = 100
+    box_color = 'lightgreen'
+
+    def __init__(self, img_annotator, box_color=None):
+        super().__init__(img_annotator)
+        if box_color is not None:
+            self.box_color = box_color
+
+    def apply(self, image, scale):
+        d = ImageDraw.Draw(image)
+        for obj in self.world.visible_pets:
+            text = self.label_for_pet(obj)
+            box = obj.last_observed_image_box
+            if scale != 1:
+                box *= scale
+            add_img_box_to_image(image, box, self.box_color, text=text)
+
+    def label_for_pet(self, obj):
+        '''Fetch a label to display for the pet.
+
+        Override or replace to customize.
+        '''
+        return ImageText('%d: %s' % (obj.pet_id, obj.pet_type))
 
 
 class TextAnnotator(Annotator):
@@ -290,10 +356,11 @@ class ImageAnnotator(event.Dispatcher):
     This is instantiated by :class:`cozmo.world.World` and is accessible as
     :class:`cozmo.world.World.image_annotator`.
 
-    By default it defines two active annotators named ``objects`` and ``faces``.
+    By default it defines three active annotators named ``objects``, ``faces`` and ``pets``.
 
     The ``objects`` annotator adds a box around each object (such as light cubes)
-    that Cozmo can see.  The ``faces`` annotators adds a box around each person's
+    that Cozmo can see.  The ``faces`` annotator adds a box around each person's
+    face that Cozmo can recognize. The ``pets`` annotator adds a box around each pet
     face that Cozmo can recognize.
 
     Custom annotations can be defined by calling :meth:`add_annotator` with
@@ -322,6 +389,7 @@ class ImageAnnotator(event.Dispatcher):
         self._sorted_annotators = []
         self.add_annotator('objects', ObjectAnnotator(self))
         self.add_annotator('faces', FaceAnnotator(self))
+        self.add_annotator('pets', PetAnnotator(self))
 
         #: If this attribute is set to false, the :meth:`annotate_image` method
         #: will continue to provide a scaled image, but will not apply any annotations.

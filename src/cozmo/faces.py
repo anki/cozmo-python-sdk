@@ -31,6 +31,8 @@ observed by adding handlers there.
 
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['FACE_VISIBILITY_TIMEOUT',
+           'FACIAL_EXPRESSION_UNKNOWN', 'FACIAL_EXPRESSION_NEUTRAL', 'FACIAL_EXPRESSION_HAPPY',
+           'FACIAL_EXPRESSION_SURPRISED', 'FACIAL_EXPRESSION_ANGRY', 'FACIAL_EXPRESSION_SAD',
            'EvtErasedEnrolledFace', 'EvtFaceAppeared', 'EvtFaceDisappeared',
            'EvtFaceIdChanged', 'EvtFaceObserved', 'EvtFaceRenamed',
            'EnrollNamedFace', 'Face',
@@ -49,11 +51,27 @@ from . import objects
 from . import util
 
 from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo
+from ._clad import _clad_to_game_anki
 
 
 #: Length of time to go without receiving an observed event before
 #: assuming that Cozmo can no longer see a face.
 FACE_VISIBILITY_TIMEOUT = objects.OBJECT_VISIBILITY_TIMEOUT
+
+# Facial expressions that Cozmo can distinguish
+#: Facial expression not recognized.
+#: Call :func:`cozmo.robot.Robot.enable_facial_expression_estimation` to enable recognition.
+FACIAL_EXPRESSION_UNKNOWN = "unknown"
+#: Facial expression neutral
+FACIAL_EXPRESSION_NEUTRAL = "neutral"
+#: Facial expression happy
+FACIAL_EXPRESSION_HAPPY = "happy"
+#: Facial expression surprised
+FACIAL_EXPRESSION_SURPRISED = "surprised"
+#: Facial expression angry
+FACIAL_EXPRESSION_ANGRY = "angry"
+#: Facial expression sad
+FACIAL_EXPRESSION_SAD = "sad"
 
 
 class EvtErasedEnrolledFace(event.Event):
@@ -91,7 +109,7 @@ class EvtFaceObserved(event.Event):
 
 
 class EvtFaceAppeared(event.Event):
-    '''Triggered whenever an object is first visually identified by a robot.
+    '''Triggered whenever a face is first visually identified by a robot.
 
     This differs from EvtFaceObserved in that it's only triggered when
     a face initially becomes visible.  If it disappears for more than
@@ -179,7 +197,24 @@ class EnrollNamedFace(action.Action):
                                                      sequence=_clad_to_engine_cozmo.FaceEnrollmentSequence.Simple)
 
 
-class Face(event.Dispatcher):
+def _clad_facial_expression_to_facial_expression(clad_expression_type):
+    if clad_expression_type == _clad_to_game_anki.Vision.FacialExpression.Unknown:
+        return FACIAL_EXPRESSION_UNKNOWN
+    elif clad_expression_type == _clad_to_game_anki.Vision.FacialExpression.Neutral:
+        return FACIAL_EXPRESSION_NEUTRAL
+    elif clad_expression_type == _clad_to_game_anki.Vision.FacialExpression.Happiness:
+        return FACIAL_EXPRESSION_HAPPY
+    elif clad_expression_type == _clad_to_game_anki.Vision.FacialExpression.Surprise:
+        return FACIAL_EXPRESSION_SURPRISED
+    elif clad_expression_type == _clad_to_game_anki.Vision.FacialExpression.Anger:
+        return FACIAL_EXPRESSION_ANGRY
+    elif clad_expression_type == _clad_to_game_anki.Vision.FacialExpression.Sadness:
+        return FACIAL_EXPRESSION_SAD
+    else:
+        raise ValueError("Unexpected facial expression type %s" % clad_expression_type)
+
+
+class Face(objects.ObservableElement):
     '''A single face that Cozmo has detected.
 
     May represent a face that has previously been enrolled, in which case
@@ -188,70 +223,46 @@ class Face(event.Dispatcher):
     Each Face instance has a :attr:`face_id` integer - This may change if
     Cozmo later gets an improved view and makes a different prediction about
     which face it is looking at.
+
+    See parent class :class:`~cozmo.objects.ObservableElement` for additional properties
+    and methods.
     '''
+
+    #: Length of time in seconds to go without receiving an observed event before
+    #: assuming that Cozmo can no longer see a face.
+    visibility_timeout = FACE_VISIBILITY_TIMEOUT
 
     #: callable: The factory function to return an :class:`EnrollNamedFace`
     #: class or subclass instance.
     enroll_named_face_factory = EnrollNamedFace
 
     def __init__(self, conn, world, robot, face_id=None, **kw):
-        super().__init__(**kw)
+        super().__init__(conn, world, robot, **kw)
         self._face_id = face_id
         self._updated_face_id = None
-        self._robot = robot
         self._name = ''
-        self._pose = None
-        self.conn = conn
-        #: :class:`cozmo.world.World`: instance in which this face is located.
-        self.world = world
+        self._expression = None
+        self._left_eye = None
+        self._right_eye = None
+        self._nose = None
+        self._mouth = None
 
-        #: float: The time the event was received.
-        #: ``None`` if no events have yet been received.
-        self.last_event_time = None
-
-        #: float: The time the face was last observed by the robot.
-        #: ``None`` if the face has not yet been observed.
-        self.last_observed_time = None
-
-        #: int: The robot's timestamp of the last observed event.
-        #: ``None`` if the face has not yet been observed.
-        #: In milliseconds relative to robot epoch.
-        self.last_observed_robot_timestamp = None
-
-        #: :class:`~cozmo.util.ImageBox`: The ImageBox defining where the
-        #: object was last visible within Cozmo's camera view.
-        #: ``None`` if the face has not yet been observed.
-        self.last_observed_image_box = None
-
-        self._is_visible = False
-        self._observed_timeout_handler = None
-
-    def __repr__(self):
-        return '<%s face_id=%s,%s is_visible=%s name=%s pose=%s>' % (self.__class__.__name__, self.face_id, self.updated_face_id,
-                                                      self.is_visible, self.name, self.pose)
+    def _repr_values(self):
+        return 'face_id=%s,%s name=%s' % (self.face_id, self.updated_face_id,
+                                          self.name)
 
     #### Private Methods ####
 
-    def _update_field(self, changed, field_name, new_value):
-        # Set only changed fields and update the passed in changed set
-        current = getattr(self, field_name)
-        if current != new_value:
-            setattr(self, field_name, new_value)
-            changed.add(field_name)
+    def _dispatch_observed_event(self, changed_fields, image_box):
+        self.dispatch_event(EvtFaceObserved, face=self, name=self._name,
+                updated=changed_fields, image_box=image_box, pose=self._pose)
 
-    def _reset_observed_timeout_handler(self):
-        if self._observed_timeout_handler is not None:
-            self._observed_timeout_handler.cancel()
-        self._observed_timeout_handler = self._loop.call_later(
-                FACE_VISIBILITY_TIMEOUT, self._observed_timeout)
+    def _dispatch_appeared_event(self, changed_fields, image_box):
+        self.dispatch_event(EvtFaceAppeared, face=self,
+                updated=changed_fields, image_box=image_box, pose=self._pose)
 
-    def _observed_timeout(self):
-        # triggered when the object is no longer considered "visible"
-        # ie. FACE_VISIBILITY_TIMEOUT seconds after the last
-        # object observed event
-        self._is_visible = False
+    def _dispatch_disappeared_event(self):
         self.dispatch_event(EvtFaceDisappeared, face=self)
-
 
     #### Properties ####
 
@@ -284,11 +295,6 @@ class Face(event.Dispatcher):
             return self.face_id
 
     @property
-    def pose(self):
-        ''':class:`cozmo.util.Pose`: The pose of the face in the world.'''
-        return self._pose
-
-    @property
     def name(self):
         '''string: The name Cozmo has associated with the face in his memory.
 
@@ -296,33 +302,70 @@ class Face(event.Dispatcher):
         '''
         return self._name
 
+    @property
+    def expression(self):
+        '''string: The facial expression Cozmo has recognized on the face.
+
+        Will be ``FACIAL_EXPRESSION_UNKNOWN`` by default if you haven't called
+        :meth:`cozmo.robot.Robot.enable_facial_expression_estimation` to enable
+        the facial expression estimation. Otherwise it will be equal to one of:
+        ``FACIAL_EXPRESSION_NEUTRAL``, ``FACIAL_EXPRESSION_HAPPY``,
+        ``FACIAL_EXPRESSION_SURPRISED``, ``FACIAL_EXPRESSION_ANGRY``,
+        or ``FACIAL_EXPRESSION_SAD``.
+        '''
+        return self._expression
+
+    @property
+    def known_expression(self):
+        '''string: The known facial expression Cozmo has recognized on the face.
+
+        Like :meth:`expression` but returns an empty string for the unknown expression.
+        '''
+        expression = self.expression
+        if expression == FACIAL_EXPRESSION_UNKNOWN:
+            return ""
+        return expression
+
+    @property
+    def left_eye(self):
+        '''sequence of tuples of float (x,y): points representing the outline of the left eye'''
+        return self._left_eye
+
+    @property
+    def right_eye(self):
+        '''sequence of tuples of float (x,y): points representing the outline of the right eye'''
+        return self._right_eye
+
+    @property
+    def nose(self):
+        '''sequence of tuples of float (x,y): points representing the outline of the nose'''
+        return self._nose
+
+    @property
+    def mouth(self):
+        '''sequence of tuples of float (x,y): points representing the outline of the mouth'''
+        return self._mouth
+
     #### Private Event Handlers ####
 
     def _recv_msg_robot_observed_face(self, evt, *, msg):
-        changed_fields = {'last_observed_time', 'last_observed_robot_timestamp',
-                'last_event_time', 'last_observed_image_box', 'pose'}
-        newly_visible = self._is_visible == False
-        self._is_visible = True
-        self._pose = util.Pose(msg.pose.x, msg.pose.y, msg.pose.z,
-                               q0=msg.pose.q0, q1=msg.pose.q1,
-                               q2=msg.pose.q2, q3=msg.pose.q3,
-                               origin_id=msg.pose.originID)
+
+        changed_fields = {'pose', 'left_eye', 'right_eye', 'nose', 'mouth'}
+        self._pose = util.Pose._create_from_clad(msg.pose)
         self._name = msg.name
-        self.last_observed_time = time.time()
-        self.last_observed_robot_timestamp = msg.timestamp
-        self.last_event_time = time.time()
 
-        image_box = util.ImageBox(msg.img_topLeft_x, msg.img_topLeft_y, msg.img_width, msg.img_height)
-        self.last_observed_image_box = image_box
+        expression = _clad_facial_expression_to_facial_expression(msg.expression)
+        if expression != self._expression:
+            self._expression = expression
+            changed_fields.add('expression')
 
-        self._reset_observed_timeout_handler()
+        self._left_eye = msg.leftEye
+        self._right_eye = msg.rightEye
+        self._nose = msg.nose
+        self._mouth = msg.mouth
 
-        self.dispatch_event(EvtFaceObserved, face=self, name=self._name,
-                updated=changed_fields, image_box=image_box, pose=self._pose)
-
-        if newly_visible:
-            self.dispatch_event(EvtFaceAppeared, face=self,
-                    updated=changed_fields, image_box=image_box, pose=self._pose)
+        image_box = util.ImageBox._create_from_clad_rect(msg.img_rect)
+        self._on_observed(image_box, msg.timestamp, changed_fields)
 
     def _recv_msg_robot_changed_observed_face_id(self, evt, *, msg):
         self._updated_face_id = msg.newID
@@ -373,24 +416,4 @@ class Face(event.Dispatcher):
         '''
         erase_enrolled_face_by_id(self.conn, self.face_id)
 
-    @property
-    def time_since_last_seen(self):
-        '''float: time since this face was last seen (math.inf if never)'''
-        if self.last_observed_time is None:
-            return math.inf
-        return time.time() - self.last_observed_time
 
-    @property
-    def time_since_last_seen(self):
-        '''float: time since this face was last seen (math.inf if never)'''
-        if self.last_observed_time is None:
-            return math.inf
-        return time.time() - self.last_observed_time
-
-    @property
-    def is_visible(self):
-        '''bool: True if the face has been observed recently.
-
-        "recently" is defined as :const:`FACE_VISIBILITY_TIMEOUT` seconds.
-        '''
-        return self._is_visible

@@ -14,11 +14,11 @@
 
 '''The "world" represents the robot's known view of its environment.
 
-This view includes objects and faces it knows about and can currently "see"
-with its camera, along with what actions or behaviors the robot is
+This view includes objects, faces and pets it knows about and can currently
+"see" with its camera, along with what actions or behaviors the robot is
 current performing and the images coming back from the camera (if any).
 
-Almost all events emitted by the robot itself, objects, faces and the
+Almost all events emitted by the robot itself, objects, faces, pets and the
 camera can be observed directly on the :class:`World` object, which is
 itself accessible as :attr:`cozmo.robot.Robot.world`.
 
@@ -43,7 +43,7 @@ The :class:`World` object also has a :class:`cozmo.camera.Camera` instance
 associated with it.  It emits :class:`EvtNewCameraImage` objects whenever
 a new camera image is available (generally up to 15 times per second),
 which includes the raw image from the camera, as well as an annotated version
-showing where faces and objects have been observed.
+showing where faces, pets and objects have been observed.
 
 .. Note::  The camera must first be enabled to receive images by setting
     :attr:`~cozmo.camera.Camera.image_stream_enabled` to ``True``.
@@ -63,6 +63,7 @@ from . import annotate
 from . import event
 from . import faces
 from . import objects
+from . import pets
 from . import util
 
 from . import _clad
@@ -80,6 +81,10 @@ class World(event.Dispatcher):
     #: callable: The factory function that returns a
     #: :class:`faces.Face` class or subclass instance.
     face_factory = faces.Face
+
+    #: callable: The factory function that returns a
+    #: :class:`pets.Pet` class or subclass instance.
+    pet_factory = pets.Pet
 
     #: callable: The factory function that returns an
     #: :class:`objects.LightCube` class or subclass instance.
@@ -124,7 +129,9 @@ class World(event.Dispatcher):
         self._objects = {}
         self._visible_object_counts = collections.defaultdict(int)
         self._visible_face_count = 0
+        self._visible_pet_count = 0
         self._faces = {}
+        self._pets = {}
         self._active_behavior = None
         self._active_action = None
         self._init_light_cubes()
@@ -188,6 +195,13 @@ class World(event.Dispatcher):
         logger.debug('Allocated face_id=%s to face=%s', face.face_id, face)
         return face
 
+    def _allocate_pet_from_msg(self, msg):
+        pet = self.pet_factory(self.conn, self, self.robot, dispatch_parent=self)
+        pet.pet_id = msg.petID
+        self._pets[pet.pet_id] = pet
+        logger.debug('Allocated pet_id=%s to pet=%s', pet.pet_id, pet)
+        return pet
+
     def _update_visible_obj_count(self, obj, inc):
         obscls = objects.ObservableObject
 
@@ -213,6 +227,7 @@ class World(event.Dispatcher):
         '''generator: yields each object that Cozmo can currently see.
 
         For faces, see :meth:`visible_faces`.
+        For pets, see :meth:`visible_pets`.
 
         Returns:
             A generator yielding :class:`cozmo.objects.BaseObject` instances
@@ -237,7 +252,7 @@ class World(event.Dispatcher):
 
     @property
     def visible_faces(self):
-        '''generator: yields each faces that Cozmo can currently see.
+        '''generator: yields each face that Cozmo can currently see.
 
         Returns:
             A generator yielding :class:`cozmo.faces.Face` instances
@@ -253,6 +268,25 @@ class World(event.Dispatcher):
             int: The number of faces currently visible.
         '''
         return self._visible_face_count
+
+    @property
+    def visible_pets(self):
+        '''generator: yields each pet that Cozmo can currently see.
+
+        Returns:
+            A generator yielding :class:`cozmo.pets.Pet` instances
+        '''
+        for obj in self._pets.values():
+            if obj.is_visible:
+                yield obj
+
+    def visible_pet_count(self):
+        '''Returns the number of pets that Cozmo can currently see.
+
+        Returns:
+            int: The number of pets currently visible.
+        '''
+        return self._visible_pet_count
 
     #### Private Event Handlers ####
 
@@ -290,6 +324,13 @@ class World(event.Dispatcher):
         face = self._faces.get(msg.faceID)
         if face:
             face.dispatch_event(evt)
+
+    def _recv_msg_robot_observed_pet(self, evt, *, msg):
+        pet = self._pets.get(msg.petID)
+        if not pet:
+            pet = self._allocate_pet_from_msg(msg)
+        if pet:
+            pet.dispatch_event(evt)
 
     def _recv_msg_object_tapped(self, evt, *, msg):
         obj = self._objects.get(msg.objectID)
@@ -341,6 +382,12 @@ class World(event.Dispatcher):
     def recv_evt_face_disappeared(self, evt, *, face, **kw):
         self._visible_face_count -= 1
 
+    def recv_evt_pet_appeared(self, evt, *, pet, **kw):
+        self._visible_pet_count += 1
+
+    def recv_evt_pet_disappeared(self, evt, *, pet, **kw):
+        self._visible_pet_count -= 1
+
 
     #### Event Wrappers ####
 
@@ -390,6 +437,26 @@ class World(event.Dispatcher):
         filter = event.Filter(faces.EvtFaceObserved)
         evt = await self.wait_for(filter, timeout=timeout)
         return evt.face
+
+    async def wait_for_observed_pet(self, timeout=None, include_existing=True):
+        '''Waits for a pet to be observed by the robot.
+
+        Args:
+            timeout (float): Number of seconds to wait for a pet to be
+                observed, or None for indefinite
+            include_existing (bool): Specifies whether to include pets
+                that are already visible.
+        Returns:
+            The :class:`cozmo.pets.Pet` object that was observed.
+        '''
+        if include_existing:
+            pet = next(self.visible_pets, None)
+            if pet:
+                return pet
+
+        filter = event.Filter(pets.EvtPetObserved)
+        evt = await self.wait_for(filter, timeout=timeout)
+        return evt.pet
 
     async def wait_for_observed_charger(self, timeout=None, include_existing=True):
         '''Waits for a charger to be observed by the robot.
@@ -635,7 +702,7 @@ class CameraImage:
 
     This wraps a raw image and provides an :meth:`annotate_image` method
     that can resize and add dynamic annotations to the image, such as
-    marking up the location of objects and faces.
+    marking up the location of objects, faces and pets.
     '''
     def __init__(self, raw_image, image_annotator, image_number=0):
         #: :class:`PIL.Image.Image`: the raw unprocessed image from the camera

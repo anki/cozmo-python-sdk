@@ -38,11 +38,16 @@ from ._clad import _clad_to_engine_anki
 class ImageBox(collections.namedtuple('ImageBox', 'top_left_x top_left_y width height')):
     '''Defines a bounding box within an image frame.
 
-    This is used when objects and faces are observed to denote where in
-    the robot's camera view the object or face actually appears.  It's then
+    This is used when objects, faces and pets are observed to denote where in
+    the robot's camera view the object, face or pet actually appears.  It's then
     used by the :mod:`cozmo.annotate` module to show an outline of a box around
-    the object or face.
+    the object, face or pet.
     '''
+
+    @classmethod
+    def _create_from_clad_rect(cls, img_rect):
+        return cls(img_rect.x_topLeft, img_rect.y_topLeft,
+                   img_rect.width, img_rect.height)
 
     def __mul__(self, other):
         return ImageBox(self[0] * other, self[1] * other, self[2] * other, self[3] * other)
@@ -273,6 +278,23 @@ class Pose:
 
     Use the :func:'pose_z_angle' to return pose in the form of
     position and rotation defined by rotation about the z axis
+
+    When the engine is initialized, and whenever Cozmo is de-localized (i.e.
+    whenever Cozmo no longer knows where he is - e.g. when he's picked up)
+    Cozmo creates a new pose starting at (0,0,0) with no rotation, with
+    origin_id incremented to show that these poses cannot be compared with
+    earlier ones. As Cozmo drives around, his pose (and the pose of other
+    objects he observes - e.g. faces, cubes etc.) is relative to this initial
+    position and orientation.
+
+    The coordinate space is relative to Cozmo, where Cozmo's origin is the
+    point on the ground between Cozmo's two front wheels:
+
+    The X axis is Cozmo's forward direction
+    The Y axis is to Cozmo's left
+    The Z axis is up
+
+    Only poses of the same origin_id can safely be compared or operated on
     '''
 
     __slots__ = ('_position', '_rotation', '_origin_id')
@@ -281,6 +303,12 @@ class Pose:
         self._position = Position(x,y,z)
         self._rotation = Rotation(q0,q1,q2,q3,angle_z)
         self._origin_id = origin_id
+
+    @classmethod
+    def _create_from_clad(cls, pose):
+        return cls(pose.x, pose.y, pose.z,
+                   q0=pose.q0, q1=pose.q1, q2=pose.q2, q3=pose.q3,
+                   origin_id=pose.originID)
 
     def __repr__(self):
         return "<%s %s %s origin_id=%d>" % (self.__class__.__name__, self.position, self.rotation, self.origin_id)
@@ -487,15 +515,13 @@ def angle_z_to_quaternion(angle_z):
     return q0,q1,q2,q3
 
 
-class Position:
-    '''Represents the position of an object in the world.
-
-    A position consists of its x, y and z values in millimeters.
+class Vector3:
+    '''Represents a 3D Vector (type/units aren't specified)
 
     Args:
-        x (float): X position in millimeters
-        y (float): Y position in millimeters
-        z (float): Z position in millimeters
+        x (float): X component
+        y (float): Y component
+        z (float): Z component
     '''
 
     __slots__ = ('_x', '_y', '_z')
@@ -507,46 +533,58 @@ class Position:
 
     @property
     def x(self):
-        '''float: The x value of this position in millimeters (mm).'''
+        '''float: The x component.'''
         return self._x
 
     @property
     def y(self):
-        '''float: The y value of this position in millimeters (mm).'''
+        '''float: The y component.'''
         return self._y
 
     @property
     def z(self):
-        '''float: The z value of this position in millimeters (mm).'''
+        '''float: The z component.'''
         return self._z
 
     @property
     def x_y_z(self):
-        '''tuple (float, float, float): The X, Y, Z elements of the position (x,y,z)'''
-        return self._x,self._y,self._z
+        '''tuple (float, float, float): The X, Y, Z elements of the Vector3 (x,y,z)'''
+        return self._x, self._y, self._z
 
     def __repr__(self):
         return "<%s x: %.2f y: %.2f z: %.2f>" % (self.__class__.__name__, self.x, self.y, self.z)
 
     def __add__(self, other):
-        if not isinstance(other, Position):
-            raise TypeError("Unsupported operand for + expected Position")
-        return Position(self.x+other.x, self.y+other.y, self.z+other.z)
+        if not isinstance(other, Vector3):
+            raise TypeError("Unsupported operand for + expected Vector3")
+        return Vector3(self.x + other.x, self.y + other.y, self.z + other.z)
 
     def __sub__(self, other):
-        if not isinstance(other, Position):
-            raise TypeError("Unsupported operand for - expected Position")
-        return Position(self.x-other.x, self.y-other.y, self.z-other.z)
+        if not isinstance(other, Vector3):
+            raise TypeError("Unsupported operand for - expected Vector3")
+        return Vector3(self.x - other.x, self.y - other.y, self.z - other.z)
 
     def __mul__(self, other):
         if not isinstance(other, (int, float)):
             raise TypeError("Unsupported operand for * expected number")
-        return Position(self.x*other, self.y*other, self.z*other)
+        return Vector3(self.x * other, self.y * other, self.z * other)
 
     def __truediv__(self, other):
         if not isinstance(other, (int, float)):
             raise TypeError("Unsupported operand for / expected number")
-        return Position(self.x/other, self.y/other, self.z/other)
+        return Vector3(self.x / other, self.y / other, self.z / other)
+
+
+class Position(Vector3):
+    '''Represents the position of an object in the world.
+
+    A position consists of its x, y and z values in millimeters.
+
+    Args:
+        x (float): X position in millimeters
+        y (float): Y position in millimeters
+        z (float): Z position in millimeters
+    '''
 
 
 class Timeout:
