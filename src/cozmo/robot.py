@@ -390,7 +390,8 @@ class TurnTowardsFace(action.Action):
 
     def _encode(self):
         return _clad_to_engine_iface.TurnTowardsFace(
-            faceID=self.face.face_id)
+            faceID=self.face.face_id,
+            maxTurnAngle_rad=util.degrees(180).radians)
 
 
 
