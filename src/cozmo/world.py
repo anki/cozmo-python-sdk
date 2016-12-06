@@ -339,13 +339,13 @@ class World(event.Dispatcher):
             return
         obj.dispatch_event(evt)
 
-    def _recv_msg_available_objects(self, evt, *, msg):
-        for available_object in msg.objects:
-            obj = self._objects.get(available_object.objectID)
+    def _recv_msg_object_states(self, evt, *, msg):
+        for object_state in msg.objects:
+            obj = self._objects.get(object_state.objectID)
             if not obj:
-                obj = self._allocate_object_from_msg(available_object)
+                obj = self._allocate_object_from_msg(object_state)
             if obj:
-                obj._handle_available_object(available_object)
+                obj._handle_object_state(object_state)
 
     #### Public Event Handlers ####
 
