@@ -287,7 +287,7 @@ class ObservableObject(ObservableElement):
         self.dispatch_event(EvtObjectDisappeared, obj=self)
 
     def _handle_object_state(self, object_state):
-        # triggered when engine sends objectStates
+        # triggered when engine sends an ObjectStates message
         # as a response to a RequestObjectStates message
         if (self.last_observed_robot_timestamp and
                 (self.last_observed_robot_timestamp > object_state.lastObservedTimestamp)):
