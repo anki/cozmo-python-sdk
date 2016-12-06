@@ -81,10 +81,10 @@ To run a program for Cozmo:
 
 1. Plug the mobile device containing the Cozmo app into your computer.
 2. Open the Cozmo app on the device. Make sure Cozmo is on and connected to the app via WiFi.
-3. On the computer, open a Terminal (iOS/Linux) / Command Prompt (Windows) window. Type ``cd cozmo_sdk_examples`` where *cozmo_sdk_examples* is the name of the directory you extracted the SDK example programs into and press Enter.
+3. On the computer, open a Terminal (macOS/Linux) / Command Prompt (Windows) window. Type ``cd cozmo_sdk_examples`` where *cozmo_sdk_examples* is the name of the directory you extracted the SDK example programs into and press Enter.
 4. Now you can run your program.
 
-  a. For iOS and Linux systems, type the following into the same window and press **Enter**::
+  a. For macOS and Linux systems, type the following into the same window and press **Enter**::
 
       python3 program_name.py
 

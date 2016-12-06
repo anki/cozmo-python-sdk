@@ -31,7 +31,7 @@ Starting Up the SDK
 2. Open the Cozmo app on the phone. Make sure Cozmo is on and connected to the app via WiFi.
 3. Tap on the gear icon at the top right corner to open the Settings menu.
 4. Swipe left to show the Cozmo SDK option and tap the Enable SDK button.
-5. On the computer, open a Terminal (iOS/Linux) / Command Prompt (Windows) window. Type ``cd cozmo_sdk_examples`` where *cozmo_sdk_examples* is the name of the directory you extracted the SDK examples into and press Enter. The SDK example scripts can be downloaded from the :doc:`Downloads page </downloads>`.
+5. On the computer, open a Terminal (macOS/Linux) / Command Prompt (Windows) window. Type ``cd cozmo_sdk_examples`` where *cozmo_sdk_examples* is the name of the directory you extracted the SDK examples into and press Enter. The SDK example scripts can be downloaded from the :doc:`Downloads page </downloads>`.
 6. Now you can run any of the example programs.
 
 ----------------
@@ -48,9 +48,9 @@ Let's test your new setup by running a very simple program. This program instruc
 The Program
 """""""""""
 
-1. To run the program, using the same Terminal (iOS/Linux) / Command Prompt (Windows) window mentioned above:
+1. To run the program, using the same Terminal (macOS/Linux) / Command Prompt (Windows) window mentioned above:
 
-    a. For iOS and Linux systems, type the following and press **Enter**::
+    a. For macOS and Linux systems, type the following and press **Enter**::
 
         ./hello_world.py
 
@@ -109,7 +109,7 @@ Next Steps - "Night-Night"
 5. At the top of the screen, select *File -> Save As*, and save the program as ``nightnight.py``.
 6. Now you can run your program:
 
-        a. For iOS and Linux systems, type the following into the same window and press **Enter**::
+        a. For macOS and Linux systems, type the following into the same window and press **Enter**::
 
             ./nightnight.py
 
