@@ -73,7 +73,7 @@ class EvtConnectionClosed(event.Event):
 # Some messages have no robotID but should still be forwarded to the primary robot
 FORCED_ROBOT_MESSAGES = {"AnimationAborted",
                          "AnimationEvent",
-                         "AvailableObjects",
+                         "ObjectStates",
                          "BehaviorObjectiveAchieved",
                          "BehaviorTransition",
                          "BlockPickedUp",
@@ -381,10 +381,10 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
                 'cozmoclad_version=%s app_build_version=%s',
                 version.__version__, cozmoclad.__version__, msg.buildVersion)
 
-        # We send RequestAvailableObjects before refreshing the animation names
+        # We send RequestObjectStates before refreshing the animation names
         # as this ensures that we will receive the responses before we mark the
         # robot as ready
-        msg = _clad_to_engine_iface.RequestAvailableObjects()
+        msg = _clad_to_engine_iface.RequestObjectStates()
         self.send_msg(msg)
 
         self.anim_names.refresh()
