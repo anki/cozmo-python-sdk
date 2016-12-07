@@ -100,7 +100,7 @@ class EvtObjectAvailable(event.Event):
     '''Triggered when the engine reports that an object is available (i.e. exists).
 
     This will usually occur at the start of the program in response to the SDK
-    sending RequestAvailableObjects to the engine.
+    sending RequestObjectStates to the engine.
     '''
     obj = 'The object that is available'
     updated = 'A set of field names that have changed'
@@ -286,23 +286,23 @@ class ObservableObject(ObservableElement):
     def _dispatch_disappeared_event(self):
         self.dispatch_event(EvtObjectDisappeared, obj=self)
 
-    def _handle_available_object(self, available_object):
-        # triggered when engine sends available objects
-        # as a response to a RequestAvailableObjects message
+    def _handle_object_state(self, object_state):
+        # triggered when engine sends an ObjectStates message
+        # as a response to a RequestObjectStates message
         if (self.last_observed_robot_timestamp and
-                (self.last_observed_robot_timestamp > available_object.lastObservedTimestamp)):
-            logger.debug("ignoring old available_object=%s obj=%s (last_observed_robot_timestamp=%s)",
-                         available_object, self, self.last_observed_robot_timestamp)
+                (self.last_observed_robot_timestamp > object_state.lastObservedTimestamp)):
+            logger.debug("ignoring old object_state=%s obj=%s (last_observed_robot_timestamp=%s)",
+                         object_state, self, self.last_observed_robot_timestamp)
             return
 
         changed_fields = {'last_observed_robot_timestamp', 'pose'}
 
-        self.last_observed_robot_timestamp = available_object.lastObservedTimestamp
+        self.last_observed_robot_timestamp = object_state.lastObservedTimestamp
 
-        self._pose = util.Pose(available_object.pose.x, available_object.pose.y, available_object.pose.z,
-                               q0=available_object.pose.q0, q1=available_object.pose.q1,
-                               q2=available_object.pose.q2, q3=available_object.pose.q3,
-                               origin_id=available_object.pose.originID)
+        self._pose = util.Pose(object_state.pose.x, object_state.pose.y, object_state.pose.z,
+                               q0=object_state.pose.q0, q1=object_state.pose.q1,
+                               q2=object_state.pose.q2, q3=object_state.pose.q3,
+                               origin_id=object_state.pose.originID)
 
         self.dispatch_event(EvtObjectAvailable,
                             obj=self,
