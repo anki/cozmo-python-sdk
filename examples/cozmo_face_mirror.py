@@ -21,21 +21,20 @@ import sys
 import time
 
 try:
-    from PIL import Image
-except ImportError:
-    sys.exit("Cannot import from PIL: Do `pip3 install --user Pillow` to install")
-
-try:
     import numpy as np
 except ImportError:
     sys.exit("Cannot import numpy: Do `pip3 install --user numpy` to install")
 
+try:
+    from PIL import Image
+except ImportError:
+    sys.exit("Cannot import from PIL: Do `pip3 install --user Pillow` to install")
 
 import cozmo
 
 
 def get_in_position(robot):
-    '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face'''
+    '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face.'''
     if (robot.lift_height.distance_mm > 45) or (robot.head_angle.degrees < 40):
         with robot.perform_off_charger():
             robot.set_lift_height(0.0).wait_for_completed()
@@ -43,10 +42,10 @@ def get_in_position(robot):
 
 
 def calc_pixel_threshold(image):
-    '''Calculate a pixel threshold based on the image
+    '''Calculate a pixel threshold based on the image.
 
-    Anything brighter than this will be shown on (light blue)
-    Anything darker will be shown off (black)
+    Anything brighter than this will be shown on (light blue).
+    Anything darker will be shown off (black).
     '''
 
     # Convert image to gray scale
@@ -58,6 +57,7 @@ def calc_pixel_threshold(image):
 
 
 def cozmo_face_mirror(robot):
+    '''Continuously display Cozmo's camera feed back on his face.'''
 
     robot.camera.image_stream_enabled = True
 
@@ -69,17 +69,17 @@ def cozmo_face_mirror(robot):
         latest_image = robot.world.latest_image
 
         if latest_image is not None:
-            # scale the camera image down to fit on Cozmo's face
+            # Scale the camera image down to fit on Cozmo's face
             resized_image = latest_image.raw_image.resize(face_dimensions,
                                                           Image.BICUBIC)
 
             # Flip the image left/right so it displays mirrored
             resized_image = resized_image.transpose(Image.FLIP_LEFT_RIGHT)
 
-            # calculate the pixel threshold for this image
+            # Calculate the pixel threshold for this image
             pixel_threshold = calc_pixel_threshold(resized_image)
 
-            # convert the image to the format to display on Cozmo's face
+            # Convert the image to the format to display on Cozmo's face
             # the pixel_threshold defines which pixels should be on/off
             screen_data = cozmo.oled_face.convert_image_to_screen_data(
                 resized_image,
