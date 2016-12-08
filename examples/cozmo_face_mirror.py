@@ -57,7 +57,7 @@ def calc_pixel_threshold(image):
     return mean_value
 
 
-def run_coz_mirror(robot):
+def cozmo_face_mirror(robot):
 
     robot.camera.image_stream_enabled = True
 
@@ -100,7 +100,7 @@ def run(sdk_conn):
     print("Press CTRL-C to quit")
 
     try:
-        run_coz_mirror(robot)
+        cozmo_face_mirror(robot)
     except KeyboardInterrupt:
         print("")
         print("Exit requested by user")
