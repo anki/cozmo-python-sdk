@@ -187,28 +187,19 @@ class Action(event.Dispatcher):
         elif result == types.RUNNING:
             # XXX what does one do with this? it seems to occur after a cancel request!
             logger.warn('Received "running" action notification for action=%s', self)
-            self._set_failed('running', 'The action was still running')
+            self._set_failed('running', 'Action was still running')
 
-        elif result == types.FAILURE_NOT_STARTED:
+        elif result == types.NOT_STARTED:
             # not sure we'll see this?
-            self._set_failed('not_started', 'The action was not started')
+            self._set_failed('not_started', 'Action was not started')
 
-        elif result == types.FAILURE_TIMEOUT:
-            self._set_failed('timeout', 'The action timed out')
+        elif result == types.TIMEOUT:
+            self._set_failed('timeout', 'Action timed out')
 
-        elif result == types.FAILURE_PROCEED:
-            self._set_failed('proceed', 'Action completed but failed to find object')
-
-        elif result == types.FAILURE_RETRY:
-            self._set_failed('retry', 'Retry the event')
-
-        elif result == types.FAILURE_ABORT:
-            self._set_failed('aborted', 'Reached maximum retries for action')
-
-        elif result == types.FAILURE_TRACKS_LOCKED:
+        elif result == types.TRACKS_LOCKED:
             self._set_failed('tracks_locked', 'Action failed due to tracks locked')
 
-        elif result == types.FAILURE_BAD_TAG:
+        elif result == types.BAD_TAG:
             # guessing this is bad
             self._set_failed('bad_tag', 'Action failed due to bad tag')
             logger.error("Received FAILURE_BAD_TAG for action %s", self)
@@ -219,9 +210,21 @@ class Action(event.Dispatcher):
         elif result == types.INTERRUPTED:
             self._set_failed('interrupted', 'Action was interrupted')
 
+        # Can add additional if statements for other ActionResults to exposure more specific failure reasons to users
+
         else:
-            self._set_failed('unknown', 'Action failed with unknown reason')
-            logger.error('Received unknown action result status %s', msg)
+            # Got some other result figure out if it is a result that indicates the action can be retried
+            resultCategory = result >> _clad_to_game_cozmo.ARCBitShift.NUM_BITS
+            resultCategories = _clad_to_game_cozmo.ActionResultCategory
+            
+            if resultCategory == resultCategories.ABORT:
+                self._set_failed('aborted', 'Action failed')
+            elif resultCategory == resultCategories.RETRY:
+                self._set_failed('retry', 'Action failed but can be retried')
+            else:
+                # Shouldn't be able to get here
+                self._set_failed('unknown', 'Action failed with unknown reason')
+                logger.error('Received unknown action result status %s', msg)
 
 
     #### Public Event Handlers ####
