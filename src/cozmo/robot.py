@@ -592,12 +592,12 @@ class Robot(event.Dispatcher):
             # Note: Robot state is reset on entering SDK mode, and after any SDK program exits
             self.stop_all_motors()
             self.enable_reactionary_behaviors(False)
+            self._stop_behavior()
 
             # Ensure the SDK has full control of cube lights
             self._set_cube_light_state(False)
 
             await self.world.delete_all_custom_objects()
-            self._reset_behavior_state()
 
             # wait for animations to load
             await self.conn.anim_names.wait_for_loaded()
@@ -610,10 +610,12 @@ class Robot(event.Dispatcher):
             self.dispatch_event(EvtRobotReady, robot=self)
         asyncio.ensure_future(_init(), loop=self._loop)
 
-    def _reset_behavior_state(self):
-        msg = _clad_to_engine_iface.ExecuteBehavior(
-                behaviorType=_clad_to_engine_cozmo.BehaviorType.NoneBehavior)
+    def _stop_behavior(self):
+        # Internal helper method called from Behavior.stop etc.
+        msg = _clad_to_engine_iface.ExecuteBehaviorByExecutableType(
+                behaviorType=_clad_to_engine_cozmo.ExecutableBehaviorType.NoneBehavior)
         self.conn.send_msg(msg)
+        self._is_behavior_running = False
 
     def _set_cube_light_state(self, enable):
         msg = _clad_to_engine_iface.EnableLightStates(enable=enable, objectID=-1)
@@ -1146,13 +1148,6 @@ class Robot(event.Dispatcher):
         b = self.start_behavior(behavior_type)
         await asyncio.sleep(active_time, loop=self._loop)
         b.stop()
-
-    def _stop_behavior(self):
-        # Internal helper method called from Behavior.stop etc.
-        msg = _clad_to_engine_iface.ExecuteBehaviorByExecutableType(
-                behaviorType=_clad_to_engine_cozmo.ExecutableBehaviorType.NoneBehavior)
-        self.conn.send_msg(msg)
-        self._is_behavior_running = False
 
     def start_freeplay_behaviors(self):
         '''Start running freeplay behaviors on Cozmo
