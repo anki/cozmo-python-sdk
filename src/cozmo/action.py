@@ -210,16 +210,15 @@ class Action(event.Dispatcher):
         elif result == types.INTERRUPTED:
             self._set_failed('interrupted', 'Action was interrupted')
 
-        # Can add additional if statements for other ActionResults to exposure more specific failure reasons to users
-
         else:
-            # Got some other result figure out if it is a result that indicates the action can be retried
-            resultCategory = result >> _clad_to_game_cozmo.ARCBitShift.NUM_BITS
-            resultCategories = _clad_to_game_cozmo.ActionResultCategory
+            # All other results should fall under either the abort or retry
+            # categories, determine the category by shifting the result
+            result_category = result >> _clad_to_game_cozmo.ARCBitShift.NUM_BITS
+            result_categories = _clad_to_game_cozmo.ActionResultCategory
             
-            if resultCategory == resultCategories.ABORT:
+            if result_category == result_categories.ABORT:
                 self._set_failed('aborted', 'Action failed')
-            elif resultCategory == resultCategories.RETRY:
+            elif result_category == result_categories.RETRY:
                 self._set_failed('retry', 'Action failed but can be retried')
             else:
                 # Shouldn't be able to get here
