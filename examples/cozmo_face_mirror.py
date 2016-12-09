@@ -76,11 +76,12 @@ def cozmo_face_mirror(robot):
             # Flip the image left/right so it displays mirrored
             resized_image = resized_image.transpose(Image.FLIP_LEFT_RIGHT)
 
-            # Calculate the pixel threshold for this image
+            # Calculate the pixel threshold for this image. This threshold
+            # will define how bright a pixel needs to be in the source image
+            # for it to be displayed as lit-up on Cozmo's face.
             pixel_threshold = calc_pixel_threshold(resized_image)
 
-            # Convert the image to the format to display on Cozmo's face
-            # the pixel_threshold defines which pixels should be on/off
+            # Convert the image to the format to display on Cozmo's face.
             screen_data = cozmo.oled_face.convert_image_to_screen_data(
                 resized_image,
                 pixel_threshold=pixel_threshold)
