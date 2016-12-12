@@ -23,10 +23,12 @@ import sys
 
 import cozmo
 
+
 def run(sdk_conn):
     '''The run method runs once Cozmo is connected.'''
     robot = sdk_conn.wait_for_robot()
     robot.say_text("Hello World").wait_for_completed()
+
 
 if __name__ == '__main__':
     cozmo.setup_basic_logging()

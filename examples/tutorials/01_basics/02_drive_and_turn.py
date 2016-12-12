@@ -14,27 +14,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Turn Cozmo and play an animation.
+'''Drive And Turn
 
-Turn the robot around its current position by 90 degrees.
-Start the MajorWin animation trigger playing on Cozmo.
+Make Cozmo drive forwards and turn 90 degrees to the left.
 '''
 
 import sys
 
 import cozmo
-from cozmo.util import degrees
+from cozmo.util import degrees, distance_mm, speed_mmps
 
 
 def run(sdk_conn):
     '''The run method runs once Cozmo is connected.'''
     robot = sdk_conn.wait_for_robot()
 
-    # Turn 90 degrees, play an animation, exit.
-    robot.turn_in_place(degrees(90)).wait_for_completed()
+    # Drive forwards for 150 millimeters at 50 millimeters-per-second.
+    robot.drive_straight(distance_mm(150), speed_mmps(50)).wait_for_completed()
 
-    anim = robot.play_anim_trigger(cozmo.anim.Triggers.MajorWin)
-    anim.wait_for_completed()
+    # Turn 90 degrees to the left.
+    # Note: To turn to the right, just use a negative number.
+    robot.turn_in_place(degrees(90)).wait_for_completed()
 
 
 if __name__ == '__main__':

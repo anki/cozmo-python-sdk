@@ -14,24 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Make Cozmo drive in a square.
+'''Play an animation on Cozmo
 
-This script is designed to show off the 'simple robot capabilites' of Cozmo.
-He will drive in a square by going forward and turning (left) 4 times.
+Play animations on Cozmo
 '''
 
 import sys
 
 import cozmo
-from cozmo.util import degrees, distance_mm, speed_mmps
+
 
 def run(sdk_conn):
     '''The run method runs once Cozmo is connected.'''
     robot = sdk_conn.wait_for_robot()
 
-    for _ in range(4):
-        robot.drive_straight(distance_mm(150), speed_mmps(50)).wait_for_completed()
-        robot.turn_in_place(degrees(90)).wait_for_completed()
+    print("1. Play an animation via a trigger")
+    robot.play_anim_trigger(cozmo.anim.Triggers.CubePounceLoseSession).wait_for_completed()
+
 
 if __name__ == '__main__':
     cozmo.setup_basic_logging()
