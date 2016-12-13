@@ -128,7 +128,7 @@ async def serve_gmail(request):
                 await robot.say_text("Email from " + email_local_part).wait_for_completed()
 
                 # Last, have Cozmo display an email image on his face.
-                robot.display_image_file_on_face("../images/ifttt_gmail.png")
+                robot.display_image_file_on_face("images/ifttt_gmail.png")
 
         except cozmo.RobotBusy:
             cozmo.logger.warn("Robot was busy so didn't read email address: "+ from_email_address)

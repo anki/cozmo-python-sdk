@@ -129,7 +129,7 @@ async def serve_stocks(request):
                 await robot.say_text(stock_name + " is up " + percentage + " percent").wait_for_completed()
 
                 # Last, have Cozmo display a stock market image on his face.
-                robot.display_image_file_on_face("../images/ifttt_stocks.png")
+                robot.display_image_file_on_face("images/ifttt_stocks.png")
 
         except cozmo.RobotBusy:
             cozmo.logger.warn("Robot was busy so didn't read stock update: '"+ stock_name + " is up " + percentage + " percent'.")
