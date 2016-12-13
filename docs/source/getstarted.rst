@@ -82,7 +82,6 @@ The code for the Hello World program is:
 
   if __name__ == '__main__':
     cozmo.setup_basic_logging()
-    cozmo.connect(run)
 
     try:
        cozmo.connect(run)
