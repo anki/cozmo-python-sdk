@@ -28,7 +28,7 @@ Windows Installation
 4. Move the zip file you downloaded in step 2 to your new Android folder at ``C:\Users\your_name\Android``.
 5. Right-click the zip file in ``C:\Users\your_name\Android`` and select Extract All.
 6. Open a Command Prompt window. (To find the Command Prompt, you may use the search box in the lower left-hand corner of your screen.) In the Command Prompt window, navigate to your Android folder by typing ``cd C:\Users\your_name\Android``.
-7. Next, navigate to the android file inside the SDK tools package by typing this command: ``cd tools_r*-windows\tools`` (where ``r*`` is the version of your tools download file, e.g. ``tools_r25.2.3-windows``).
+7. Next, navigate to the ``android`` (or ``android.bat``) file inside the SDK tools package by typing this command: ``cd tools_r*-windows\tools`` (where ``r*`` is the version of your tools download file, e.g. ``tools_r25.2.3-windows``).
 
 8. Finally, run this command: ``android``
   a. If you do not have Java installed, instructions will display in your Command Prompt window to tell you how to install it. Follow the instructions to install Java 8. Once Java 8 is installed, run the ``android`` command again.
