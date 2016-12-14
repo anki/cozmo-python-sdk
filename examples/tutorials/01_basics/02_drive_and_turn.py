@@ -19,16 +19,11 @@
 Make Cozmo drive forwards and turn 90 degrees to the left.
 '''
 
-import sys
-
 import cozmo
 from cozmo.util import degrees, distance_mm, speed_mmps
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
-
+def cozmo_program(robot: cozmo.robot.Robot):
     # Drive forwards for 150 millimeters at 50 millimeters-per-second.
     robot.drive_straight(distance_mm(150), speed_mmps(50)).wait_for_completed()
 
@@ -37,9 +32,4 @@ def run(sdk_conn):
     robot.turn_in_place(degrees(90)).wait_for_completed()
 
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.run_program(cozmo_program)

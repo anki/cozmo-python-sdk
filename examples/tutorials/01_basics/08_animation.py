@@ -19,22 +19,15 @@
 Play animations on Cozmo
 '''
 
-import sys
-
 import cozmo
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
-
-    print("1. Play an animation via a trigger")
+def cozmo_program(robot: cozmo.robot.Robot):
+    # Play an animation via a Trigger
     robot.play_anim_trigger(cozmo.anim.Triggers.CubePounceLoseSession).wait_for_completed()
 
+    # Play an animation via a Name
+    robot.play_anim(name="ID_pokedB").wait_for_completed()
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+
+cozmo.run_program(cozmo_program)

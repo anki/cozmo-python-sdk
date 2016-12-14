@@ -19,26 +19,15 @@
 Make Cozmo count from 1 to 5
 '''
 
-import sys
-
 import cozmo
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
-
+def cozmo_program(robot: cozmo.robot.Robot):
     # A "for loop" runs for each value i in the given range - in this example
-    # starting from 1, until i is no longer less-than 6 (so 1,2,3,4,5).
+    # starting from 1, whilst i is less than 6 (so 1,2,3,4,5).
     for i in range(1, 6):
         # Convert the number to a string, and make Cozmo say it.
         robot.say_text(str(i)).wait_for_completed()
 
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.run_program(cozmo_program)

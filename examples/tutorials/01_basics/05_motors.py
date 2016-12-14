@@ -21,16 +21,12 @@ This is an example of how you can also have low-level control of Cozmo's motors
 multiple things at once.
 '''
 
-import sys
 import time
 
 import cozmo
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
-
+def cozmo_program(robot: cozmo.robot.Robot):
     # Tell the head motor to start lowering the head (at 5 radians per second)
     robot.move_head(-5)
     # Tell the lift motor to start lowering the lift (at 5 radians per second)
@@ -55,9 +51,4 @@ def run(sdk_conn):
     time.sleep(3)
 
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.run_program(cozmo_program)

@@ -16,27 +16,28 @@
 
 '''Control Cozmo's Backpack lights
 
-This script shows how you can control Cozmo's backpack lights and
-set each part to a variety of different colors.
+This script shows how you can control Cozmo's backpack lights and set
+them to different colors.
 '''
 
-import sys
 import time
 
 import cozmo
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
-
+def cozmo_program(robot: cozmo.robot.Robot):
+    # set all of Cozmo's backpack lights to red, and wait for 2 seconds
     robot.set_all_backpack_lights(cozmo.lights.red_light)
-    time.sleep(10)
+    time.sleep(2)
+    # set all of Cozmo's backpack lights to green, and wait for 2 seconds
+    robot.set_all_backpack_lights(cozmo.lights.green_light)
+    time.sleep(2)
+    # set all of Cozmo's backpack lights to green, and wait for 2 seconds
+    robot.set_all_backpack_lights(cozmo.lights.blue_light)
+    time.sleep(2)
+    # turn off Cozmo's backpack lights and wait for 2 seconds
+    robot.set_all_backpack_lights(cozmo.lights.off_light)
+    time.sleep(2)
 
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.run_program(cozmo_program)

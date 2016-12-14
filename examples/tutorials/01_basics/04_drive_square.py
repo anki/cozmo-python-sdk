@@ -20,16 +20,11 @@ This script combines the previous two examples to make Cozmo drive in a
 square by going forward and turning (left) 4 times in a row.
 '''
 
-import sys
-
 import cozmo
 from cozmo.util import degrees, distance_mm, speed_mmps
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
-
+def cozmo_program(robot: cozmo.robot.Robot):
     # Use a "for loop" to repeat the indented code 4 times
     # Note: the _ variable name can be used when you don't need the value
     for _ in range(4):
@@ -37,9 +32,4 @@ def run(sdk_conn):
         robot.turn_in_place(degrees(90)).wait_for_completed()
 
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.run_program(cozmo_program)

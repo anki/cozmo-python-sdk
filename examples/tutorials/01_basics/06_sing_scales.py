@@ -16,23 +16,21 @@
 
 '''Make Cozmo sing Do Re Mi.
 
-Slight extension from hello_world.py - introduces for loops to make Cozmo "sing" the scales.
+Slight extension from the earlier 03_count.py example.
+Make Cozmo "sing" the scales.
 '''
-
-import sys
 
 import cozmo
 from cozmo.util import degrees
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
 
+def cozmo_program(robot: cozmo.robot.Robot):
+    # scales is a list of the notes for Cozmo to sing
     scales = ["Doe", "Ray", "Mi", "Fa", "So", "La", "Ti", "Doe"]
 
     # Find voice_pitch_delta value that will range the pitch from -1 to 1 over all of the scales
     voice_pitch = -1.0
-    voice_pitch_delta = 2.0 / (len(scales) -1)
+    voice_pitch_delta = 2.0 / (len(scales) - 1)
 
     # Move head and lift down to the bottom, and wait until that's achieved
     robot.move_head(-5) # start moving head down so it mostly happens in parallel with lift
@@ -48,9 +46,5 @@ def run(sdk_conn):
         robot.say_text(note, voice_pitch=voice_pitch, duration_scalar=0.3).wait_for_completed()
         voice_pitch += voice_pitch_delta
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+
+cozmo.run_program(cozmo_program)
