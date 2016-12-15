@@ -57,13 +57,8 @@ class BlinkyCube(cozmo.objects.LightCube):
 cozmo.world.World.light_cube_factory = BlinkyCube
 
 
-
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
+def cozmo_program(robot: cozmo.robot.Robot):
     cube = None
-    robot = sdk_conn.wait_for_robot()
-    print("Got initialized Cozmo")
-
     look_around = robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
 
     try:
@@ -85,9 +80,5 @@ def run(sdk_conn):
         cube.stop_light_chaser()
         cube.set_lights_off()
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+
+cozmo.run_program(cozmo_program)

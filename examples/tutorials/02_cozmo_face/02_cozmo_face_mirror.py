@@ -56,12 +56,15 @@ def calc_pixel_threshold(image):
     return mean_value
 
 
-def cozmo_face_mirror(robot):
+def cozmo_face_mirror(robot: cozmo.robot.Robot):
     '''Continuously display Cozmo's camera feed back on his face.'''
 
     robot.camera.image_stream_enabled = True
+    get_in_position(robot)
 
     face_dimensions = cozmo.oled_face.SCREEN_WIDTH, cozmo.oled_face.SCREEN_HALF_HEIGHT
+
+    print("Press CTRL-C to quit")
 
     while True:
         duration_s = 0.1  # time to display each camera frame on Cozmo's face
@@ -92,25 +95,5 @@ def cozmo_face_mirror(robot):
         time.sleep(duration_s)
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-
-    robot = sdk_conn.wait_for_robot()
-    get_in_position(robot)
-
-    print("Press CTRL-C to quit")
-
-    try:
-        cozmo_face_mirror(robot)
-    except KeyboardInterrupt:
-        print("")
-        print("Exit requested by user")
-
-
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
+cozmo.run_program(cozmo_face_mirror)

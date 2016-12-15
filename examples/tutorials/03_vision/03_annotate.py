@@ -65,8 +65,7 @@ class Battery(cozmo.annotate.Annotator):
         text.render(d, bounds)
 
 
-async def run(sdk_conn):
-    robot = await sdk_conn.wait_for_robot()
+async def cozmo_program(robot: cozmo.robot.Robot):
     robot.world.image_annotator.add_static_text('text', 'Coz-Cam', position=cozmo.annotate.TOP_RIGHT)
     robot.world.image_annotator.add_annotator('clock', clock)
     robot.world.image_annotator.add_annotator('battery', Battery)
@@ -89,6 +88,4 @@ async def run(sdk_conn):
     await asyncio.sleep(100)
 
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    cozmo.connect_with_tkviewer(run, force_on_top=True)
+cozmo.run_program(cozmo_program, use_viewer=True, force_viewer_on_top=True)

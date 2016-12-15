@@ -21,13 +21,12 @@ It waits for a face, and then will light up his backpack when that face is visib
 '''
 
 import asyncio
-import sys
 import time
 
 import cozmo
 
 
-def light_when_face(robot):
+def light_when_face(robot: cozmo.robot.Robot):
     '''The core of the light_when_face program'''
 
     # Move lift down and tilt the head up
@@ -52,21 +51,4 @@ def light_when_face(robot):
         time.sleep(.1)
 
 
-def run(sdk_conn):
-    '''The run method runs once the Cozmo SDK is connected.'''
-    robot = sdk_conn.wait_for_robot()
-
-    try:
-        light_when_face(robot)
-
-    except KeyboardInterrupt:
-        print("")
-        print("Exit requested by user")
-
-
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect_with_tkviewer(run, force_on_top=True)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.run_program(light_when_face, use_viewer=True, force_viewer_on_top=True)

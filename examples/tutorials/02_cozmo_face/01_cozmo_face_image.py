@@ -36,11 +36,7 @@ def get_in_position(robot):
             robot.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-
-    robot = sdk_conn.wait_for_robot()
-
+def cozmo_program(robot: cozmo.robot.Robot):
     get_in_position(robot)
 
     # load some images and convert them for display cozmo's face
@@ -73,10 +69,6 @@ def run(sdk_conn):
             time.sleep(duration_s)
 
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
+cozmo.run_program(cozmo_program)
+

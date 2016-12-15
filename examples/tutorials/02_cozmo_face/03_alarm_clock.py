@@ -23,7 +23,6 @@ NOTE: This is an example program. Anki takes no responsibility
 if Cozmo fails to wake you up on time!
 '''
 
-from contextlib import contextmanager
 import datetime
 import math
 import sys
@@ -219,7 +218,7 @@ def extract_time_from_args():
     return None
 
 
-def get_in_position(robot):
+def get_in_position(robot: cozmo.robot.Robot):
     '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face'''
     if (robot.lift_height.distance_mm > 45) or (robot.head_angle.degrees < 40):
         with robot.perform_off_charger():
@@ -227,7 +226,7 @@ def get_in_position(robot):
             robot.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
 
 
-def alarm_clock(robot):
+def alarm_clock(robot: cozmo.robot.Robot):
     '''The core of the alarm_clock program'''
 
     alarm_time = extract_time_from_args()
@@ -275,23 +274,5 @@ def alarm_clock(robot):
         time.sleep(0.1)
 
 
-def run(sdk_conn):
-    '''The run method runs once the Cozmo SDK is connected.'''
-
-    robot = sdk_conn.wait_for_robot()
-
-    try:
-        alarm_clock(robot)
-
-    except KeyboardInterrupt:
-        print("")
-        print("Exit requested by user")
-
-
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
+cozmo.run_program(alarm_clock)

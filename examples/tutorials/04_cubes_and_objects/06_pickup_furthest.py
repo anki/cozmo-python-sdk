@@ -28,15 +28,10 @@ pick up the furthest one. It calculates this based on the
 reported poses of the Cubes.
 '''
 
-import sys
-
 import cozmo
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
-
+def cozmo_program(robot: cozmo.robot.Robot):
     cubes = robot.world.wait_until_observe_num_objects(num=3, object_type=cozmo.objects.LightCube, timeout=60)
 
     max_dst, targ = 0, None
@@ -52,9 +47,4 @@ def run(sdk_conn):
         robot.pickup_object(targ).wait_for_completed()
 
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect_with_tkviewer(run, force_on_top=True)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.run_program(cozmo_program)

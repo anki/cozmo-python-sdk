@@ -34,7 +34,7 @@ normally be a need to modify them or write your own.
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['DeviceConnector', 'IOSConnector', 'AndroidConnector',
            'connect',  'connect_with_tkviewer', 'connect_on_loop',
-           'setup_basic_logging']
+           'run_program', 'setup_basic_logging']
 
 import threading
 
@@ -692,3 +692,79 @@ def setup_basic_logging(general_log_level=None, protocol_log_level=None,
     if protocol_log_level is not None:
         logger_protocol.addHandler(h)
         logger_protocol.setLevel(protocol_log_level)
+
+
+class _SyncRunRobotWrapper:
+    # Wrapper to take a NON-(async/coroutine) function and
+    # wrap it so that it can be used as a run(sdk_conn: cozmo.conn.CozmoConnection)
+    # that automatically waits for a robot on the connection and then passes that
+    # to the wrapped function
+
+    def __init__(self, robot_func):
+        self._robot_func = robot_func
+
+    def func(self, sdk_conn):
+        robot = sdk_conn.wait_for_robot()
+        try:
+            self._robot_func(robot)
+        except KeyboardInterrupt:
+            logger.info('\nExit requested by user')
+
+
+class _AsyncRunRobotWrapper:
+    # Wrapper to take an async/coroutine function and
+    # wrap it so that it can be used as a run(sdk_conn: cozmo.conn.CozmoConnection)
+    # that automatically waits for a robot on the connection and then passes that
+    # to the wrapped function
+
+    def __init__(self, robot_func):
+        self._robot_func = robot_func
+
+    async def func(self, sdk_conn):
+        robot = await sdk_conn.wait_for_robot()
+        try:
+            await self._robot_func(robot)
+        except KeyboardInterrupt:
+            logger.info('\nExit requested by user')
+
+
+def _wrap_wait_for_robot(f):
+    # Wrap f (a function that takes in an already created robot) with a function
+    # that accepts a cozmo.conn.CozmoConnection
+    if asyncio.iscoroutinefunction(f):
+        return _AsyncRunRobotWrapper(f).func
+    else:
+        return _SyncRunRobotWrapper(f).func
+
+
+def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
+               connector=None, force_viewer_on_top=False, wait_for_robot = True):
+    '''Connect to Cozmo and run the provided program/function f.
+
+    Args:
+
+        f (callable): The function to execute
+        use_viewer (bool): Specifies whether the window should be forced on top of all others
+        conn_factory (callable): Override the factory function to generate a
+            :class:`cozmo.conn.CozmoConnection` (or subclass) instance.
+        connector (:class:`DeviceConnector`): Optional instance of a DeviceConnector
+            subclass that handles opening the USB connection to a device.
+            By default it will connect to the first Android or iOS device that
+            has the Cozmo app running in SDK mode.
+        force_viewer_on_top (bool): Specifies whether the window should be
+            forced on top of all others (only relevant if use_viewer is True).
+        wait_for_robot (bool): True if f takes in an already connected
+            :class:`cozmo.robot.Robot`, False if it takes in a
+            :class:`cozmo.conn.CozmoConnection`
+    '''
+    setup_basic_logging()
+
+    try:
+        if wait_for_robot:
+            f = _wrap_wait_for_robot(f)
+        if use_viewer:
+            connect_with_tkviewer(f, conn_factory=conn_factory, connector=connector, force_on_top=force_viewer_on_top)
+        else:
+            connect(f, conn_factory=conn_factory, connector=connector)
+    except exceptions.ConnectionError as e:
+        sys.exit("A connection error occurred: %s" % e)

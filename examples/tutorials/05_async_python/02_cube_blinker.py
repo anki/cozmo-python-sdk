@@ -57,12 +57,11 @@ class BlinkyCube(cozmo.objects.LightCube):
 cozmo.world.World.light_cube_factory = BlinkyCube
 
 
+async def cozmo_program(robot: cozmo.robot.Robot):
+    '''The async equivalent of 01_cube_blinker_sync
 
-async def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.
-
-    The usage of ``async def`` makes the run method a coroutine. Within
-    a coroutine, ``await`` can be used. With ``await``, the statement
+    The usage of ``async def`` makes the cozmo_program method a coroutine.
+    Within a coroutine, ``await`` can be used. With ``await``, the statement
     blocks until the request being waited for has completed. Meanwhile
     the event loop continues in the background.
 
@@ -78,10 +77,8 @@ async def run(sdk_conn):
     For more information, see
     https://docs.python.org/3/library/asyncio-task.html
     '''
-    cube = None
-    robot = await sdk_conn.wait_for_robot()
-    print("Got initialized Cozmo")
 
+    cube = None
     look_around = robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
 
     try:
@@ -103,9 +100,5 @@ async def run(sdk_conn):
         cube.stop_light_chaser()
         cube.set_lights_off()
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+
+cozmo.run_program(cozmo_program)
