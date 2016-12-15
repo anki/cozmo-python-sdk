@@ -189,17 +189,17 @@ class Action(event.Dispatcher):
             logger.warn('Received "running" action notification for action=%s', self)
             self._set_failed('running', 'Action was still running')
 
-        elif result == types.NOT_STARTED:
+        elif result == types.FAILURE_NOT_STARTED:
             # not sure we'll see this?
             self._set_failed('not_started', 'Action was not started')
 
-        elif result == types.TIMEOUT:
+        elif result == types.FAILURE_TIMEOUT:
             self._set_failed('timeout', 'Action timed out')
 
-        elif result == types.TRACKS_LOCKED:
+        elif result == types.FAILURE_TRACKS_LOCKED:
             self._set_failed('tracks_locked', 'Action failed due to tracks locked')
 
-        elif result == types.BAD_TAG:
+        elif result == types.FAILURE_BAD_TAG:
             # guessing this is bad
             self._set_failed('bad_tag', 'Action failed due to bad tag')
             logger.error("Received FAILURE_BAD_TAG for action %s", self)
