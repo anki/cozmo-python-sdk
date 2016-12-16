@@ -32,7 +32,7 @@ normally be a need to modify them or write your own.
 '''
 
 # __all__ should order by constants, event classes, other classes, functions.
-__all__ = ['DeviceConnector', 'IOSConnector', 'AndroidConnector',
+__all__ = ['DeviceConnector', 'IOSConnector', 'AndroidConnector', 'TCPConnector',
            'connect',  'connect_with_tkviewer', 'connect_on_loop',
            'setup_basic_logging']
 
