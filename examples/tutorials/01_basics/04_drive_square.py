@@ -16,8 +16,9 @@
 
 '''Make Cozmo drive in a square.
 
-This script combines the previous two examples to make Cozmo drive in a
-square by going forward and turning (left) 4 times in a row.
+This script combines the two previous examples (02_drive_and_turn.py and
+03_count.py) to make Cozmo drive in a square by going forward and turning
+left 4 times in a row.
 '''
 
 import cozmo

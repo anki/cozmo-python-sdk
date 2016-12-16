@@ -58,7 +58,7 @@ cozmo.world.World.light_cube_factory = BlinkyCube
 
 
 async def cozmo_program(robot: cozmo.robot.Robot):
-    '''The async equivalent of 01_cube_blinker_sync
+    '''The async equivalent of 01_cube_blinker_sync.
 
     The usage of ``async def`` makes the cozmo_program method a coroutine.
     Within a coroutine, ``await`` can be used. With ``await``, the statement

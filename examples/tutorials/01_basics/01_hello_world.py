@@ -16,8 +16,7 @@
 
 '''Hello World
 
-Make Cozmo say 'Hello World' and then wait for him to finish speaking
-in this simple Cozmo SDK example program.
+Make Cozmo say 'Hello World' in this simple Cozmo SDK example program.
 '''
 
 import cozmo

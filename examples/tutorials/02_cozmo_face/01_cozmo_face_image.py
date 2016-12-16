@@ -69,6 +69,11 @@ def cozmo_program(robot: cozmo.robot.Robot):
             time.sleep(duration_s)
 
 
-cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
+# Cozmo is moved off his charger contacts by default at the start of any program.
+# This is because not all motor movement is possible whilst drawing current from
+# the charger. In cases where motor movement is not required, such as this example
+# we can specify that Cozmo can stay on his charger at the start:
+cozmo.robot.Robot.drive_off_charger_on_connect = False
+
 cozmo.run_program(cozmo_program)
 

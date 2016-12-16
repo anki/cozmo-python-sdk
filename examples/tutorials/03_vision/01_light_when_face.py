@@ -35,6 +35,7 @@ def light_when_face(robot: cozmo.robot.Robot):
 
     face = None
 
+    print("Press CTRL-C to quit")
     while True:
         if face and face.is_visible:
             robot.set_all_backpack_lights(cozmo.lights.blue_light)

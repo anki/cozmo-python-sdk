@@ -700,13 +700,13 @@ class _SyncRunRobotWrapper:
     # that automatically waits for a robot on the connection and then passes that
     # to the wrapped function
 
-    def __init__(self, robot_func):
-        self._robot_func = robot_func
+    def __init__(self, func_with_robot):
+        self._func_with_robot = func_with_robot
 
-    def func(self, sdk_conn):
+    def func_with_conn(self, sdk_conn):
         robot = sdk_conn.wait_for_robot()
         try:
-            self._robot_func(robot)
+            self._func_with_robot(robot)
         except KeyboardInterrupt:
             logger.info('\nExit requested by user')
 
@@ -717,24 +717,24 @@ class _AsyncRunRobotWrapper:
     # that automatically waits for a robot on the connection and then passes that
     # to the wrapped function
 
-    def __init__(self, robot_func):
-        self._robot_func = robot_func
+    def __init__(self, func_with_robot):
+        self._func_with_robot = func_with_robot
 
-    async def func(self, sdk_conn):
+    async def func_with_conn(self, sdk_conn):
         robot = await sdk_conn.wait_for_robot()
         try:
-            await self._robot_func(robot)
+            await self._func_with_robot(robot)
         except KeyboardInterrupt:
             logger.info('\nExit requested by user')
 
 
-def _wrap_wait_for_robot(f):
-    # Wrap f (a function that takes in an already created robot) with a function
-    # that accepts a cozmo.conn.CozmoConnection
-    if asyncio.iscoroutinefunction(f):
-        return _AsyncRunRobotWrapper(f).func
+def _wrap_wait_for_robot(func_with_robot):
+    # Wrap func_with_robot (a function that takes in an already created robot)
+    # with a function that accepts a cozmo.conn.CozmoConnection
+    if asyncio.iscoroutinefunction(func_with_robot):
+        return _AsyncRunRobotWrapper(func_with_robot).func_with_conn
     else:
-        return _SyncRunRobotWrapper(f).func
+        return _SyncRunRobotWrapper(func_with_robot).func_with_conn
 
 
 def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,

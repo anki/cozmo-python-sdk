@@ -35,6 +35,7 @@ def follow_faces(robot: cozmo.robot.Robot):
 
     face_to_follow = None
 
+    print("Press CTRL-C to quit")
     while True:
         turn_action = None
         if face_to_follow:

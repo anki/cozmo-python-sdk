@@ -16,7 +16,7 @@
 
 '''Drive And Turn
 
-Make Cozmo drive forwards and turn 90 degrees to the left.
+Make Cozmo drive forwards and then turn 90 degrees to the left.
 '''
 
 import cozmo
