@@ -89,7 +89,7 @@ import sys
 import threading
 
 import cozmo
-sys.path.append('../apps/')
+sys.path.append('../flask/')
 import flask_helpers
 
 from common import IFTTTRobot
