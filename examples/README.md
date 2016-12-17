@@ -6,7 +6,7 @@ See the [apps](apps) directory for some fun fully-featured programs like a remot
 
 See the [if_this_then_that](if_this_then_that) directory for some examples that connect Cozmo to the "If This Then That" service.
 
-See the [multi_robot](robot) directory for an example of how to connect the SDK to multiple devices and robots.
+See the [multi_robot](multi_robot) directory for an example of how to connect the SDK to multiple devices and robots.
 
 See the [twitter](twitter) directory for some examples of how to connect Cozmo to Twitter.
 
