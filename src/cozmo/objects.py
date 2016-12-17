@@ -441,7 +441,7 @@ class LightCube(ObservableObject):
         '''Set all lights on the cube
 
         Args:
-            light (`class:`cozmo.lights.Light`): The settings for the lights.
+            light (:class:`cozmo.lights.Light`): The settings for the lights.
         '''
         msg = _clad_to_engine_iface.SetAllActiveObjectLEDs(
                 objectID=self.object_id, robotID=self._robot.robot_id)

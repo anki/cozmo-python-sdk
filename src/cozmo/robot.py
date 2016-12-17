@@ -1052,9 +1052,9 @@ class Robot(event.Dispatcher):
         if you wish to wait for completion (or listen for the
         :class:`cozmo.anim.EvtAnimationCompleted` event).
 
-        Warning: Specific animations may be renamed or removed in future updates
-            of the app. If you want your program to work more reliably across
-            all versions we recommed using :meth:`play_anim_trigger` instead.
+        Warning: Specific animations may be renamed or removed in future updates of the app.
+            If you want your program to work more reliably across all versions
+            we recommend using :meth:`play_anim_trigger` instead.
 
         Args:
             name (str): The name of the animation to play.
