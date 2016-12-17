@@ -1,6 +1,6 @@
 # Example programs for the Anki Cozmo Python SDK
 
-See the [tutorials](tutorials) directory for a progression of example programs all the way from hello_world in the [01_basics](tutorials/01_basics) sub-directory, through to more advanced vision and action examples.
+See the [tutorials](tutorials) directory for a progression of example programs all the way from [hello_world](tutorials/01_basics/01_hello_world.py) in the [01_basics](tutorials/01_basics) sub-directory, through to more advanced vision and action examples.
 
 See the [apps](apps) directory for some fun fully-featured programs like a remote control and desk security guard.
 
