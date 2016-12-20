@@ -51,6 +51,7 @@ from . import behavior
 from . import camera
 from . import conn
 from . import event
+from . import exceptions
 from . import lights
 from . import objects
 from . import util
