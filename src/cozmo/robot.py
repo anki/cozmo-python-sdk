@@ -181,6 +181,10 @@ class DisplayOledFaceImage(action.Action):
 
     _action_type = _clad_to_engine_cozmo.RobotActionType.DISPLAY_FACE_IMAGE
 
+    # Face images are sent so frequently, with the previous face image always
+    # aborted, that logging each event would spam the log.
+    _enable_abort_logging = False
+
     def __init__(self, screen_data, duration_ms, **kw):
         super().__init__(**kw)
         #: :class:`bytes`: a sequence of pixels (8 pixels per byte)
@@ -793,6 +797,11 @@ class Robot(event.Dispatcher):
         '''
         return self._is_freeplay_mode_active
 
+    @property
+    def has_in_progress_actions(self):
+        '''bool: True if Cozmo has any SDK-triggered actions still in progress.'''
+        return self._action_dispatcher.has_in_progress_actions
+
     #### Private Event Handlers ####
 
     #def _recv_default_handler(self, event, **kw):
@@ -1046,7 +1055,8 @@ class Robot(event.Dispatcher):
                 :const:`MAX_HEAD_ANGLE`).
             accel (float): Acceleration of Cozmo's head in radians per second squared.
             max_speed (float): Maximum speed of Cozmo's head in radians per second.
-            duration (float): Time for Cozmo's head to turn in seconds.
+            duration (float): Time for Cozmo's head to turn in seconds. A value
+                of zero will make Cozmo try to do it as quickly as possible.
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
                 be already complete.
@@ -1065,7 +1075,7 @@ class Robot(event.Dispatcher):
                                                     num_retries=num_retries)
         return action
 
-    def set_lift_height(self, height, accel=1.0, max_speed=1.0, duration=2.0,
+    def set_lift_height(self, height, accel=10.0, max_speed=10.0, duration=0.0,
                         in_parallel=False, num_retries=0):
         '''Tell Cozmo's lift to move to a given height
 
@@ -1075,7 +1085,8 @@ class Robot(event.Dispatcher):
             accel (float): Acceleration of Cozmo's lift in radians per
                 second squared.
             max_speed (float): Maximum speed of Cozmo's lift in radians per second.
-            duration (float): Time for Cozmo's lift to move in seconds.
+            duration (float): Time for Cozmo's lift to move in seconds. A value
+                of zero will make Cozmo try to do it as quickly as possible.
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
                 be already complete.
@@ -1131,7 +1142,7 @@ class Robot(event.Dispatcher):
                                                     num_retries=num_retries)
         return action
 
-    def play_anim_trigger(self, trigger, loop_count=1,in_parallel=False,
+    def play_anim_trigger(self, trigger, loop_count=1, in_parallel=False,
                           num_retries=0):
         """Starts an animation trigger playing on a robot.
 
@@ -1203,7 +1214,7 @@ class Robot(event.Dispatcher):
                 previous actions, False to require that all previous actions
                 be already complete.
         Returns:
-            A :class:`cozmo.robot.PlaceObjectOnGroundHere` action object which
+            A :class:`cozmo.robot.DisplayOledFaceImage` action object which
                 can be queried to see when it is complete.
         Raises:
             :class:`cozmo.exceptions.RobotBusy` if another action is already
@@ -1212,9 +1223,9 @@ class Robot(event.Dispatcher):
 
         # We never want 2 face image actions active at once, so clear current
         # face image action (if one is running)
-        if (self._current_face_image_action is not None) and \
-            self._current_face_image_action.is_running:
-            self._current_face_image_action.is_running.abort()
+        if ((self._current_face_image_action is not None) and
+                self._current_face_image_action.is_running):
+            self._current_face_image_action.abort()
 
         action = self.display_oled_face_image_factory(screen_data=screen_data,
                                                       duration_ms=duration_ms,
@@ -1607,3 +1618,7 @@ class Robot(event.Dispatcher):
                                                     in_parallel=in_parallel,
                                                     num_retries=num_retries)
         return action
+
+    async def wait_for_all_actions_completed(self):
+        '''Waits until all SDK-initiated actions are complete.'''
+        await self._action_dispatcher.wait_for_all_actions_completed()
