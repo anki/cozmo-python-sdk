@@ -16,7 +16,7 @@
 
 '''Play some animations on Cozmo
 
-Play animations on Cozmo
+Play an animation using a trigger, and then another animation by name.
 '''
 
 import cozmo
