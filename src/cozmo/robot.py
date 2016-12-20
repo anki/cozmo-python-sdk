@@ -990,11 +990,11 @@ class Robot(event.Dispatcher):
         them to green will look off, and setting them to white will look red
 
         Args:
-            light1 (class:'cozmo.lights.Light'): The left backpack light
-            light2 (class:'cozmo.lights.Light'): The front backpack light
-            light3 (class:'cozmo.lights.Light'): The center backpack light
-            light4 (class:'cozmo.lights.Light'): The rear backpack light
-            light5 (class:'cozmo.lights.Light'): The right backpack light
+            light1 (:class:`cozmo.lights.Light`): The left backpack light
+            light2 (:class:`cozmo.lights.Light`): The front backpack light
+            light3 (:class:`cozmo.lights.Light`): The center backpack light
+            light4 (:class:`cozmo.lights.Light`): The rear backpack light
+            light5 (:class:`cozmo.lights.Light`): The right backpack light
         '''
         msg = _clad_to_engine_iface.SetBackpackLEDs(robotID=self.robot_id)
         for i, light in enumerate( (light1, light2, light3, light4, light5) ):
@@ -1011,7 +1011,7 @@ class Robot(event.Dispatcher):
         same color as the center lights).
 
         Args:
-            light (class:'cozmo.lights.Light'): The lights for Cozmo's backpack.
+            light (:class:`cozmo.lights.Light`): The lights for Cozmo's backpack.
         '''
         light_arr = [ light ] * 5
         light_arr[0] = lights.off_light
@@ -1022,7 +1022,7 @@ class Robot(event.Dispatcher):
         '''Set the lights on Cozmo's backpack to the same color.
 
         Args:
-            light (class:'cozmo.lights.Light'): The lights for Cozmo's backpack.
+            light (:class:`cozmo.lights.Light`): The lights for Cozmo's backpack.
         '''
         light_arr = [ light ] * 5
         self.set_backpack_lights(*light_arr)
