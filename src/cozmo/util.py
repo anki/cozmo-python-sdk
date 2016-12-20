@@ -368,6 +368,28 @@ class Pose:
         q0, q1, q2, q3 = self.rotation.q0_q1_q2_q3
         return _clad_to_engine_anki.PoseStruct3d(x, y, z, q0, q1, q2, q3, self.origin_id)
 
+    def invalidate(self):
+        '''Mark this pose as being invalid (unusable)'''
+        self._origin_id = -1
+
+    def is_comparable(self, other_pose):
+        '''Are these two poses comparable.
+
+        Poses are comparable if they're valid and having matching origin IDs.
+
+        Args:
+            other_pose (:class:`cozmo.util.Pose`): The other pose to compare against.
+        Returns:
+            bool: True if the two poses are comparable, False otherwise.
+        '''
+        return (self.is_valid and other_pose.is_valid and
+                (self.origin_id == other_pose.origin_id))
+
+    @property
+    def is_valid(self):
+        '''bool: Returns True if this is a valid, usable pose.'''
+        return self.origin_id() >= 0
+
     @property
     def position(self):
         ''':class:`cozmo.util.Position`: The position component of this pose.'''
