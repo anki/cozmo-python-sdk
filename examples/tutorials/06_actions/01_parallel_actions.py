@@ -56,8 +56,8 @@ def example1_lift_head(robot: cozmo.robot.Robot):
     action2 = robot.set_lift_height(1.0, in_parallel=True)
     action1.wait_for_completed()
     action2.wait_for_completed()
-    cozmo.logger.info("action1 = %s" % action1)
-    cozmo.logger.info("action2 = %s" % action2)
+    cozmo.logger.info("action1 = %s", action1)
+    cozmo.logger.info("action2 = %s", action2)
 
 
 def example2_conflicting_actions(robot: cozmo.robot.Robot):
@@ -69,9 +69,9 @@ def example2_conflicting_actions(robot: cozmo.robot.Robot):
     action1 = robot.drive_straight(distance_mm(50), speed_mmps(25), should_play_anim=False, in_parallel=True)
     action2 = robot.turn_in_place(degrees(90), in_parallel=True)
     action2.wait_for_completed()
-    cozmo.logger.info("action2 = %s" % action2)
+    cozmo.logger.info("action2 = %s", action2)
     action1.wait_for_completed()
-    cozmo.logger.info("action1 = %s" % action1)
+    cozmo.logger.info("action1 = %s", action1)
 
 
 def example3_abort_one_action(robot: cozmo.robot.Robot):
@@ -93,10 +93,10 @@ def example3_abort_one_action(robot: cozmo.robot.Robot):
     # We wait for the one remaining action to complete
     action3.wait_for_completed()
     # Only action3 should succeed (as long as Cozmo had enough space to drive)
-    cozmo.logger.info("action1 = %s" % action1)
-    cozmo.logger.info("action2 = %s" % action2)
-    cozmo.logger.info("action3 = %s" % action3)
-    cozmo.logger.info("action4 = %s" % action4)
+    cozmo.logger.info("action1 = %s", action1)
+    cozmo.logger.info("action2 = %s", action2)
+    cozmo.logger.info("action3 = %s", action3)
+    cozmo.logger.info("action4 = %s", action4)
 
 
 def example4_abort_all_actions(robot: cozmo.robot.Robot):
@@ -113,10 +113,10 @@ def example4_abort_all_actions(robot: cozmo.robot.Robot):
     # wait for results to come back for all actions
     robot.wait_for_all_actions_completed()
     # All actions should have aborted
-    cozmo.logger.info("action1 res = %s" % action1)
-    cozmo.logger.info("action2 res = %s" % action2)
-    cozmo.logger.info("action3 res = %s" % action3)
-    cozmo.logger.info("action4 res = %s" % action4)
+    cozmo.logger.info("action1 res = %s", action1)
+    cozmo.logger.info("action2 res = %s", action2)
+    cozmo.logger.info("action3 res = %s", action3)
+    cozmo.logger.info("action4 res = %s", action4)
 
 
 def cozmo_program(robot: cozmo.robot.Robot):
