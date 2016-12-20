@@ -388,7 +388,7 @@ class Pose:
     @property
     def is_valid(self):
         '''bool: Returns True if this is a valid, usable pose.'''
-        return self.origin_id() >= 0
+        return self.origin_id >= 0
 
     @property
     def position(self):
