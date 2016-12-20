@@ -738,7 +738,7 @@ def _wrap_wait_for_robot(func_with_robot):
 
 
 def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
-               connector=None, force_viewer_on_top=False, wait_for_robot = True):
+               connector=None, force_viewer_on_top=False):
     '''Connect to Cozmo and run the provided program/function f.
 
     Args:
@@ -753,15 +753,11 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
             has the Cozmo app running in SDK mode.
         force_viewer_on_top (bool): Specifies whether the window should be
             forced on top of all others (only relevant if use_viewer is True).
-        wait_for_robot (bool): True if f takes in an already connected
-            :class:`cozmo.robot.Robot`, False if it takes in a
-            :class:`cozmo.conn.CozmoConnection`
     '''
     setup_basic_logging()
+    f = _wrap_wait_for_robot(f)
 
     try:
-        if wait_for_robot:
-            f = _wrap_wait_for_robot(f)
         if use_viewer:
             connect_with_tkviewer(f, conn_factory=conn_factory, connector=connector, force_on_top=force_viewer_on_top)
         else:

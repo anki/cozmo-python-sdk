@@ -33,7 +33,7 @@ except ImportError:
 import cozmo
 
 
-def get_in_position(robot):
+def get_in_position(robot: cozmo.robot.Robot):
     '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face.'''
     if (robot.lift_height.distance_mm > 45) or (robot.head_angle.degrees < 40):
         with robot.perform_off_charger():
@@ -41,7 +41,7 @@ def get_in_position(robot):
             robot.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
 
 
-def calc_pixel_threshold(image):
+def calc_pixel_threshold(image: Image):
     '''Calculate a pixel threshold based on the image.
 
     Anything brighter than this will be shown on (light blue).

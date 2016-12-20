@@ -28,7 +28,7 @@ except ImportError:
 import cozmo
 
 
-def get_in_position(robot):
+def get_in_position(robot: cozmo.robot.Robot):
     '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face'''
     if (robot.lift_height.distance_mm > 45) or (robot.head_angle.degrees < 40):
         with robot.perform_off_charger():
