@@ -51,7 +51,7 @@ def drive_to_charger(robot):
 
     # see if Cozmo already knows where the charger is
     if robot.world.charger:
-        if robot.world.charger.pose.origin_id == robot.pose.origin_id:
+        if robot.world.charger.pose.is_comparable(robot.pose):
             print("Cozmo already knows where the charger is!")
             charger = robot.world.charger
         else:
