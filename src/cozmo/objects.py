@@ -55,7 +55,7 @@ from . import event
 from . import lights
 from . import util
 
-from ._clad import _clad_to_engine_iface, _clad_to_game_cozmo, _clad_to_engine_cozmo
+from ._clad import _clad_to_engine_iface, _clad_to_game_cozmo, _clad_to_engine_cozmo, _clad_to_game_anki
 
 
 #: Length of time in seconds to go without receiving an observed event before
@@ -299,10 +299,9 @@ class ObservableObject(ObservableElement):
 
         self.last_observed_robot_timestamp = available_object.lastObservedTimestamp
 
-        self._pose = util.Pose(available_object.pose.x, available_object.pose.y, available_object.pose.z,
-                               q0=available_object.pose.q0, q1=available_object.pose.q1,
-                               q2=available_object.pose.q2, q3=available_object.pose.q3,
-                               origin_id=available_object.pose.originID)
+        self._pose = util.Pose._create_from_clad(available_object.pose)
+        if available_object.poseState == _clad_to_game_anki.PoseState.Unknown:
+            self._pose.invalidate()
 
         self.dispatch_event(EvtObjectAvailable,
                             obj=self,
