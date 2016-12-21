@@ -24,6 +24,7 @@ See user_twitter_keys.py for details on how to setup a Twitter account and get a
 import sys
 
 import cozmo
+sys.path.append('../lib/')
 import twitter_helpers
 import user_twitter_keys as twitter_keys
 

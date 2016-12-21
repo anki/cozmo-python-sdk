@@ -27,8 +27,9 @@ import time
 import cozmo
 from cozmo.util import degrees, distance_mm, speed_mmps
 
-import twitter.twitter_helpers as twitter_helpers
-import twitter.cozmo_twitter_keys as twitter_keys
+sys.path.append('../lib/')
+import twitter_helpers as twitter_helpers
+import cozmo_twitter_keys as twitter_keys
 
 
 #: The twitter user (without the @ symbol) that will receive security photos, etc.
