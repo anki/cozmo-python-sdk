@@ -22,26 +22,32 @@ macOS Installation
 Windows Installation
 ^^^^^^^^^^^^^^^^^^^^
 
-1. Open your internet browser and go to `the Android developer website. <https://developer.android.com/studio/index.html#Other>`_
-2. Scroll down to *Get just the command line tools*. Download the SDK tools package.
-3. If you downloaded the ``.zip`` file instead of the ``.exe`` file, unzip it into your chosen directory.
-4. Run the installer to start the Android SDK Tools Setup Wizard.
-5. The Setup Wizard will direct you to install the Java Development Kit (JDK) if you do not have it installed.
-6. Complete installation of the Android SDK Tools. Take note of the directory it was installed to (e.g. ``C:\Program Files (x86)\Android``).
-7. In the Android SDK Tools location, run the SDK Manager as Administrator by right-clicking and selecting *Run as administrator*.
+1. Open your internet browser and go to the `Android developer website. <https://developer.android.com/studio/index.html#downloads>`_
+2. Scroll down to *Get just the command line tools*. Download the Windows zip file for the SDK tools package, taking note of where the file is downloaded.
+3. In the File Explorer, create a new folder in ``C:\Users\your_name`` named ``Android``. Then, navigate into your new Android folder. You should now be inside folder ``C:\Users\your_name\Android``.
+4. Move the zip file you downloaded in step 2 to your new Android folder at ``C:\Users\your_name\Android``.
+5. Right-click the zip file in ``C:\Users\your_name\Android`` and select Extract All.
+6. Open a Command Prompt window. (To find the Command Prompt, you may use the search box in the lower left-hand corner of your screen.) In the Command Prompt window, navigate to your Android folder by typing ``cd C:\Users\your_name\Android``.
+7. Next, navigate to the ``android`` (or ``android.bat``) file inside the SDK tools package by typing this command: ``cd tools_r*-windows\tools`` (where ``r*`` is the version of your tools download file, e.g. ``tools_r25.2.3-windows``).
 
-  a. Deselect everything except for *Android SDK Platform - tools*. For a Nexus phone, you may also want to select Google USB Driver to download Google’s drivers.
-  b. Click **Install** once finished.
-  c. adb should now be installed in the *platform-tools* folder.
+8. Finally, run this command: ``android``
+  a. If you do not have Java installed, instructions will display in your Command Prompt window to tell you how to install it. Follow the instructions to install Java 8. Once Java 8 is installed, run the ``android`` command again.
+  b. The Android SDK Manager window will display. In the window, deselect everything except for *Android SDK Platform-tools*.
+  c. Click **Install 1 Package**, accept the license and click **Install**.
+  d. Take note of the SDK Path displayed in the upper left corner of the Android SDK Manager window (e.g., ``C:\Users\your_name\Android\tools_r25.2.3-windows``).
 
-8. Add adb to your PATH environment variable.
+  NOTE: If you are unable to install due to a permissions error, then return to File Explorer, navigate to ``C:\Users\your_name\Android\tools_r*-windows\tools\``, right click ``android`` and select *Run as administrator*. Then repeat steps 9b-d.
+
+9. With File Explorer, check that you can find the adb file in ``C:\Users\your_name\Android\tools_r*-windows\tools\platform-tools``. You will now add this path to your PATH environment variable in the next step.
+
+10. Add adb to your PATH environment variable.
 
   a. Right-click the Start menu and select *System*.
   b. Select *Advanced System Settings -> Advanced -> Environment Variables*.
   c. Under *User Variables*, select *PATH* and click **Edit**.
-  d. Under *Edit Environment Variables*, click **New** and add the path to the folder containing adb (e.g. ``C:\Program Files (x86)\Android\android-sdk\platform-tools``).
+  d. Under *Edit Environment Variables*, click **New** and add the path to the folder containing adb (e.g. ``C:\Users\your_name\Android\tools_r25.2.3-windows\tools\platform-tools``).
 
-9. Continue to :ref:`final-install` below to complete installation.
+11. Continue to :ref:`final-install` below to complete installation.
 
 ^^^^^^^^^^^^^^^^^^
 Linux Installation
