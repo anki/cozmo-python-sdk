@@ -35,6 +35,9 @@ def cozmo_program(robot: cozmo.robot.Robot):
     # set all of Cozmo's backpack lights to blue, and wait for 2 seconds
     robot.set_all_backpack_lights(cozmo.lights.blue_light)
     time.sleep(2)
+    # set just Cozmo's center backpack lights to white, and wait for 2 seconds
+    robot.set_center_backpack_lights(cozmo.lights.white_light)
+    time.sleep(2)
     # turn off Cozmo's backpack lights and wait for 2 seconds
     robot.set_all_backpack_lights(cozmo.lights.off_light)
     time.sleep(2)

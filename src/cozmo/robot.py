@@ -939,8 +939,17 @@ class Robot(event.Dispatcher):
     def set_backpack_lights(self, light1, light2, light3, light4, light5):
         '''Set the lights on Cozmo's backpack.
 
+        The light descriptions below are all from Cozmo's perspective.
+
+        Note: The left and right lights only contain red LEDs, so e.g. setting
+        them to green will look off, and setting them to white will look red
+
         Args:
-            light1-5 (class:'cozmo.lights.Light'): The lights for Cozmo's backpack.
+            light1 (:class:`cozmo.lights.Light`): The left backpack light
+            light2 (:class:`cozmo.lights.Light`): The front backpack light
+            light3 (:class:`cozmo.lights.Light`): The center backpack light
+            light4 (:class:`cozmo.lights.Light`): The rear backpack light
+            light5 (:class:`cozmo.lights.Light`): The right backpack light
         '''
         msg = _clad_to_engine_iface.SetBackpackLEDs(robotID=self.robot_id)
         for i, light in enumerate( (light1, light2, light3, light4, light5) ):
@@ -949,11 +958,26 @@ class Robot(event.Dispatcher):
 
         self.conn.send_msg(msg)
 
+    def set_center_backpack_lights(self, light):
+        '''Set the lights in the center of Cozmo's backpack to the same color.
+
+        Forces the lights on the left and right to off (this is useful as those
+        lights only support shades of red, so cannot generally be set to the
+        same color as the center lights).
+
+        Args:
+            light (:class:`cozmo.lights.Light`): The lights for Cozmo's backpack.
+        '''
+        light_arr = [ light ] * 5
+        light_arr[0] = lights.off_light
+        light_arr[4] = lights.off_light
+        self.set_backpack_lights(*light_arr)
+
     def set_all_backpack_lights(self, light):
         '''Set the lights on Cozmo's backpack to the same color.
 
         Args:
-            light (class:'cozmo.lights.Light'): The lights for Cozmo's backpack.
+            light (:class:`cozmo.lights.Light`): The lights for Cozmo's backpack.
         '''
         light_arr = [ light ] * 5
         self.set_backpack_lights(*light_arr)
@@ -1028,6 +1052,10 @@ class Robot(event.Dispatcher):
         has been sent.  Call the wait_for_completed method on the animation
         if you wish to wait for completion (or listen for the
         :class:`cozmo.anim.EvtAnimationCompleted` event).
+
+        Warning: Specific animations may be renamed or removed in future updates of the app.
+            If you want your program to work more reliably across all versions
+            we recommend using :meth:`play_anim_trigger` instead.
 
         Args:
             name (str): The name of the animation to play.
