@@ -253,6 +253,8 @@ def alarm_clock(robot: cozmo.robot.Robot):
             was_before_alarm_time = is_before_alarm_time
 
         if do_alarm:
+            # Cancel the latest image display action so that the alarm actions can play
+            robot.abort_all_actions()
             # Speak The Time (off the charger as it's an animation)
             with robot.perform_off_charger():
                 short_time_string = str(current_time.hour) + ":" + str(current_time.minute)
