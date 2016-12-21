@@ -694,56 +694,14 @@ def setup_basic_logging(general_log_level=None, protocol_log_level=None,
         logger_protocol.setLevel(protocol_log_level)
 
 
-class _SyncRunRobotWrapper:
-    # Wrapper to take a NON-(async/coroutine) function and
-    # wrap it so that it can be used as a run(sdk_conn: cozmo.conn.CozmoConnection)
-    # that automatically waits for a robot on the connection and then passes that
-    # to the wrapped function
-
-    def __init__(self, func_with_robot):
-        self._func_with_robot = func_with_robot
-
-    def func_with_conn(self, sdk_conn):
-        robot = sdk_conn.wait_for_robot()
-        try:
-            self._func_with_robot(robot)
-        except KeyboardInterrupt:
-            logger.info('\nExit requested by user')
-
-
-class _AsyncRunRobotWrapper:
-    # Wrapper to take an async/coroutine function and
-    # wrap it so that it can be used as a run(sdk_conn: cozmo.conn.CozmoConnection)
-    # that automatically waits for a robot on the connection and then passes that
-    # to the wrapped function
-
-    def __init__(self, func_with_robot):
-        self._func_with_robot = func_with_robot
-
-    async def func_with_conn(self, sdk_conn):
-        robot = await sdk_conn.wait_for_robot()
-        try:
-            await self._func_with_robot(robot)
-        except KeyboardInterrupt:
-            logger.info('\nExit requested by user')
-
-
-def _wrap_wait_for_robot(func_with_robot):
-    # Wrap func_with_robot (a function that takes in an already created robot)
-    # with a function that accepts a cozmo.conn.CozmoConnection
-    if asyncio.iscoroutinefunction(func_with_robot):
-        return _AsyncRunRobotWrapper(func_with_robot).func_with_conn
-    else:
-        return _SyncRunRobotWrapper(func_with_robot).func_with_conn
-
-
 def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
                connector=None, force_viewer_on_top=False):
     '''Connect to Cozmo and run the provided program/function f.
 
     Args:
 
-        f (callable): The function to execute
+        f (callable): The function to execute, accepts a connected
+            :class:`cozmo.robot.Robot` as the parameter.
         use_viewer (bool): Specifies whether the window should be forced on top of all others
         conn_factory (callable): Override the factory function to generate a
             :class:`cozmo.conn.CozmoConnection` (or subclass) instance.
@@ -755,12 +713,30 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
             forced on top of all others (only relevant if use_viewer is True).
     '''
     setup_basic_logging()
-    f = _wrap_wait_for_robot(f)
+
+    # Wrap f (a function that takes in an already created robot)
+    # with a function that accepts a cozmo.conn.CozmoConnection
+    if asyncio.iscoroutinefunction(f):
+        @functools.wraps(f)
+        async def wrapper(sdk_conn):
+            try:
+                robot = await sdk_conn.wait_for_robot()
+                await f(robot)
+            except KeyboardInterrupt:
+                logger.info('Exit requested by user')
+    else:
+        @functools.wraps(f)
+        def wrapper(sdk_conn):
+            try:
+                robot = sdk_conn.wait_for_robot()
+                f(robot)
+            except KeyboardInterrupt:
+                logger.info('Exit requested by user')
 
     try:
         if use_viewer:
-            connect_with_tkviewer(f, conn_factory=conn_factory, connector=connector, force_on_top=force_viewer_on_top)
+            connect_with_tkviewer(wrapper, conn_factory=conn_factory, connector=connector, force_on_top=force_viewer_on_top)
         else:
-            connect(f, conn_factory=conn_factory, connector=connector)
+            connect(wrapper, conn_factory=conn_factory, connector=connector)
     except exceptions.ConnectionError as e:
         sys.exit("A connection error occurred: %s" % e)
