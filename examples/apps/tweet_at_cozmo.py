@@ -25,6 +25,7 @@ import sys
 
 import cozmo
 from cozmo.util import degrees
+sys.path.append('../lib/')
 import twitter_helpers
 import cozmo_twitter_keys as twitter_keys
 
