@@ -35,7 +35,8 @@ Warning:
 '''
 
 # __all__ should order by constants, event classes, other classes, functions.
-__all__ = ['ACTION_IDLE', 'ACTION_RUNNING', 'ACTION_SUCCEEDED', 'ACTION_FAILED',
+__all__ = ['ACTION_IDLE', 'ACTION_RUNNING', 'ACTION_SUCCEEDED',
+           'ACTION_FAILED', 'ACTION_ABORTING',
            'EvtActionStarted', 'EvtActionCompleted', 'Action']
 
 
@@ -58,7 +59,10 @@ ACTION_SUCCEEDED = 'action_succeeded'
 #: string: Action failed state
 ACTION_FAILED = 'action_failed'
 
-_VALID_STATES = {ACTION_IDLE, ACTION_RUNNING, ACTION_SUCCEEDED, ACTION_FAILED}
+#: string: Action failed state
+ACTION_ABORTING = 'action_aborting'
+
+_VALID_STATES = {ACTION_IDLE, ACTION_RUNNING, ACTION_SUCCEEDED, ACTION_FAILED, ACTION_ABORTING}
 
 
 class EvtActionStarted(event.Event):
@@ -83,6 +87,11 @@ class Action(event.Dispatcher):
     # TODO: abort by ID instead, and remove _action_type
     _action_type = _clad_to_engine_cozmo.RobotActionType.UNKNOWN
 
+    # We allow sub-classes of Action to optionally disable logging messages
+    # related to those actions being aborted - this is useful for actions
+    # that are aborted frequently (by design) and would otherwise spam the log
+    _enable_abort_logging = True
+
     def __init__(self, *, conn, robot, **kw):
         super().__init__(**kw)
         #: :class:`~cozmo.conn.CozmoConnection`: The connection on which the action was sent.
@@ -91,6 +100,7 @@ class Action(event.Dispatcher):
         #: :class:`~cozmo.robot.Robot`: Th robot instance executing the action.
         self.robot = robot
 
+        self._action_id = None
         self._state = ACTION_IDLE
         self._failure_code = None
         self._failure_reason = None
@@ -134,6 +144,14 @@ class Action(event.Dispatcher):
                                               failure_reason=reason)
         self.dispatch_event(self._completed_event)
 
+    def _set_aborting(self):
+        if not self.is_running:
+            raise ValueError("Action isn't currently running")
+
+        if self._enable_abort_logging:
+            logger.info('Aborting action=%s', self)
+        self._state = ACTION_ABORTING
+
 
     #### Properties ####
 
@@ -146,6 +164,11 @@ class Action(event.Dispatcher):
     def is_completed(self):
         '''bool: True if the action has completed (either succeeded or failed).'''
         return self._state in (ACTION_SUCCEEDED, ACTION_FAILED)
+
+    @property
+    def is_aborting(self):
+        '''bool: True if the action is aborting (will soon be either succeeded or failed).'''
+        return self._state == ACTION_ABORTING
 
     @property
     def has_succeeded(self):
@@ -171,6 +194,7 @@ class Action(event.Dispatcher):
         :const:`ACTION_RUNNING`
         :const:`ACTION_SUCCEEDED`
         :const:`ACTION_FAILED`
+        :const:`ACTION_ABORTING`
         '''
         return self._state
 
@@ -235,14 +259,7 @@ class Action(event.Dispatcher):
         Raises:
             ValueError if the action is not currently being executed.
         '''
-        if self._state != ACTION_RUNNING:
-            raise ValueError("Action isn't currently running")
-
-        logger.info('Sending abort request for action=%s', self)
-        msg = _clad_to_engine_iface.CancelAction(
-            actionType=self._action_type, robotID=self.robot.robot_id)
-        self.conn.send_msg(msg)
-
+        self.robot._action_dispatcher._abort_action(self)
 
     async def wait_for_completed(self, timeout=None):
         '''Waits for the action to complete.
@@ -279,6 +296,7 @@ class _ActionDispatcher(event.Dispatcher):
         super().__init__(**kw)
         self.robot = robot
         self._in_progress = {}
+        self._aborting = {}
 
     def _get_next_action_id(self):
         # Post increment _current_action_id (and loop within the SDK_TAG range)
@@ -289,19 +307,72 @@ class _ActionDispatcher(event.Dispatcher):
             self.__class__._next_action_id += 1
         return next_action_id
 
-    def _send_single_action(self, action, position=0, num_retries=0):
+    @property
+    def aborting_actions(self):
+        '''generator: yields each action that is currently aborting
+
+        Returns:
+            A generator yielding :class:`cozmo.action.Action` instances
+        '''
+        for _, action in self._aborting.items():
+            yield action
+
+    @property
+    def has_in_progress_actions(self):
+        '''bool: True if any SDK-triggered actions are still in progress.'''
+        return len(self._in_progress) > 0
+
+    @property
+    def in_progress_actions(self):
+        '''generator: yields each action that is currently in progress
+
+        Returns:
+            A generator yielding :class:`cozmo.action.Action` instances
+        '''
+        for _, action in self._in_progress.items():
+            yield action
+
+    async def wait_for_all_actions_completed(self):
+        '''Waits until all actions are complete.
+
+        In this case, all actions include not just in_progress actions but also
+        include actions that we're aborting but haven't received a completed message
+        for yet.
+        '''
+        while True:
+            action = next(self.in_progress_actions, None)
+            if action is None:
+                action = next(self.aborting_actions, None)
+            if action:
+                await action.wait_for_completed()
+            else:
+                # all actions are now complete
+                return
+
+    def _send_single_action(self, action, in_parallel=False, num_retries=0):
         action_id = self._get_next_action_id()
         action.robot = self.robot
+        action._action_id = action_id
 
-        if len(self._in_progress) > 0:
+        if self.has_in_progress_actions and not in_parallel:
+            # Note - it doesn't matter if previous action was started as in_parallel,
+            # starting any subsequent action with in_parallel==False will cancel
+            # any previous actions, so we throw an exception here and require that
+            # the client explicitly cancel or wait on earlier actions
             action = list(self._in_progress.values())[0]
-            raise exceptions.RobotBusy('Robot is already performing action %s' % action)
+            raise exceptions.RobotBusy('Robot is already performing %d action(s) %s' %
+                                       (len(self._in_progress), action))
 
         if action.is_running:
             raise ValueError('Action is already running')
 
         if action.is_completed:
             raise ValueError('Action already ran')
+
+        if in_parallel:
+            position = _clad_to_game_cozmo.QueueActionPosition.IN_PARALLEL
+        else:
+            position = _clad_to_game_cozmo.QueueActionPosition.NOW
 
         qmsg = _clad_to_engine_iface.QueueSingleAction(
             robotID=self.robot.robot_id, idTag=action_id, numRetries=num_retries,
@@ -342,6 +413,10 @@ class _ActionDispatcher(event.Dispatcher):
         action_id = msg.idTag
         is_sdk_action = self._is_sdk_action_id(action_id)
         action = self._in_progress.get(action_id)
+        was_aborted = False
+        if action is None:
+            action = self._aborting.get(action_id)
+            was_aborted = action is not None
         if action is None:
             if is_sdk_action:
                 logger.error('Received completed action message for unknown SDK action_id=%s', action_id)
@@ -349,8 +424,45 @@ class _ActionDispatcher(event.Dispatcher):
         else:
             if not is_sdk_action:
                 action_id_type = self._action_id_type(action_id)
-                logger.error('Received completed action message for sdk-known %s action_id=%s', action_id_type, action_id)
-        del self._in_progress[action_id]
+                logger.error('Received completed action message for sdk-known %s action_id=%s (was_aborted=%s)',
+                             action_id_type, action_id, was_aborted)
+        if was_aborted:
+            if action._enable_abort_logging:
+                logger.debug('Received completed action message for aborted action=%s', action)
+            del self._aborting[action_id]
+        else:
+            logger.debug('Received completed action message for in-progress action=%s', action)
+            del self._in_progress[action_id]
         # XXX This should generate a real event, not a msg
         # Should also dispatch to self so the parent can be notified.
         action.dispatch_event(evt)
+
+    def _abort_action(self, action):
+        # Mark this in-progress action as aborting - it should get a "Cancelled"
+        # message back in the next engine tick, and can basically be considered
+        # cancelled from now.
+        action._set_aborting()
+        # move from in-progress to aborting dicts
+        self._aborting[action._action_id] = action
+        del self._in_progress[action._action_id]
+
+        msg = _clad_to_engine_iface.CancelActionByIdTag(idTag=action._action_id,
+                                                        robotID=self.robot.robot_id)
+        self.robot.conn.send_msg(msg)
+
+    def _abort_all_actions(self):
+        # Mark any in-progress actions as aborting - they should get a "Cancelled"
+        # message back in the next engine tick, and can basically be considered
+        # cancelled from now.
+        actions_to_abort = self._in_progress
+        self._in_progress = {}
+        for action_id, action in actions_to_abort.items():
+            action._set_aborting()
+            self._aborting[action_id] = action
+
+        logger.info('Sending abort request for all actions')
+        # RobotActionType.UNKNOWN is a wildcard that matches all actions when cancelling.
+        msg = _clad_to_engine_iface.CancelAction(robotID=self.robot.robot_id,
+                                                 actionType=_clad_to_engine_cozmo.RobotActionType.UNKNOWN)
+        self.robot.conn.send_msg(msg)
+
