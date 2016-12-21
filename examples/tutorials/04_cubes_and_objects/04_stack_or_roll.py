@@ -24,15 +24,10 @@ Based on how many object he sees before he times out, he will do different actio
 2-> stack blocks (the blocks must all be face up)
 '''
 
-import sys
-
 import cozmo
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
-
+def cozmo_program(robot: cozmo.robot.Robot):
     lookaround = robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
 
     cubes = robot.world.wait_until_observe_num_objects(num=2, object_type=cozmo.objects.LightCube, timeout=10)
@@ -48,9 +43,5 @@ def run(sdk_conn):
     else:
         robot.run_timed_behavior(cozmo.behavior.BehaviorTypes.StackBlocks, active_time=60)
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+
+cozmo.run_program(cozmo_program)

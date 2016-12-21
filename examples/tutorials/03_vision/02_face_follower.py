@@ -21,13 +21,12 @@ and then constantly turn towards it to keep it in frame.
 '''
 
 import asyncio
-import sys
 import time
 
 import cozmo
 
 
-def follow_faces(robot):
+def follow_faces(robot: cozmo.robot.Robot):
     '''The core of the follow_faces program'''
 
     # Move lift down and tilt the head up
@@ -36,6 +35,7 @@ def follow_faces(robot):
 
     face_to_follow = None
 
+    print("Press CTRL-C to quit")
     while True:
         turn_action = None
         if face_to_follow:
@@ -57,21 +57,4 @@ def follow_faces(robot):
         time.sleep(.1)
 
 
-def run(sdk_conn):
-    '''The run method runs once the Cozmo SDK is connected.'''
-    robot = sdk_conn.wait_for_robot()
-
-    try:
-        follow_faces(robot)
-
-    except KeyboardInterrupt:
-        print("")
-        print("Exit requested by user")
-
-
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect_with_tkviewer(run, force_on_top=True)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.run_program(follow_faces, use_viewer=True, force_viewer_on_top=True)

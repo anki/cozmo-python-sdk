@@ -22,6 +22,7 @@ This example lets you control Cozmo by Remote Control, using a webpage served by
 import json
 import sys
 
+sys.path.append('../lib/')
 import flask_helpers
 import cozmo
 

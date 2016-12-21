@@ -22,13 +22,12 @@ object (e.g. a LightCube).
 '''
 
 import asyncio
-import sys
 
 import cozmo
 from cozmo.util import degrees, distance_mm
 
 
-def go_to_object_test(robot):
+def go_to_object_test(robot: cozmo.robot.Robot):
     '''The core of the go to object test program'''
 
     # Move lift down and tilt the head up
@@ -58,20 +57,4 @@ def go_to_object_test(robot):
         print("Done.")
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
-
-    try:
-        go_to_object_test(robot)
-
-    except KeyboardInterrupt:
-        print("")
-        print("Exit requested by user")
-
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.run_program(go_to_object_test)

@@ -50,44 +50,21 @@ The Program
 
 1. To run the program, using the same Terminal (macOS/Linux) / Command Prompt (Windows) window mentioned above:
 
+Change to the ``tutorials/01_basics`` sub-directory - to do this type ``cd tutorials/01_basics`` and press **Enter**. Then:
+
     a. For macOS and Linux systems, type the following and press **Enter**::
 
-        ./hello_world.py
+        ./01_hello_world.py
 
     b. For Windows systems, type the following and press **Enter**::
 
-        py hello_world.py
+        py 01_hello_world.py
 
 2. If done correctly, Cozmo will say "Hello, World!"
 
 .. warning:: If Cozmo does not perform as expected, look at the first Terminal window and make sure no error messages appeared. If you continue to have issues, please seek help in the Forums.
 
-The code for the Hello World program is:
-
-.. code-block:: python
-  :linenos:
-
-  import sys
-
-  import cozmo
-
-  '''Hello World
-
-  Make Cozmo say 'Hello World' in this simple Cozmo SDK example program.
-  '''
-
-  def run(sdk_conn):
-    robot = sdk_conn.wait_for_robot()
-    robot.say_text("Hello World").wait_for_completed()
-
-  if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    cozmo.connect(run)
-
-    try:
-       cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-       sys.exit("A connection error occurred: %s" % e)
+The code for the Hello World program can be `viewed here. <https://github.com/anki/cozmo-python-sdk/tree/master/examples/tutorials/01_basics/01_hello_world.py>`_
 
 We can edit this code to make Cozmo say something new. Let's write our first program using this code.
 
@@ -95,18 +72,28 @@ We can edit this code to make Cozmo say something new. Let's write our first pro
 Next Steps - "Night-Night"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. Open a new document in a source code editor or plain-text editor. Free source code editors, such as `PyCharm Community Edition <https://www.jetbrains.com/pycharm/>`_ , `Atom <https://atom.io>`_ , `Sublime <https://www.sublimetext.com>`_ , or `TextWrangler <http://www.barebones.com/products/textwrangler/>`_ can be found online. Anki does not provide tech support for third-party source code editors.
+1. Copy ``01_hello_world.py`` to a new file named ``nightnight.py``.
 
-2. Copy the code from the Hello World program and paste it into the new document.
+    a. For macOS and Linux systems, type the following and press **Enter**::
+
+        cp 01_hello_world.py nightnight.py
+
+    b. For Windows systems, type the following and press **Enter**::
+
+        copy 01_hello_world.py nightnight.py
+    
+2. Open this new document in a source code editor or plain-text editor. Free source code editors, such as `PyCharm Community Edition <https://www.jetbrains.com/pycharm/>`_ , `Atom <https://atom.io>`_ , `Sublime <https://www.sublimetext.com>`_ , or `TextWrangler <http://www.barebones.com/products/textwrangler/>`_ can be found online. Anki does not provide tech support for third-party source code editors.
+
 3. Each line in the program relates to a specific function. To learn more, see :doc:`the Beginner's Tutorial </tutorial-beginner>`.
-4. Move to line 15 in the program.
+
+4. Move to the line that starts with "robot.say_text"
 
   1. Select the phrase "Hello World". Do NOT select the parentheses or quotation marks around the phrase; those are necessary for Python to properly parse the command.
   2. Type in the new phrase you would like Cozmo to say. In this example, Cozmo will say "Night Night"::
 
       robot.say_text("Night Night").wait_for_completed()
 
-5. At the top of the screen, select *File -> Save As*, and save the program as ``nightnight.py``.
+5. Save the nightnight.py file.
 6. Now you can run your program:
 
         a. For macOS and Linux systems, type the following into the same window and press **Enter**::

@@ -14,28 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Make Cozmo drive in a square.
+'''Drive And Turn
 
-This script is designed to show off the 'simple robot capabilites' of Cozmo.
-He will drive in a square by going forward and turning (left) 4 times.
+Make Cozmo drive forwards and then turn 90 degrees to the left.
 '''
-
-import sys
 
 import cozmo
 from cozmo.util import degrees, distance_mm, speed_mmps
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
 
-    for _ in range(4):
-        robot.drive_straight(distance_mm(150), speed_mmps(50)).wait_for_completed()
-        robot.turn_in_place(degrees(90)).wait_for_completed()
+def cozmo_program(robot: cozmo.robot.Robot):
+    # Drive forwards for 150 millimeters at 50 millimeters-per-second.
+    robot.drive_straight(distance_mm(150), speed_mmps(50)).wait_for_completed()
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+    # Turn 90 degrees to the left.
+    # Note: To turn to the right, just use a negative number.
+    robot.turn_in_place(degrees(90)).wait_for_completed()
+
+
+cozmo.run_program(cozmo_program)

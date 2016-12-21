@@ -25,6 +25,7 @@ import sys
 
 import cozmo
 from cozmo.util import degrees
+sys.path.append('../lib/')
 import twitter_helpers
 import cozmo_twitter_keys as twitter_keys
 
@@ -37,16 +38,6 @@ def extract_float(cmd_args, index=0):
         except ValueError:
             pass
     return None
-
-
-def extract_next_float(cmd_args, index=0):
-    for i in range(index, len(cmd_args)):
-        try:
-            float_val = float(cmd_args[index])
-            return float_val, i
-        except ValueError:
-            pass
-    return None, None
 
 
 class ReactToTweetsStreamListener(twitter_helpers.CozmoTweetStreamListener):

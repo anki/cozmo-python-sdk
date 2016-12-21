@@ -89,7 +89,7 @@ import sys
 import threading
 
 import cozmo
-sys.path.append('../')
+sys.path.append('../lib/')
 import flask_helpers
 
 from common import IFTTTRobot
@@ -155,7 +155,7 @@ def then_that_action(alert_body):
             robot.say_text(alert_body).wait_for_completed()
 
             # Last, have Cozmo display a sports image on his face.
-            robot.display_image_file_on_face("../images/ifttt_sports.png")
+            robot.display_image_file_on_face("../face_images/ifttt_sports.png")
 
     except cozmo.exceptions.RobotBusy:
         pass

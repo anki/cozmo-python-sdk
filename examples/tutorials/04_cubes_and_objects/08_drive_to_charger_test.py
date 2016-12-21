@@ -21,7 +21,6 @@ Cozmo's world, and driving towards it.
 '''
 
 import asyncio
-import sys
 import time
 
 import cozmo
@@ -81,22 +80,5 @@ def drive_to_charger(robot):
         print("Done.")
 
 
-def run(sdk_conn):
-    '''The run method runs once the Cozmo SDK is connected.'''
-    robot = sdk_conn.wait_for_robot()
-
-    try:
-        drive_to_charger(robot)
-
-    except KeyboardInterrupt:
-        print("")
-        print("Exit requested by user")
-
-
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on charger for now
-    try:
-        cozmo.connect_with_tkviewer(run, force_on_top=True)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on charger for now
+cozmo.run_program(drive_to_charger, use_viewer=True, force_viewer_on_top=True)

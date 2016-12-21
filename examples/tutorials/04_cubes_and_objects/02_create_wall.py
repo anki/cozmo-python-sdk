@@ -21,15 +21,11 @@ It creates a wall in front of cozmo and tells him to drive around it.
 He will plan a path to drive 200mm in front of himself after these objects are created.
 '''
 
-import sys
-
 import cozmo
 from cozmo.util import degrees, Pose
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
 
+def cozmo_program(robot: cozmo.robot.Robot):
     fixed_object = robot.world.create_custom_fixed_object(Pose(100, 0, 0, angle_z=degrees(0)),
                                                         10, 100, 100, relative_to_robot=True)
     if fixed_object:
@@ -38,9 +34,4 @@ def run(sdk_conn):
     robot.go_to_pose(Pose(200, 0, 0, angle_z=degrees(0)), relative_to_robot=True).wait_for_completed()
 
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.run_program(cozmo_program)
