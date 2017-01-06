@@ -14,27 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Tell Cozmo to drive to the specified pose and orientation.
+'''Count to 5
 
-Define a destination pose for Cozmo. If relative_to_robot is set to true,
-the given pose will assume the robot's pose as its origin.
+Make Cozmo count from 1 to 5
 '''
 
-import sys
-
 import cozmo
-from cozmo.util import degrees, Pose
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
+def cozmo_program(robot: cozmo.robot.Robot):
+    # A "for loop" runs for each value i in the given range - in this example
+    # starting from 0, while i is less than 5 (so 0,1,2,3,4).
+    for i in range(5):
+        # Add 1 to the number (so that we count from 1 to 5, not 0 to 4),
+        # then convert the number to a string and make Cozmo say it.
+        robot.say_text(str(i+1)).wait_for_completed()
 
-    robot.go_to_pose(Pose(100, 100, 0, angle_z=degrees(45)), relative_to_robot=True).wait_for_completed()
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.run_program(cozmo_program)

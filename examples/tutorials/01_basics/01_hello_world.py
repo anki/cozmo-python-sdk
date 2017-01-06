@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright (c) 2016 Anki, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "0.10.1.dev0"
+'''Hello World
 
-# Specify the version of cozmoclad that this package requires
-# Releases of the Cozmo package must specify an exact cozmoclad release
-# to ensure compatibility with a specific release of the ios/android app.
-__cozmoclad_version__ = None
-#__cozmoclad_version__ = "1.1.0"
+Make Cozmo say 'Hello World' in this simple Cozmo SDK example program.
+'''
+
+import cozmo
+
+
+def cozmo_program(robot: cozmo.robot.Robot):
+    robot.say_text("Hello World").wait_for_completed()
+
+
+cozmo.run_program(cozmo_program)

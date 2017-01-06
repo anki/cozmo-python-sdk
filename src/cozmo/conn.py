@@ -302,22 +302,12 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
             or cozmoclad.__build_version__ == msg.buildVersion)
 
         if clad_hashes_match and not build_versions_match:
-            # If CLAD hashes match, and this is only a minor version change, allow connection but recommend user upgrades
+            # If CLAD hashes match, and this is only a minor version change,
+            # then still allow connection (it's just an app hotfix
+            # that didn't require CLAD or SDK changes)
             sdk_major_version = cozmoclad.__build_version__.split(".")[0:2]
             build_major_version = msg.buildVersion.split(".")[0:2]
             build_versions_match = (sdk_major_version == build_major_version)
-            if build_versions_match:
-                if cozmoclad.__build_version__ < msg.buildVersion:
-                    # App is newer
-                    logger.warning(
-                        'Your app is newer than your SDK: '
-                        'We recommend that you upgrade your SDK by calling: '
-                        '"pip3 install --user --upgrade cozmo" '
-                        'and downloading the latest examples from http://cozmosdk.anki.com/docs/downloads.html')
-                else:
-                    logger.warning(
-                        'Your app is older than your SDK: '
-                        'We recommend that you download the latest app from the app store.')
 
         if clad_hashes_match and build_versions_match:
             connection_success_msg = _clad_to_engine_iface.UiDeviceConnectionSuccess(

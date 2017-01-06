@@ -36,8 +36,9 @@ methods such as :meth:`~cozmo.event.Dispatcher.wait_for` and
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['MAX_HEAD_ANGLE', 'MIN_HEAD_ANGLE', 'MIN_LIFT_HEIGHT_MM', 'MAX_LIFT_HEIGHT_MM',
            'EvtRobotReady',
-           'GoToPose', 'DriveOffChargerContacts', 'DriveStraight', 'PickupObject',
-           'PlaceOnObject', 'PlaceObjectOnGroundHere', 'SayText', 'SetHeadAngle',
+           'GoToPose', 'DisplayOledFaceImage', 'DriveOffChargerContacts',
+           'DriveStraight', 'PickupObject', 'PlaceOnObject',
+           'PlaceObjectOnGroundHere', 'SayText', 'SetHeadAngle',
            'SetLiftHeight', 'TurnInPlace', 'TurnTowardsFace',
            'Robot']
 
@@ -51,6 +52,7 @@ from . import behavior
 from . import camera
 from . import conn
 from . import event
+from . import exceptions
 from . import lights
 from . import objects
 from . import util
@@ -170,6 +172,34 @@ class DriveStraight(action.Action):
         return _clad_to_engine_iface.DriveStraight(speed_mmps=self.speed.speed_mmps,
                                                    dist_mm=self.distance.distance_mm,
                                                    shouldPlayAnimation=self.should_play_anim)
+
+
+class DisplayOledFaceImage(action.Action):
+    '''Represents the "display oled face image" action in progress.
+
+    Returned by :meth:`~cozmo.robot.Robot.display_oled_face_image`
+    '''
+
+    _action_type = _clad_to_engine_cozmo.RobotActionType.DISPLAY_FACE_IMAGE
+
+    # Face images are sent so frequently, with the previous face image always
+    # aborted, that logging each event would spam the log.
+    _enable_abort_logging = False
+
+    def __init__(self, screen_data, duration_ms, **kw):
+        super().__init__(**kw)
+        #: :class:`bytes`: a sequence of pixels (8 pixels per byte)
+        self.screen_data = screen_data
+        #: float: time to keep displaying this image on Cozmo's face
+        self.duration_ms = duration_ms
+
+    def _repr_values(self):
+        return "screen_data=%s Bytes duration_ms=%s" %\
+               (len(self.screen_data), self.duration_ms)
+
+    def _encode(self):
+        return _clad_to_engine_iface.DisplayFaceImage(faceData=self.screen_data,
+                                                      duration_ms=self.duration_ms)
 
 
 class PickupObject(action.Action):
@@ -484,6 +514,10 @@ class Robot(event.Dispatcher):
     #: :class:`DriveStraight` class or subclass instance.
     drive_straight_factory = DriveStraight
 
+    #: callable: The factory function that returns a
+    #: :class:`DisplayOledFaceImage` class or subclass instance.
+    display_oled_face_image_factory = DisplayOledFaceImage
+
     # other factories
 
     #: callable: The factory function that returns a
@@ -536,6 +570,8 @@ class Robot(event.Dispatcher):
         self.world = self.world_factory(self.conn, self, dispatch_parent=self)
 
         self._action_dispatcher = self._action_dispatcher_factory(self)
+
+        self._current_face_image_action = None
 
         #: :class:`cozmo.util.Speed`: Speed of the left wheel
         self.left_wheel_speed = None
@@ -592,12 +628,12 @@ class Robot(event.Dispatcher):
             # Note: Robot state is reset on entering SDK mode, and after any SDK program exits
             self.stop_all_motors()
             self.enable_reactionary_behaviors(False)
+            self._stop_behavior()
 
             # Ensure the SDK has full control of cube lights
             self._set_cube_light_state(False)
 
             await self.world.delete_all_custom_objects()
-            self._reset_behavior_state()
 
             # wait for animations to load
             await self.conn.anim_names.wait_for_loaded()
@@ -610,10 +646,12 @@ class Robot(event.Dispatcher):
             self.dispatch_event(EvtRobotReady, robot=self)
         asyncio.ensure_future(_init(), loop=self._loop)
 
-    def _reset_behavior_state(self):
-        msg = _clad_to_engine_iface.ExecuteBehavior(
-                behaviorType=_clad_to_engine_cozmo.BehaviorType.NoneBehavior)
+    def _stop_behavior(self):
+        # Internal helper method called from Behavior.stop etc.
+        msg = _clad_to_engine_iface.ExecuteBehaviorByExecutableType(
+                behaviorType=_clad_to_engine_cozmo.ExecutableBehaviorType.NoneBehavior)
         self.conn.send_msg(msg)
+        self._is_behavior_running = False
 
     def _set_cube_light_state(self, enable):
         msg = _clad_to_engine_iface.EnableLightStates(enable=enable, objectID=-1)
@@ -760,6 +798,11 @@ class Robot(event.Dispatcher):
         '''
         return self._is_freeplay_mode_active
 
+    @property
+    def has_in_progress_actions(self):
+        '''bool: True if Cozmo has any SDK-triggered actions still in progress.'''
+        return self._action_dispatcher.has_in_progress_actions
+
     #### Private Event Handlers ####
 
     #def _recv_default_handler(self, event, **kw):
@@ -828,10 +871,7 @@ class Robot(event.Dispatcher):
 
         Abort / Cancel any action that is currently either running or queued within the engine
         '''
-        # RobotActionType.UNKNOWN is a wildcard that matches all actions when cancelling.
-        msg = _clad_to_engine_iface.CancelAction(robotID=self.robot_id,
-                                                 actionType=_clad_to_engine_cozmo.RobotActionType.UNKNOWN)
-        self.conn.send_msg(msg)
+        self._action_dispatcher._abort_all_actions()
 
     def enable_facial_expression_estimation(self, enable=True):
         '''Enable or Disable facial expression estimation
@@ -909,7 +949,8 @@ class Robot(event.Dispatcher):
         msg = _clad_to_engine_iface.MoveLift(speed_rad_per_sec=speed)
         self.conn.send_msg(msg)
 
-    def say_text(self, text, play_excited_animation=False, use_cozmo_voice=True, duration_scalar=1.8, voice_pitch=0.0):
+    def say_text(self, text, play_excited_animation=False, use_cozmo_voice=True,
+                 duration_scalar=1.8, voice_pitch=0.0, in_parallel=False, num_retries=0):
         '''Have Cozmo say text!
 
         Args:
@@ -921,6 +962,11 @@ class Robot(event.Dispatcher):
             duration_scalar (float): Adjust the relative duration of the
                 generated text to speech audio.
             voice_pitch (float): Adjust the pitch of Cozmo's robot voice [-1.0, 1.0]
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
             A :class:`cozmo.robot.SayText` action object which can be
                 queried to see when it is complete
@@ -930,14 +976,25 @@ class Robot(event.Dispatcher):
                                        use_cozmo_voice=use_cozmo_voice, duration_scalar=duration_scalar,
                                        voice_pitch=voice_pitch, conn=self.conn,
                                        robot=self, dispatch_parent=self)
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
 
     def set_backpack_lights(self, light1, light2, light3, light4, light5):
         '''Set the lights on Cozmo's backpack.
 
+        The light descriptions below are all from Cozmo's perspective.
+
+        Note: The left and right lights only contain red LEDs, so e.g. setting
+        them to green will look off, and setting them to white will look red
+
         Args:
-            light1-5 (class:'cozmo.lights.Light'): The lights for Cozmo's backpack.
+            light1 (:class:`cozmo.lights.Light`): The left backpack light
+            light2 (:class:`cozmo.lights.Light`): The front backpack light
+            light3 (:class:`cozmo.lights.Light`): The center backpack light
+            light4 (:class:`cozmo.lights.Light`): The rear backpack light
+            light5 (:class:`cozmo.lights.Light`): The right backpack light
         '''
         msg = _clad_to_engine_iface.SetBackpackLEDs(robotID=self.robot_id)
         for i, light in enumerate( (light1, light2, light3, light4, light5) ):
@@ -946,11 +1003,26 @@ class Robot(event.Dispatcher):
 
         self.conn.send_msg(msg)
 
+    def set_center_backpack_lights(self, light):
+        '''Set the lights in the center of Cozmo's backpack to the same color.
+
+        Forces the lights on the left and right to off (this is useful as those
+        lights only support shades of red, so cannot generally be set to the
+        same color as the center lights).
+
+        Args:
+            light (:class:`cozmo.lights.Light`): The lights for Cozmo's backpack.
+        '''
+        light_arr = [ light ] * 5
+        light_arr[0] = lights.off_light
+        light_arr[4] = lights.off_light
+        self.set_backpack_lights(*light_arr)
+
     def set_all_backpack_lights(self, light):
         '''Set the lights on Cozmo's backpack to the same color.
 
         Args:
-            light (class:'cozmo.lights.Light'): The lights for Cozmo's backpack.
+            light (:class:`cozmo.lights.Light`): The lights for Cozmo's backpack.
         '''
         light_arr = [ light ] * 5
         self.set_backpack_lights(*light_arr)
@@ -974,7 +1046,8 @@ class Robot(event.Dispatcher):
         msg = _clad_to_engine_iface.SetHeadlight(enable=enable)
         self.conn.send_msg(msg)
 
-    def set_head_angle(self, angle, accel=10.0, max_speed=10.0, duration=0.0):
+    def set_head_angle(self, angle, accel=10.0, max_speed=10.0, duration=0.0,
+                       in_parallel=False, num_retries=0):
         '''Tell Cozmo's head to turn to a given angle.
 
         Args:
@@ -983,7 +1056,13 @@ class Robot(event.Dispatcher):
                 :const:`MAX_HEAD_ANGLE`).
             accel (float): Acceleration of Cozmo's head in radians per second squared.
             max_speed (float): Maximum speed of Cozmo's head in radians per second.
-            duration (float): Time for Cozmo's head to turn in seconds.
+            duration (float): Time for Cozmo's head to turn in seconds. A value
+                of zero will make Cozmo try to do it as quickly as possible.
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
             A :class:`cozmo.robot.SetHeadAngle` action object which can be
                 queried to see when it is complete
@@ -992,10 +1071,13 @@ class Robot(event.Dispatcher):
                 accel=accel, duration=duration, conn=self.conn,
                 robot=self, dispatch_parent=self)
 
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
 
-    def set_lift_height(self, height, accel=1.0, max_speed=1.0, duration=2.0):
+    def set_lift_height(self, height, accel=10.0, max_speed=10.0, duration=0.0,
+                        in_parallel=False, num_retries=0):
         '''Tell Cozmo's lift to move to a given height
 
         Args:
@@ -1004,7 +1086,13 @@ class Robot(event.Dispatcher):
             accel (float): Acceleration of Cozmo's lift in radians per
                 second squared.
             max_speed (float): Maximum speed of Cozmo's lift in radians per second.
-            duration (float): Time for Cozmo's lift to move in seconds.
+            duration (float): Time for Cozmo's lift to move in seconds. A value
+                of zero will make Cozmo try to do it as quickly as possible.
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
             A :class:`cozmo.robot.SetLiftHeight` action object which can be
                 queried to see when it is complete.
@@ -1012,13 +1100,15 @@ class Robot(event.Dispatcher):
         action = self.set_lift_height_factory(height=height, max_speed=max_speed,
                 accel=accel, duration=duration, conn=self.conn,
                 robot=self, dispatch_parent=self)
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
 
 
     ## Animation Commands ##
 
-    def play_anim(self, name, loop_count=1):
+    def play_anim(self, name, loop_count=1, in_parallel=False, num_retries=0):
         '''Starts an animation playing on a robot.
 
         Returns an Animation object as soon as the request to play the animation
@@ -1026,9 +1116,18 @@ class Robot(event.Dispatcher):
         if you wish to wait for completion (or listen for the
         :class:`cozmo.anim.EvtAnimationCompleted` event).
 
+        Warning: Specific animations may be renamed or removed in future updates of the app.
+            If you want your program to work more reliably across all versions
+            we recommend using :meth:`play_anim_trigger` instead.
+
         Args:
             name (str): The name of the animation to play.
             loop_count (int): Number of times to play the animation.
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
             A :class:`cozmo.anim.Animation` action object which can be queried
                 to see when it is complete.
@@ -1039,10 +1138,13 @@ class Robot(event.Dispatcher):
             raise ValueError('Unknown animation name "%s"' % name)
         action = self.animation_factory(name, loop_count,
                 conn=self.conn, robot=self, dispatch_parent=self)
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
 
-    def play_anim_trigger(self, trigger, loop_count=1):
+    def play_anim_trigger(self, trigger, loop_count=1, in_parallel=False,
+                          num_retries=0):
         """Starts an animation trigger playing on a robot.
 
         As noted in the Triggers class, playing a trigger requests that an
@@ -1052,6 +1154,11 @@ class Robot(event.Dispatcher):
         Args:
             trigger (object): An attribute of the :class:`cozmo.anim.Triggers` class
             loop_count (int): Number of times to play the animation
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
             A :class:`cozmo.anim.AnimationTrigger` action object which can be
                 queried to see when it is complete
@@ -1063,7 +1170,9 @@ class Robot(event.Dispatcher):
 
         action = self.animation_trigger_factory(trigger, loop_count,
             conn=self.conn, robot=self, dispatch_parent=self)
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
 
     def set_idle_animation(self, anim_trigger):
@@ -1092,7 +1201,8 @@ class Robot(event.Dispatcher):
 
     # Cozmo's Face animation commands
 
-    def display_oled_face_image(self, screen_data, duration_ms):
+    def display_oled_face_image(self, screen_data, duration_ms,
+                                in_parallel=True):
         ''' Display a bitmap image on Cozmo's OLED face screen.
 
         Args:
@@ -1101,9 +1211,32 @@ class Robot(event.Dispatcher):
                 :func:`cozmo.oled_face.convert_pixels_to_screen_data`).
             duration_ms (float): time to keep displaying this image on Cozmo's
                 face (clamped to 30 seconds in engine).
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+        Returns:
+            A :class:`cozmo.robot.DisplayOledFaceImage` action object which
+                can be queried to see when it is complete.
+        Raises:
+            :class:`cozmo.exceptions.RobotBusy` if another action is already
+                running and in_parallel==False
         '''
-        msg = _clad_to_engine_iface.DisplayFaceImage(faceData=screen_data, duration_ms=duration_ms)
-        self.conn.send_msg(msg)
+
+        # We never want 2 face image actions active at once, so clear current
+        # face image action (if one is running)
+        if ((self._current_face_image_action is not None) and
+                self._current_face_image_action.is_running):
+            self._current_face_image_action.abort()
+
+        action = self.display_oled_face_image_factory(screen_data=screen_data,
+                                                      duration_ms=duration_ms,
+                                                      conn=self.conn, robot=self,
+                                                      dispatch_parent=self)
+        self._current_face_image_action = action
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=0)
+        return action
 
 
     ## Behavior Commands ##
@@ -1147,13 +1280,6 @@ class Robot(event.Dispatcher):
         await asyncio.sleep(active_time, loop=self._loop)
         b.stop()
 
-    def _stop_behavior(self):
-        # Internal helper method called from Behavior.stop etc.
-        msg = _clad_to_engine_iface.ExecuteBehaviorByExecutableType(
-                behaviorType=_clad_to_engine_cozmo.ExecutableBehaviorType.NoneBehavior)
-        self.conn.send_msg(msg)
-        self._is_behavior_running = False
-
     def start_freeplay_behaviors(self):
         '''Start running freeplay behaviors on Cozmo
 
@@ -1187,7 +1313,8 @@ class Robot(event.Dispatcher):
 
     ## Object Commands ##
 
-    def pickup_object(self, obj, use_pre_dock_pose=True):
+    def pickup_object(self, obj, use_pre_dock_pose=True, in_parallel=False,
+                      num_retries=0):
         '''Instruct the robot to pick-up the supplied object.
 
         Args:
@@ -1195,11 +1322,17 @@ class Robot(event.Dispatcher):
                 pick up where ``obj.pickupable`` is True.
             use_pre_dock_pose (bool): whether or not to try to immediately pick
                 up an object or first position the robot next to the object.
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
             A :class:`cozmo.robot.PickupObject` action object which can be
                 queried to see when it is complete.
         Raises:
-            :class:`cozmo.exceptions.RobotBusy` if another action is already running.
+            :class:`cozmo.exceptions.RobotBusy` if another action is already
+                running and in_parallel==False
             :class:`cozmo.exceptions.NotPickupable` if object type can't be picked up.
         '''
         if not obj.pickupable:
@@ -1209,10 +1342,13 @@ class Robot(event.Dispatcher):
         logger.info("Sending pickup object request for object=%s", obj)
         action = self.pickup_object_factory(obj=obj, use_pre_dock_pose=use_pre_dock_pose,
                 conn=self.conn, robot=self, dispatch_parent=self)
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
 
-    def place_on_object(self, obj, use_pre_dock_pose=True):
+    def place_on_object(self, obj, use_pre_dock_pose=True, in_parallel=False,
+                        num_retries=0):
         '''Asks Cozmo to place the currently held object onto a target object.
 
         Args:
@@ -1221,11 +1357,17 @@ class Robot(event.Dispatcher):
                 is True.
             use_pre_dock_pose (bool): Whether or not to try to immediately pick
                 up an object or first position the robot next to the object.
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
             A :class:`cozmo.robot.PlaceOnObject` action object which can be
                 queried to see when it is complete.
         Raises:
-            :class:`cozmo.exceptions.RobotBusy` if another action is already running
+            :class:`cozmo.exceptions.RobotBusy` if another action is already
+                running and in_parallel==False
             :class:`cozmo.exceptions.CannotPlaceObjectsOnThis` if the object cannot have objects
             placed on it.
         '''
@@ -1236,46 +1378,65 @@ class Robot(event.Dispatcher):
         logger.info("Sending place on object request for target object=%s", obj)
         action = self.place_on_object_factory(obj=obj, use_pre_dock_pose=use_pre_dock_pose,
                 conn=self.conn, robot=self, dispatch_parent=self)
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
 
-    def place_object_on_ground_here(self, obj):
+    def place_object_on_ground_here(self, obj, in_parallel=False, num_retries=0):
         '''Ask Cozmo to place the object he is carrying on the ground at the current location.
 
+        Args:
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
             A :class:`cozmo.robot.PlaceObjectOnGroundHere` action object which
                 can be queried to see when it is complete.
         Raises:
-            :class:`cozmo.exceptions.RobotBusy` if another action is already running
+            :class:`cozmo.exceptions.RobotBusy` if another action is already
+                running and in_parallel==False
         '''
         # TODO: Check whether Cozmo is known to be holding the object in question
         logger.info("Sending place down here request for object=%s", obj)
         action = self.place_object_on_ground_here_factory(obj=obj,
                 conn=self.conn, robot=self, dispatch_parent=self)
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
 
 
     ## Interact with seen Face Commands ##
 
-    def turn_towards_face(self, face):
+    def turn_towards_face(self, face, in_parallel=False, num_retries=0):
         '''Tells Cozmo to turn towards this face.
 
         Args:
             face: (:class:`cozmo.faces.Face`): The face Cozmo will turn towards.
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
             A :class:`cozmo.robot.TurnTowardsFace` action object which can be
                 queried to see when it is complete
         '''
         action = self.turn_towards_face_factory(face=face,
                 conn=self.conn, robot=self, dispatch_parent=self)
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
 
 
     ## Robot Driving Commands ##
 
-    def go_to_pose(self, pose, relative_to_robot=False):
+    def go_to_pose(self, pose, relative_to_robot=False, in_parallel=False,
+                   num_retries=0):
         '''Tells Cozmo to drive to the specified pose and orientation.
 
         If relative_to_robot is set to True, the given pose will assume the
@@ -1290,6 +1451,11 @@ class Robot(event.Dispatcher):
             pose: (:class:`cozmo.util.Pose`): The destination pose.
             relative_to_robot (bool): Whether the given pose is relative to
                 the robot's pose.
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
             A :class:`cozmo.robot.GoToPose` action object which can be queried
                 to see when it is complete.
@@ -1298,10 +1464,13 @@ class Robot(event.Dispatcher):
             pose = self.pose.define_pose_relative_this(pose)
         action = self.go_to_pose_factory(pose=pose,
                 conn=self.conn, robot=self, dispatch_parent=self)
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
 
-    def go_to_object(self, target_object, distance_from_object):
+    def go_to_object(self, target_object, distance_from_object,
+                     in_parallel=False, num_retries=0):
         '''Tells Cozmo to drive to the specified object.
 
         Args:
@@ -1310,6 +1479,11 @@ class Robot(event.Dispatcher):
                 object to stop. This is the distance between the origins. For instance,
                 the distance from the robot's origin (between Cozmo's two front wheels)
                 to the cube's origin (at the center of the cube) is ~40mm.
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
             A :class:`cozmo.robot.GoToObject` action object which can be queried
                 to see when it is complete.
@@ -1320,15 +1494,22 @@ class Robot(event.Dispatcher):
         action = self.go_to_object_factory(object_id=target_object.object_id,
                                            distance_from_object=distance_from_object,
                                            conn=self.conn, robot=self, dispatch_parent=self)
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
 
-    def turn_in_place(self, angle):
+    def turn_in_place(self, angle, in_parallel=False, num_retries=0):
         '''Turn the robot around its current position.
 
         Args:
             angle: (:class:`cozmo.util.Angle`): The angle to turn. Positive
                 values turn to the left, negative values to the right.
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
             A :class:`cozmo.robot.TurnInPlace` action object which can be
                 queried to see when it is complete.
@@ -1336,10 +1517,12 @@ class Robot(event.Dispatcher):
         # TODO: add support for absolute vs relative positioning, speed & accel options
         action = self.turn_in_place_factory(angle=angle,
                 conn=self.conn, robot=self, dispatch_parent=self)
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
 
-    def drive_off_charger_contacts(self):
+    def drive_off_charger_contacts(self, in_parallel=False, num_retries=0):
         '''Tells Cozmo to drive forward slightly to get off the charger contacts.
 
         All motor movement is disabled while Cozmo is on the charger to
@@ -1347,13 +1530,21 @@ class Robot(event.Dispatcher):
         a way to drive forward a little to disconnect from the charger contacts
         and thereby re-enable all other commands.
 
+        Args:
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
            A :class:`cozmo.robot.DriveOffChargerContacts` action object which
             can be queried to see when it is complete.
         '''
         action = self.drive_off_charger_contacts_factory(conn=self.conn,
                 robot=self, dispatch_parent=self)
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
 
     async def backup_onto_charger(self, max_drive_time=3):
@@ -1396,7 +1587,8 @@ class Robot(event.Dispatcher):
         '''
         return self.perform_off_charger_factory(self)
 
-    def drive_straight(self, distance, speed, should_play_anim=True):
+    def drive_straight(self, distance, speed, should_play_anim=True,
+                       in_parallel=False, num_retries=0):
         '''Tells Cozmo to drive in a straight line
 
         Cozmo will drive for the specified distance (forwards or backwards)
@@ -1408,7 +1600,11 @@ class Robot(event.Dispatcher):
                 (should always be >0, the abs(speed) is used internally)
             should_play_anim (bool): Whether to play idle animations
                 whilst driving (tilt head, hum, animated eyes, etc.)
-
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
         Returns:
            A :class:`cozmo.robot.DriveStraight` action object which
             can be queried to see when it is complete.
@@ -1419,5 +1615,11 @@ class Robot(event.Dispatcher):
                                              distance=distance,
                                              speed=speed,
                                              should_play_anim=should_play_anim)
-        self._action_dispatcher._send_single_action(action)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
         return action
+
+    async def wait_for_all_actions_completed(self):
+        '''Waits until all SDK-initiated actions are complete.'''
+        await self._action_dispatcher.wait_for_all_actions_completed()

@@ -21,14 +21,10 @@ Cozmo will wait until he sees two Cubes, and then will pick up one and place it 
 He will pick up the first one he sees, and place it on the second one.
 '''
 
-import sys
-
 import cozmo
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
 
+def cozmo_program(robot: cozmo.robot.Robot):
     lookaround = robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
 
     cubes = robot.world.wait_until_observe_num_objects(num=2, object_type=cozmo.objects.LightCube, timeout=60)
@@ -50,9 +46,5 @@ def run(sdk_conn):
             code, reason = current_action.failure_reason
             print("Place On Cube failed: code=%s reason=%s" % (code, reason))
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+
+cozmo.run_program(cozmo_program)

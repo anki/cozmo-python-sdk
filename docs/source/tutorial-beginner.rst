@@ -28,40 +28,28 @@ The code for the Hello World program looks like this.
   Make Cozmo say 'Hello World' in this simple Cozmo SDK example program.
   '''
 
-  import sys
-
   import cozmo
 
-  def run(sdk_conn):
-      '''The run method runs once Cozmo is connected.'''
-      robot = sdk_conn.wait_for_robot()
+
+  def cozmo_program(robot: cozmo.robot.Robot):
       robot.say_text("Hello World").wait_for_completed()
 
-  if __name__ == '__main__':
-      cozmo.setup_basic_logging()
 
-      try:
-          cozmo.connect(run)
-      except cozmo.ConnectionError as e:
-          sys.exit("A connection error occurred: %s" % e)
+  cozmo.run_program(cozmo_program)
 ..
 
 The breakdown of each part of the program is as follows:
 
-1. ``import sys`` and ``import cozmo`` allows your program to access the code contained within the ``sys`` and ``cozmo`` modules.
-2. Text sandwiched between three ' marks is a comment. Comments are placed inside code to give information to the user.
-3. The first line of the run function tells the SDK to connect to the robot, and to wait until that connection happens before performing any other actions.
-4. ``robot.say_text("Hello World").wait_for_completed`` is the core of the program.
+1. ``import cozmo`` allows your program to access the Cozmo SDK code contained within the ``cozmo`` module.
+2. Text sandwiched between three ``'`` marks is a Docstring. Docstrings are like comments, and are placed inside code to give information to the user.
+3. ``robot.say_text("Hello World").wait_for_completed`` is the core of the program.
 
   a. ``robot.say_text`` is the function that makes Cozmo speak.
   b. ``("Hello World")`` tells Cozmo what to say.
   c. ``wait_for_completed`` tells Cozmo to finish speaking before doing anything else.
 
-5. The next two lines set up a logging system so that if an error occurs, the system will inform you of what specifically went wrong.
-6. ``cozmo.connect(run)``, runs the program as soon as Cozmo connects to the system.
-7. The last two lines ensure that the system will alert you when a connection error occurs, and that it will give you details of what occurred.
+4 The last line runs the program above on Cozmo.
 
-Different types of modules will be discussed in the example programs below.
 
 --------------------
 Running the Programs
@@ -102,7 +90,7 @@ Example Programs
 Example 1 - Drive Straight
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For your first program, you will tell Cozmo to drive in a straight line for three seconds. This program will give you a simple overview of the programming process, as well as some of the building blocks necessary for the programs to work.
+For your first program, you will tell Cozmo to drive in a straight line for a short distance. This program will give you a simple overview of the programming process, as well as some of the building blocks necessary for the programs to work.
 
 1. In your source code editor, create a new document (*File -> New Document*). Free source code editors, such as `PyCharm Community Edition <https://www.jetbrains.com/pycharm/>`_ , `Atom <https://atom.io>`_ , `Sublime <https://www.sublimetext.com>`_ , or `TextWrangler <http://www.barebones.com/products/textwrangler>`_ can be found online. Anki does not provide tech support for third-party source code editors.
 2. First, you need to tell the program to import some important information. Type the following lines into your document exactly as shown:
@@ -110,55 +98,45 @@ For your first program, you will tell Cozmo to drive in a straight line for thre
 .. code-block:: python
   :linenos:
 
-  import sys
-
   import cozmo
+  from cozmo.util import distance_mm, speed_mmps
 
 ..
 
-  a. ``import sys`` is a necessary module that assists the computer and Cozmo in communicating.
-  b. ``import cozmo`` allows your program to access the information contained within the ``cozmo`` module.
+  a. ``import cozmo`` allows your program to access the Cozmo SDK code contained within the ``cozmo`` module.
+  b. ``from cozmo.util import distance_mm, speed_mmps`` allows your program to specify distances and speeds for Cozmo.
 
 3. Next, you need to tell the program wait for Cozmo to connect. Type the following lines into the document exactly as shown:
 
 .. code-block:: python
-  :lineno-start: 5
+  :lineno-start: 4
 
-  def run(sdk_conn):
-      robot = sdk_conn.wait_for_robot()
+  def cozmo_program(robot: cozmo.robot.Robot):
 
 4. Now type in the following command as shown:
 
 .. code-block:: python
-  :lineno-start: 8
+  :lineno-start: 5
 
-      robot.drive_wheels(50, 50, 50, 50, duration=3)
+      robot.drive_straight(distance_mm(150), speed_mmps(50)).wait_for_completed()
 
 ..
 
-  a. The ``drive_wheels`` function directly controls all aspects of Cozmo's wheel motion.
-  b. ``50, 50, 50, 50`` is the speed of the wheels in his left and right treads, respectively. Speed is measured in millimeters per second (mm/s). In this example, Cozmo will move forward 50 millimeters per second.
-  c. ``duration=3`` specifies how long Cozmo will move. Duration is measured in seconds. In this example, Cozmo will move for three seconds.
+  a. The ``drive_straight`` function creates an action on Cozmo that drives him in a straight line.
+  b. ``distance_mm(150)`` is the distance to drive (150 millimeters)
+  c. ``speed_mmps(50)`` is the speed to drive at (50 millimeters per second)
+  d. ``wait_for_completed()`` instructs the program to wait until the drive_straight action has finished before continuing.
 
-5. Type in the last six lines:
+5. Type in the last line:
 
 .. code-block:: python
-  :lineno-start: 10
+  :lineno-start: 7
 
-  if __name__ == '__main__':
-      cozmo.setup_basic_logging()
-      try:
-          cozmo.connect(run)
-      except cozmo.ConnectionError as e:
-          sys.exit("A connection error occurred: %s" % e)
+  cozmo.run_program(cozmo_program)
 
 ..
 
-    a. ``cozmo.setup_basic_logging()`` tells the program to alert you if any errors occur when running the program.
-    b. ``cozmo.connect(run)`` tells the program to run as soon as Cozmo connects to the computer.
-    c. ``cozmo.ConnectionError`` is a flag that tells the system to alert you if there is a problem connecting the system or the mobile device to the robot.
-    d. ``sys.exit`` exits the script in the case of an error.
-    e. ``("A connection error occurred: %s" % e)`` is what will print as the specific error. *%s* and *% e* are variables that define the exact errors.
+    a. ``cozmo.run_program(cozmo_program)`` tells the SDK to run the ``def cozmo_program`` function above as soon as Cozmo connects to the computer.
 
 6. Save the file in the directory of your choice as ``drive_forward.py``.
 
@@ -167,21 +145,13 @@ The completed program should look like this.
 .. code-block:: python
   :linenos:
 
-  import sys
-
   import cozmo
+  from cozmo.util import distance_mm, speed_mmps
 
-  def run(sdk_conn):
-    robot = sdk_conn.wait_for_robot()
+  def cozmo_program(robot: cozmo.robot.Robot):
+    robot.drive_straight(distance_mm(150), speed_mmps(50)).wait_for_completed()
 
-    robot.drive_wheels(50,50, duration=3)
-
-  if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-      cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-      sys.exit("A connection error occurred: %s" % e)
+  cozmo.run_program(cozmo_program)
 
 ..
 
@@ -197,8 +167,6 @@ Now that you have written your first program, you're ready to write a more compl
 .. code-block:: python
   :linenos:
 
-  import sys
-
   import cozmo
   from cozmo.util import degrees
 
@@ -209,15 +177,14 @@ Now that you have written your first program, you're ready to write a more compl
 3. Next, you need to tell the program wait for Cozmo to connect. Type the following lines into the document exactly as shown:
 
 .. code-block:: python
-  :lineno-start: 7
+  :lineno-start: 4
 
-  def run(sdk_conn):
-      robot = sdk_conn.wait_for_robot()
+  def cozmo_program(robot: cozmo.robot.Robot):
 
 4. Now type in the following command as shown:
 
 .. code-block:: python
-  :lineno-start: 10
+  :lineno-start: 5
 
       robot.turn_in_place(degrees(90)).wait_for_completed()
 
@@ -230,7 +197,7 @@ Now that you have written your first program, you're ready to write a more compl
 5. Next, type in:
 
 .. code-block:: python
-  :lineno-start: 12
+  :lineno-start: 7
 
       anim = robot.play_anim_trigger(cozmo.anim.Triggers.MajorWin)
       anim.wait_for_completed()
@@ -240,17 +207,12 @@ Now that you have written your first program, you're ready to write a more compl
   a. ``anim = robot.play_anim_trigger(cozmo.anim.Triggers.MajorWin)`` triggers Cozmo to play a specific animation - in this case, his "Major Win" happy dance.
   b. ``anim.wait_for_completed`` is a signal that makes sure Cozmo completes his dance before performing his next action.
 
-6. Type in the last six lines:
+6. Type in the last line:
 
 .. code-block:: python
-  :lineno-start: 16
+  :lineno-start: 10
 
-  if __name__ == '__main__':
-      cozmo.setup_basic_logging()
-      try:
-          cozmo.connect(run)
-      except cozmo.ConnectionError as e:
-          sys.exit("A connection error occurred: %s" % e)
+  cozmo.run_program(cozmo_program)
 
 7. Save the file as ``turn.py``.
 
@@ -259,27 +221,16 @@ The completed program should look like this.
 .. code-block:: python
   :linenos:
 
-  import sys
-
   import cozmo
   from cozmo.util import degrees
 
-
-  def run(sdk_conn):
-      robot = sdk_conn.wait_for_robot()
-
+  def cozmo_program(robot: cozmo.robot.Robot):
       robot.turn_in_place(degrees(90)).wait_for_completed()
 
       anim = robot.play_anim_trigger(cozmo.anim.Triggers.MajorWin)
       anim.wait_for_completed()
 
-
-  if __name__ == '__main__':
-      cozmo.setup_basic_logging()
-      try:
-          cozmo.connect(run)
-      except cozmo.ConnectionError as e:
-          sys.exit("A connection error occurred: %s" % e)
+  cozmo.run_program(cozmo_program)
 
 ..
 
@@ -295,23 +246,20 @@ As a third beginning tutorial, you can tell Cozmo to look around for his blocks,
 .. code-block:: python
   :linenos:
 
-  import asyncio
-
   import cozmo
 
-  def run(sdk_conn):
-    robot = sdk_conn.wait_for_robot()
+  def cozmo_program(robot: cozmo.robot.Robot):
 
 3. Now type in the following command as shown:
 
 .. code-block:: python
-  :lineno-start: 8
+  :lineno-start: 4
 
-  lookaround = robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
+      lookaround = robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
 
-  cubes = robot.world.wait_until_observe_num_objects(num=2, object_type=cozmo.objects.LightCube, timeout=60)
+      cubes = robot.world.wait_until_observe_num_objects(num=2, object_type=cozmo.objects.LightCube, timeout=60)
 
-  lookaround.stop()
+      lookaround.stop()
 
 ..
 
@@ -322,17 +270,17 @@ As a third beginning tutorial, you can tell Cozmo to look around for his blocks,
 
   2. ``robot.world.wait_until_observe_num_objects`` directs Cozmo to wait until his sensors detect a specified number of objects.
   3. ``num=2`` specifies the number of objects Cozmo has to find in order to trigger the next behavior.
-  4. ``object_type=cozmo.objects.LightCube`` directs Cozmo to specifically find his Cubes. He will not count other objects, such as your hands or other objects on the play area.
+  4. ``object_type=cozmo.objects.LightCube`` directs Cozmo to specifically find his Cubes. He will not count other objects, such as his charger or other objects on the play area.
   5. ``timeout=60`` sets how long Cozmo will look for Cubes. Timeout is set in seconds.
   6. ``lookaround.stop()`` stops the behavior once it reaches the time limit.
 
 4. Type in the following as shown:
 
 .. code-block:: python
-  :lineno-start: 14
+  :lineno-start: 10
 
-  if len(cubes) < 2:
-        print("Error: need 2 Cubes but only found", len(cubes), "Cube(s)")
+      if len(cubes) < 2:
+          print("Error: need 2 Cubes but only found", len(cubes), "Cube(s)")
 ..
 
   a. ``if len(cubes) < 2:`` is an argument that is called if Cozmo detects fewer than two cubes.
@@ -341,11 +289,11 @@ As a third beginning tutorial, you can tell Cozmo to look around for his blocks,
 5. Type in the next line as shown:
 
 .. code-block:: python
-  :lineno-start: 17
+  :lineno-start: 12
 
-  else:
-        robot.pickup_object(cubes[0]).wait_for_completed()
-        robot.place_on_object(cubes[1]).wait_for_completed()
+      else:
+          robot.pickup_object(cubes[0]).wait_for_completed()
+          robot.place_on_object(cubes[1]).wait_for_completed()
 
 ..
 
@@ -356,17 +304,12 @@ As a third beginning tutorial, you can tell Cozmo to look around for his blocks,
   e. ``(cubes[1])`` specifies the Cube Cozmo needs to place what he is holding onto; in this case, it is the second Cube Cozmo detected.
   f. ``wait_for_completed()`` is a signal that makes sure Cozmo completes his action before performing his next action.
 
-6. Type in the last three lines:
+6. Type in the last line:
 
 .. code-block:: python
-  :lineno-start: 21
+  :lineno-start: 16
 
-  if __name__ == '__main__':
-      cozmo.setup_basic_logging()
-      try:
-          cozmo.connect(run)
-      except cozmo.ConnectionError as e:
-          sys.exit("A connection error occurred: %s" % e)
+  cozmo.run_program(cozmo_program)
 
 ..
 
@@ -377,13 +320,9 @@ The completed program should look like this.
 .. code-block:: python
   :linenos:
 
-  import sys
-
   import cozmo
 
-  def run(sdk_conn):
-      robot = sdk_conn.wait_for_robot()
-
+  def cozmo_program(robot: cozmo.robot.Robot):
       lookaround = robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
 
       cubes = robot.world.wait_until_observe_num_objects(num=2, object_type=cozmo.objects.LightCube, timeout=60)
@@ -396,12 +335,7 @@ The completed program should look like this.
           robot.pickup_object(cubes[0]).wait_for_completed()
           robot.place_on_object(cubes[1]).wait_for_completed()
 
-  if __name__ == '__main__':
-      cozmo.setup_basic_logging()
-      try:
-          cozmo.connect(run)
-      except cozmo.ConnectionError as e:
-          sys.exit("A connection error occurred: %s" % e)
+  cozmo.run_program(cozmo_program)
 
 ..
 
@@ -419,23 +353,21 @@ Building further on previously introduced code, let's combine your new knowledge
 
     '''Make Cozmo sing Do Re Mi.
 
-    Slight extension from hello_world.py - introduces for loops to make Cozmo "sing" the scales.
+    Make Cozmo "sing" the scales.
+    This is a small extension of the 03_count.py example.
     '''
-
-    import sys
 
     import cozmo
     from cozmo.util import degrees
 
-    def run(sdk_conn):
-        '''The run method runs once Cozmo is connected.'''
-        robot = sdk_conn.wait_for_robot()
 
+    def cozmo_program(robot: cozmo.robot.Robot):
+        # scales is a list of the words for Cozmo to sing
         scales = ["Doe", "Ray", "Mi", "Fa", "So", "La", "Ti", "Doe"]
 
         # Find voice_pitch_delta value that will range the pitch from -1 to 1 over all of the scales
         voice_pitch = -1.0
-        voice_pitch_delta = 2.0 / (len(scales) -1)
+        voice_pitch_delta = 2.0 / (len(scales) - 1)
 
         # Move head and lift down to the bottom, and wait until that's achieved
         robot.move_head(-5) # start moving head down so it mostly happens in parallel with lift
@@ -451,12 +383,8 @@ Building further on previously introduced code, let's combine your new knowledge
             robot.say_text(note, voice_pitch=voice_pitch, duration_scalar=0.3).wait_for_completed()
             voice_pitch += voice_pitch_delta
 
-    if __name__ == '__main__':
-        cozmo.setup_basic_logging()
-        try:
-            cozmo.connect(run)
-        except cozmo.ConnectionError as e:
-            sys.exit("A connection error occurred: %s" % e)
+
+    cozmo.run_program(cozmo_program)
 
 ..
 

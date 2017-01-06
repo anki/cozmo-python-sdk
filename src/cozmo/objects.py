@@ -55,7 +55,7 @@ from . import event
 from . import lights
 from . import util
 
-from ._clad import _clad_to_engine_iface, _clad_to_game_cozmo, _clad_to_engine_cozmo
+from ._clad import _clad_to_engine_iface, _clad_to_game_cozmo, _clad_to_engine_cozmo, _clad_to_game_anki
 
 
 #: Length of time in seconds to go without receiving an observed event before
@@ -299,10 +299,9 @@ class ObservableObject(ObservableElement):
 
         self.last_observed_robot_timestamp = object_state.lastObservedTimestamp
 
-        self._pose = util.Pose(object_state.pose.x, object_state.pose.y, object_state.pose.z,
-                               q0=object_state.pose.q0, q1=object_state.pose.q1,
-                               q2=object_state.pose.q2, q3=object_state.pose.q3,
-                               origin_id=object_state.pose.originID)
+        self._pose = util.Pose._create_from_clad(object_state.pose)
+        if object_state.poseState == _clad_to_game_anki.PoseState.Unknown:
+            self._pose.invalidate()
 
         self.dispatch_event(EvtObjectAvailable,
                             obj=self,
@@ -441,7 +440,7 @@ class LightCube(ObservableObject):
         '''Set all lights on the cube
 
         Args:
-            light (`class:`cozmo.lights.Light`): The settings for the lights.
+            light (:class:`cozmo.lights.Light`): The settings for the lights.
         '''
         msg = _clad_to_engine_iface.SetAllActiveObjectLEDs(
                 objectID=self.object_id, robotID=self._robot.robot_id)

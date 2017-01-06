@@ -34,7 +34,6 @@ and adds a couple of custom annotations of its own using two different methods.
 '''
 
 
-import asyncio
 import sys
 import time
 
@@ -65,30 +64,27 @@ class Battery(cozmo.annotate.Annotator):
         text.render(d, bounds)
 
 
-async def run(sdk_conn):
-    robot = await sdk_conn.wait_for_robot()
+def cozmo_program(robot: cozmo.robot.Robot):
     robot.world.image_annotator.add_static_text('text', 'Coz-Cam', position=cozmo.annotate.TOP_RIGHT)
     robot.world.image_annotator.add_annotator('clock', clock)
     robot.world.image_annotator.add_annotator('battery', Battery)
 
-    await asyncio.sleep(2)
+    time.sleep(2)
 
     print("Turning off all annotations for 2 seconds")
     robot.world.image_annotator.annotation_enabled = False
-    await asyncio.sleep(2)
+    time.sleep(2)
 
     print('Re-enabling all annotations')
     robot.world.image_annotator.annotation_enabled = True
 
     # Disable the face annotator after 10 seconds
-    await asyncio.sleep(10)
+    time.sleep(10)
     print("Disabling face annotations (light cubes still annotated)")
     robot.world.image_annotator.disable_annotator('faces')
 
     # Shutdown the program after 100 seconds
-    await asyncio.sleep(100)
+    time.sleep(100)
 
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    cozmo.connect_with_tkviewer(run, force_on_top=True)
+cozmo.run_program(cozmo_program, use_viewer=True, force_viewer_on_top=True)

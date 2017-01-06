@@ -28,7 +28,7 @@ except ImportError:
 import cozmo
 
 
-def get_in_position(robot):
+def get_in_position(robot: cozmo.robot.Robot):
     '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face'''
     if (robot.lift_height.distance_mm > 45) or (robot.head_angle.degrees < 40):
         with robot.perform_off_charger():
@@ -36,16 +36,12 @@ def get_in_position(robot):
             robot.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-
-    robot = sdk_conn.wait_for_robot()
-
+def cozmo_program(robot: cozmo.robot.Robot):
     get_in_position(robot)
 
     # load some images and convert them for display cozmo's face
-    image_settings = [("images/cozmosdk.png", Image.BICUBIC),
-                      ("images/hello_world.png", Image.NEAREST)]
+    image_settings = [("../../face_images/cozmosdk.png", Image.BICUBIC),
+                      ("../../face_images/hello_world.png", Image.NEAREST)]
     face_images = []
     for image_name, resampling_mode in image_settings:
         image = Image.open(image_name)
@@ -73,10 +69,11 @@ def run(sdk_conn):
             time.sleep(duration_s)
 
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+# Cozmo is moved off his charger contacts by default at the start of any program.
+# This is because not all motor movement is possible whilst drawing current from
+# the charger. In cases where motor movement is not required, such as this example
+# we can specify that Cozmo can stay on his charger at the start:
+cozmo.robot.Robot.drive_off_charger_on_connect = False
+
+cozmo.run_program(cozmo_program)
+

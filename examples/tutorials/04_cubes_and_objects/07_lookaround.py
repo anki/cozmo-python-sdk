@@ -20,16 +20,12 @@ Cozmo looks around, reacts, and picks up and puts down a cube if found.
 '''
 
 import asyncio
-import sys
 
 import cozmo
 from cozmo.util import degrees
 
 
-def run(sdk_conn):
-    '''The run method runs once Cozmo is connected.'''
-    robot = sdk_conn.wait_for_robot()
-
+def cozmo_program(robot: cozmo.robot.Robot):
     look_around = robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
 
     # try to find a block
@@ -75,9 +71,4 @@ def run(sdk_conn):
     anim.wait_for_completed()
 
 
-if __name__ == '__main__':
-    cozmo.setup_basic_logging()
-    try:
-        cozmo.connect(run)
-    except cozmo.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+cozmo.run_program(cozmo_program)

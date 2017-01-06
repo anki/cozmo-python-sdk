@@ -34,7 +34,7 @@ normally be a need to modify them or write your own.
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['DeviceConnector', 'IOSConnector', 'AndroidConnector', 'TCPConnector',
            'connect',  'connect_with_tkviewer', 'connect_on_loop',
-           'setup_basic_logging']
+           'run_program', 'setup_basic_logging']
 
 import threading
 
@@ -692,3 +692,51 @@ def setup_basic_logging(general_log_level=None, protocol_log_level=None,
     if protocol_log_level is not None:
         logger_protocol.addHandler(h)
         logger_protocol.setLevel(protocol_log_level)
+
+
+def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
+               connector=None, force_viewer_on_top=False):
+    '''Connect to Cozmo and run the provided program/function f.
+
+    Args:
+
+        f (callable): The function to execute, accepts a connected
+            :class:`cozmo.robot.Robot` as the parameter.
+        use_viewer (bool): Specifies whether the window should be forced on top of all others
+        conn_factory (callable): Override the factory function to generate a
+            :class:`cozmo.conn.CozmoConnection` (or subclass) instance.
+        connector (:class:`DeviceConnector`): Optional instance of a DeviceConnector
+            subclass that handles opening the USB connection to a device.
+            By default it will connect to the first Android or iOS device that
+            has the Cozmo app running in SDK mode.
+        force_viewer_on_top (bool): Specifies whether the window should be
+            forced on top of all others (only relevant if use_viewer is True).
+    '''
+    setup_basic_logging()
+
+    # Wrap f (a function that takes in an already created robot)
+    # with a function that accepts a cozmo.conn.CozmoConnection
+    if asyncio.iscoroutinefunction(f):
+        @functools.wraps(f)
+        async def wrapper(sdk_conn):
+            try:
+                robot = await sdk_conn.wait_for_robot()
+                await f(robot)
+            except KeyboardInterrupt:
+                logger.info('Exit requested by user')
+    else:
+        @functools.wraps(f)
+        def wrapper(sdk_conn):
+            try:
+                robot = sdk_conn.wait_for_robot()
+                f(robot)
+            except KeyboardInterrupt:
+                logger.info('Exit requested by user')
+
+    try:
+        if use_viewer:
+            connect_with_tkviewer(wrapper, conn_factory=conn_factory, connector=connector, force_on_top=force_viewer_on_top)
+        else:
+            connect(wrapper, conn_factory=conn_factory, connector=connector)
+    except exceptions.ConnectionError as e:
+        sys.exit("A connection error occurred: %s" % e)
