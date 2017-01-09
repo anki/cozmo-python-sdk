@@ -22,32 +22,23 @@ macOS Installation
 Windows Installation
 ^^^^^^^^^^^^^^^^^^^^
 
-1. Open your internet browser and go to the `Android developer website. <https://developer.android.com/studio/index.html#downloads>`_
-2. Scroll down to *Get just the command line tools*. Download the Windows zip file for the SDK tools package, taking note of where the file is downloaded.
-3. In the File Explorer, create a new folder in ``C:\Users\your_name`` named ``Android``. Then, navigate into your new Android folder. You should now be inside folder ``C:\Users\your_name\Android``.
-4. Move the zip file you downloaded in step 2 to your new Android folder at ``C:\Users\your_name\Android``.
-5. Right-click the zip file in ``C:\Users\your_name\Android`` and select Extract All.
-6. Open a Command Prompt window. (To find the Command Prompt, you may use the search box in the lower left-hand corner of your screen.) In the Command Prompt window, navigate to your Android folder by typing ``cd C:\Users\your_name\Android``.
-7. Next, navigate to the ``android`` (or ``android.bat``) file inside the SDK tools package by typing this command: ``cd tools_r*-windows\tools`` (where ``r*`` is the version of your tools download file, e.g. ``tools_r25.2.3-windows``).
-8. Finally, run this command: ``android``
-
-  a. If you do not have Java installed, instructions will display in your Command Prompt window to tell you how to install it. Follow the instructions to install Java 8. Once Java 8 is installed, run the ``android`` command again.
-  b. The Android SDK Manager window will display. In the window, deselect everything except for *Android SDK Platform-tools*.
-  c. Click **Install 1 Package**, accept the license and click **Install**.
-  d. Take note of the SDK Path displayed in the upper left corner of the Android SDK Manager window (e.g., ``C:\Users\your_name\Android\tools_r25.2.3-windows``).
-
-  NOTE: If you are unable to install due to a permissions error, then return to File Explorer, navigate to ``C:\Users\your_name\Android\tools_r*-windows\tools\``, right click ``android`` and select *Run as administrator*. Then repeat steps 9b-d.
-
-9. With File Explorer, check that you can find the adb file in ``C:\Users\your_name\Android\tools_r*-windows\tools\platform-tools``. You will now add this path to your PATH environment variable in the next step.
-
-10. Add adb to your PATH environment variable.
+1. In your internet browser, navigate to this `link <https://dl.google.com/android/repository/platform-tools-latest-windows.zip>`_ and download file ``platform-tools-latest-windows.zip`` to your Downloads folder.
+2. Open a File Explorer window to your Downloads folder and see that your downloaded file ``platform-tools-latest-windows.zip`` is there.
+3. Open a new File Explorer window and create a new folder in ``C:\Users\your_name`` named ``Android``. Then, navigate into your new Android folder. You should now be inside folder ``C:\Users\your_name\Android``.
+4. Move the zip file you downloaded in step 1, ``platform-tools-latest-windows.zip``, to your new Android folder at ``C:\Users\your_name\Android``.
+5. Right-click the ``platform-tools-latest-windows.zip`` file in ``C:\Users\your_name\Android`` and select Extract All.
+6. With File Explorer, navigate to ``C:\Users\your_name\Android\platform-tools-latest-windows\platform-tools`` and confirm that the adb is there. You will now add this path to your PATH environment variable in the next step.
+7. Add adb to your PATH environment variable.
 
   a. Right-click the Start menu and select *System*.
   b. Select *Advanced System Settings -> Advanced -> Environment Variables*.
   c. Under *User Variables*, select *PATH* and click **Edit**.
-  d. Under *Edit Environment Variables*, click **New** and add the path to the folder containing adb (e.g. ``C:\Users\your_name\Android\tools_r25.2.3-windows\tools\platform-tools``).
+  d. Under *Edit Environment Variables*, click **New** and add the path to the folder containing adb (e.g. ``C:\Users\your_name\Android\platform-tools-latest-windows\platform-tools``). Click OK on all dialog boxes to confirm your change.
+8. Confirm that the PATH is correctly pointing to adb.
 
-11. Continue to :ref:`final-install` below to complete installation.
+  a. Open new a Command Prompt window. (To find the Command Prompt, you may use the search box in the lower left-hand corner of your screen.)
+  b. Type ``adb`` and adb instructions should print out.
+9. Continue to :ref:`final-install` below to complete installation.
 
 ^^^^^^^^^^^^^^^^^^
 Linux Installation
