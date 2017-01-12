@@ -59,7 +59,7 @@ class Color:
         Returns:
             A new :class:`Color` instance.
         """
-        if not 0 < alpha < 255:
+        if not 0 <= alpha <= 255:
             raise ValueError("Illegal value for alpha")
         return Color(int_color=(self._int_color & 0xffffff00) | alpha)
 
