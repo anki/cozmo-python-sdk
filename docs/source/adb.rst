@@ -34,10 +34,12 @@ Windows Installation
   b. Select *Advanced System Settings -> Advanced -> Environment Variables*.
   c. Under *User Variables*, select *PATH* and click **Edit**.
   d. Under *Edit Environment Variables*, click **New** and add the path to the folder containing adb (e.g. ``C:\Users\your_name\Android\platform-tools-latest-windows\platform-tools``). Click OK on all dialog boxes to confirm your change.
+
 8. Confirm that the PATH is correctly pointing to adb.
 
   a. Open new a Command Prompt window. (To find the Command Prompt, you may use the search box in the lower left-hand corner of your screen.)
   b. Type ``adb`` and adb instructions should print out.
+
 9. Continue to :ref:`final-install` below to complete installation.
 
 ^^^^^^^^^^^^^^^^^^
