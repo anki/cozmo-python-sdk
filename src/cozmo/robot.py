@@ -627,7 +627,7 @@ class Robot(event.Dispatcher):
         async def _init():
             # Note: Robot state is reset on entering SDK mode, and after any SDK program exits
             self.stop_all_motors()
-            self.enable_reactionary_behaviors(False)
+            self.enable_all_reaction_triggers(False)
             self._stop_behavior()
 
             # Ensure the SDK has full control of cube lights
@@ -848,13 +848,13 @@ class Robot(event.Dispatcher):
 
     #### Commands ####
 
-    def enable_reactionary_behaviors(self, should_enable):
+    def enable_all_reaction_triggers(self, should_enable):
         '''Enable or disable Cozmo's responses to being handled or observing the world.
 
         Args:
             should_enable (bool): True if the robot should react to its environment.
         '''
-        msg = _clad_to_engine_iface.EnableReactionaryBehaviors(enabled=should_enable)
+        msg = _clad_to_engine_iface.EnableAllReactionTriggers(enabled=should_enable)
         self.conn.send_msg(msg)
 
     def set_robot_volume(self, robot_volume):
