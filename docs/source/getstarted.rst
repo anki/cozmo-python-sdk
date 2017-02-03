@@ -50,17 +50,7 @@ The Program
 
 1. To run the program, using the same Terminal (macOS/Linux) / Command Prompt (Windows) window mentioned above:
 
-First, change to the ``01_basics`` sub-directory of the ``tutorials`` directory.
-
-    a. For macOS and Linux systems, type the following and press **Enter**::
-
-        cd tutorials/01_basics
-
-    b. For Windows systems, type the following and press **Enter**::
-
-        cd tutorials\01_basics
-
-Then, run the program.
+Change to the ``tutorials/01_basics`` sub-directory - to do this type ``cd tutorials/01_basics`` and press **Enter**. Then:
 
     a. For macOS and Linux systems, type the following and press **Enter**::
 
