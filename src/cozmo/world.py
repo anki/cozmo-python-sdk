@@ -292,7 +292,7 @@ class World(event.Dispatcher):
 
     def _recv_msg_robot_observed_object(self, evt, *, msg):
         #The engine still sends observed messages for fixed custom objects, this is a bug
-        if evt.msg.objectType == _clad_to_game_cozmo.ObjectType.Custom_Fixed:
+        if evt.msg.objectType == _clad_to_game_cozmo.ObjectType.CustomFixedObstacle:
             return
         obj = self._objects.get(msg.objectID)
         if not obj:
