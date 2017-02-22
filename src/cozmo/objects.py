@@ -321,8 +321,12 @@ class ObservableObject(ObservableElement):
     @object_id.setter
     def object_id(self, value):
         if self._object_id is not None:
-            raise ValueError("Cannot change object ID once set (from %s to %s)" % (self._object_id, value))
-        logger.debug("Updated object_id for %s from %s to %s", self.__class__, self._object_id, value)
+            # We cannot currently rely on Engine ensuring that object ID remains static
+            # E.g. in the case of a cube disconnecting and reconnecting it's removed
+            # and then re-added to blockworld which results in a new ID.
+            logger.warn("Changing object_id for %s from %s to %s", self.__class__, self._object_id, value)
+        else:
+            logger.debug("Setting object_id for %s to %s", self.__class__, value)
         self._object_id = value
 
     #### Private Event Handlers ####
