@@ -62,6 +62,12 @@ class Animation(action.Action):
         return _clad_to_engine_iface.PlayAnimation(
             robotID=self.robot.robot_id, animationName=self.anim_name, numLoops=self.loop_count)
 
+    def _dispatch_completed_event(self, msg):
+        self._completed_event = EvtAnimationCompleted(
+                action=self, state=self._state,
+                animation_name=self.anim_name)
+        self.dispatch_event(self._completed_event)
+
 
 class AnimationTrigger(action.Action):
     '''An AnimationTrigger represents a playing animation trigger.
@@ -89,10 +95,10 @@ class AnimationTrigger(action.Action):
             robotID=self.robot.robot_id, trigger=self.trigger.id, numLoops=self.loop_count)
 
     def _dispatch_completed_event(self, msg):
-        self.dispatch_event(EvtAnimationCompleted,
+        self._completed_event = EvtAnimationCompleted(
                 action=self, state=self._state,
                 animation_name=self.trigger.name)
-
+        self.dispatch_event(self._completed_event)
 
 
 class AnimationNames(event.Dispatcher, set):
