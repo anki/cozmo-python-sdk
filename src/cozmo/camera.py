@@ -106,11 +106,13 @@ class Camera(event.Dispatcher):
         super().__init__(**kw)
         self.robot = robot
         self._image_stream_enabled = None
+        self._color_image_enabled = None
         if np is None:
             logger.warn("Camera image processing not available due to missng NumPy or Pillow packages: %s" % _img_processing_available)
         else:
             # set property to ensure clad initialization is sent.
             self.image_stream_enabled = False
+            self.color_image_enabled = False
         self._reset_partial_state()
 
 
@@ -151,6 +153,26 @@ class Camera(event.Dispatcher):
         msg = _clad_to_engine_iface.ImageRequest(
                 robotID=self.robot.robot_id, mode=image_send_mode)
 
+        self.robot.conn.send_msg(msg)
+
+    @property
+    @_require_img_processing
+    def color_image_enabled(self):
+        '''bool: Set to true to receive color images from the robot.'''
+        if np is None:
+            return False
+
+        return self._color_image_enabled
+
+    @color_image_enabled.setter
+    @_require_img_processing
+    def color_image_enabled(self, enabled):
+        if self._color_image_enabled == enabled:
+            return
+
+        self._color_image_enabled = enabled
+
+        msg = _clad_to_engine_iface.EnableColorImages(enable = enabled)
         self.robot.conn.send_msg(msg)
 
 
@@ -198,16 +220,24 @@ class Camera(event.Dispatcher):
 
     def _process_completed_image(self):
         data = self._partial_data[0:self._partial_size]
+        
+        # The first byte of the image is whether or not it is in color
+        is_color_image = data[0] != 0
+        
         if self._partial_metadata.imageEncoding ==  _clad_to_game_cozmo.ImageEncoding.JPEGMinimizedGray:
             width, height = RESOLUTIONS[self._partial_metadata.resolution]
-            data = _minigray_to_jpeg(data, width, height)
-        elif self._partial_metadata.imageEncoding == _clad_to_game_cozmo.ImageEncoding.JPEGMinimizedColor:
-            width, height = (160,240)
-            data = _minicolor_to_jpeg(data, width, height)
+            
+            if is_color_image:
+                # Color images are half width
+                width = width // 2
+                data = _minicolor_to_jpeg(data, width, height)
+            else:
+                data = _minigray_to_jpeg(data, width, height)
+                
         image = Image.open(io.BytesIO(data)).convert('RGB')
 
         # Color images need to be resized to the proper resolution
-        if self._partial_metadata.imageEncoding ==  _clad_to_game_cozmo.ImageEncoding.JPEGMinimizedColor:
+        if is_color_image:
             size = RESOLUTIONS[self._partial_metadata.resolution]
             image = image.resize(size)
         
