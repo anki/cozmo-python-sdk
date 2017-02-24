@@ -25,7 +25,7 @@ __all__ = ['Angle', 'degrees', 'radians',
            'Rotation', 'rotation_quaternion', 'rotation_z_angle',
            'angle_z_to_quaternion',
            'Speed', 'speed_mmps',
-           'Timeout']
+           'Timeout', 'Vector2', 'Vector3']
 
 
 import collections
@@ -535,6 +535,59 @@ def angle_z_to_quaternion(angle_z):
     # q3 = cos(x/2)*cos(y/2)*sin(z/2) - sin(x/2)*sin(y/2)*cos(z/2)
     q3 = math.sin(angle_z.radians/2)
     return q0,q1,q2,q3
+
+
+class Vector2:
+    '''Represents a 2D Vector (type/units aren't specified)
+
+    Args:
+        x (float): X component
+        y (float): Y component
+    '''
+
+    __slots__ = ('_x', '_y')
+
+    def __init__(self, x, y):
+        self._x = x
+        self._y = y
+
+    @property
+    def x(self):
+        '''float: The x component.'''
+        return self._x
+
+    @property
+    def y(self):
+        '''float: The y component.'''
+        return self._y
+
+    @property
+    def x_y(self):
+        '''tuple (float, float): The X, Y elements of the Vector2 (x,y)'''
+        return self._x, self._y
+
+    def __repr__(self):
+        return "<%s x: %.2f y: %.2f>" % (self.__class__.__name__, self.x, self.y)
+
+    def __add__(self, other):
+        if not isinstance(other, Vector2):
+            raise TypeError("Unsupported operand for + expected Vector2")
+        return Vector2(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other):
+        if not isinstance(other, Vector2):
+            raise TypeError("Unsupported operand for - expected Vector2")
+        return Vector2(self.x - other.x, self.y - other.y)
+
+    def __mul__(self, other):
+        if not isinstance(other, (int, float)):
+            raise TypeError("Unsupported operand for * expected number")
+        return Vector2(self.x * other, self.y * other)
+
+    def __truediv__(self, other):
+        if not isinstance(other, (int, float)):
+            raise TypeError("Unsupported operand for / expected number")
+        return Vector2(self.x / other, self.y / other)
 
 
 class Vector3:

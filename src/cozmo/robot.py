@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Anki, Inc.
+# Copyright (c) 2016-2017 Anki, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ methods such as :meth:`~cozmo.event.Dispatcher.wait_for` and
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['MAX_HEAD_ANGLE', 'MIN_HEAD_ANGLE', 'MIN_LIFT_HEIGHT_MM', 'MAX_LIFT_HEIGHT_MM',
            'EvtRobotReady',
-           'GoToPose', 'DisplayOledFaceImage', 'DriveOffChargerContacts',
+           'CameraConfig', 'GoToPose', 'DisplayOledFaceImage', 'DriveOffChargerContacts',
            'DriveStraight', 'PickupObject', 'PlaceOnObject',
            'PlaceObjectOnGroundHere', 'SayText', 'SetHeadAngle',
            'SetLiftHeight', 'TurnInPlace', 'TurnTowardsFace',
@@ -443,6 +443,127 @@ class PerformOffChargerContext(event.Dispatcher):
         return False
 
 
+class CameraConfig:
+    """The fixed properties and current settings for Cozmo's Camera
+
+    A full 3x3 calibration matrix for doing 3D reasoning based on the camera
+    images would look like:
+
+        +--------------+--------------+---------------+
+        |focal_length.x|      0       |    center.x   |
+        +--------------+--------------+---------------+
+        |       0      |focal_length.y|    center.y   |
+        +--------------+--------------+---------------+
+        |       0      |       0      |        1      |
+        +--------------+--------------+---------------+
+    """
+
+    def __init__(self,
+                 focal_length_x: float,
+                 focal_length_y: float,
+                 center_x: float,
+                 center_y: float,
+                 fov_x_degrees: float,
+                 fov_y_degrees: float,
+                 min_exposure_time_ms: int,
+                 max_exposure_time_ms: int,
+                 min_camera_gain: float,
+                 max_camera_gain: float):
+        self._focal_length = util.Vector2(focal_length_x, focal_length_y)
+        self._center = util.Vector2(center_x, center_y)
+        self._fov_x = util.degrees(fov_x_degrees)
+        self._fov_y = util.degrees(fov_y_degrees)
+        self._min_exposure_time_ms = min_exposure_time_ms
+        self._max_exposure_time_ms = max_exposure_time_ms
+        self._min_camera_gain = min_camera_gain
+        self._max_camera_gain = max_camera_gain
+        self._camera_gain = 0.0
+        self._exposure_ms = 0
+        self._auto_exposure_enabled = True
+
+    @classmethod
+    def _create_from_clad(cls, cs):
+        return cls(cs.focalLengthX, cs.focalLengthY,
+                   cs.centerX, cs.centerY,
+                   cs.fovX, cs.fovY,
+                   cs.minCameraExposureTime_ms, cs.maxCameraExposureTime_ms,
+                   cs.minCameraGain, cs.maxCameraGain)
+
+    def _update_params(self, camera_gain, exposure_ms, auto_exposure_enabled):
+        self._camera_gain = camera_gain
+        self._exposure_ms = exposure_ms
+        self._auto_exposure_enabled = auto_exposure_enabled
+
+    # Fixed camera properties (calibrated for each robot at the factory).
+
+    @property
+    def focal_length(self):
+        ''':class:`cozmo.util.Vector2`:  The focal length of the camera.
+
+        This is focal length combined with pixel skew (as the pixels aren't
+        perfectly square), so there are subtly different values for x and y.
+        '''
+        return self._focal_length
+
+    @property
+    def center(self):
+        ''':class:`cozmo.util.Vector2`:  The focal center of the camera.'''
+        return self._center
+
+    @property
+    def fov_x(self):
+        ''':class:`cozmo.util.Angle`: The x (horizontal) field of view.'''
+        return self._fov_x
+
+    @property
+    def fov_y(self):
+        ''':class:`cozmo.util.Angle`: The y (vertical) field of view.'''
+        return self._fov_y
+
+    # The fixed range of values supported for this camera.
+
+    @property
+    def min_exposure_time_ms(self):
+        '''int: The minimum supported exposure time in milliseconds.'''
+        return self._min_exposure_time_ms
+
+    @property
+    def max_exposure_time_ms(self):
+        '''int: The maximum supported exposure time in milliseconds.'''
+        return self._max_exposure_time_ms
+
+    @property
+    def min_camera_gain(self):
+        '''float: The minimum supported camera gain.'''
+        return self._min_camera_gain
+
+    @property
+    def max_camera_gain(self):
+        '''float: The maximum supported camera gain.'''
+        return self._max_camera_gain
+
+    # The current camera exposure/gain settings, these update live.
+
+    @property
+    def is_auto_exposure_enabled(self):
+        '''bool: True if auto exposure is currently enabled
+
+        If auto exposure is enabled the `camera_gain` and `exposure_ms`
+        values will constantly be updated by Cozmo.
+        '''
+        return self._auto_exposure_enabled
+
+    @property
+    def camera_gain(self):
+        '''float: The current camera gain setting.'''
+        return self._camera_gain
+
+    @property
+    def exposure_ms(self):
+        '''int: The current camera exposure setting in milliseconds.'''
+        return self._exposure_ms
+
+
 class Robot(event.Dispatcher):
     """The interface to a Cozmo robot.
 
@@ -613,6 +734,12 @@ class Robot(event.Dispatcher):
         self._robot_status_flags = 0
         self._game_status_flags = 0
 
+        self._serial_number_head = 0
+        self._serial_number_body = 0
+        self._model_number = 0
+        self._hw_version = 0
+
+        self._camera_config = None  # type: CameraConfig
 
         # send all received events to the world and action dispatcher
         self._add_child_dispatcher(self._action_dispatcher)
@@ -642,7 +769,7 @@ class Robot(event.Dispatcher):
             self.conn.send_msg(msg)
 
             self._is_ready = True
-            logger.info("Robot initialized OK")
+            logger.info('Robot id=%s serial=%s initialized OK', self.robot_id, self.serial)
             self.dispatch_event(EvtRobotReady, robot=self)
         asyncio.ensure_future(_init(), loop=self._loop)
 
@@ -803,6 +930,19 @@ class Robot(event.Dispatcher):
         '''bool: True if Cozmo has any SDK-triggered actions still in progress.'''
         return self._action_dispatcher.has_in_progress_actions
 
+    @property
+    def camera_config(self):
+        ''':class:`cozmo.robot.CameraConfig`: The read-only config/calibration for this robot's camera'''
+        return self._camera_config
+
+    @property
+    def serial(self):
+        '''string: The serial number, as a hex-string, for the robot.
+
+        This matches the Cozmo Serial value in the settings menu of the app.
+        '''
+        return "%08x" % self._serial_number_body
+
     #### Private Event Handlers ####
 
     #def _recv_default_handler(self, event, **kw):
@@ -817,6 +957,17 @@ class Robot(event.Dispatcher):
 
     def _recv_msg_image_chunk(self, evt, *, msg):
         self.camera.dispatch_event(evt)
+
+    def _recv_msg_per_robot_settings(self, evt, *, msg):
+        self._serial_number_head = msg.serialNumberHead
+        self._serial_number_body = msg.serialNumberBody
+        self._model_number = msg.modelNumber
+        self._hw_version = msg.hwVersion
+        self._camera_config = CameraConfig._create_from_clad(msg.cameraConfig)
+
+    def _recv_msg_current_camera_params(self, evt, *, msg):
+        if self._camera_config is not None:
+            self._camera_config._update_params(msg.cameraGain, msg.exposure_ms, msg.autoExposureEnabled)
 
     def _recv_msg_robot_state(self, evt, *, msg):
         self._pose = util.Pose(x=msg.pose.x, y=msg.pose.y, z=msg.pose.z,
@@ -888,6 +1039,54 @@ class Robot(event.Dispatcher):
         msg = _clad_to_engine_iface.EnableVisionMode(
             mode=_clad_to_engine_cozmo.VisionMode.EstimatingFacialExpression,
             enable=enable)
+        self.conn.send_msg(msg)
+
+    ### Camera Commands ###
+
+    def enable_auto_exposure(self):
+        '''Enable auto exposure on Cozmo's Camera.
+
+        Enable auto exposure on Cozmo's camera to constantly update the exposure
+        time and gain values based on the recent images. This is the default mode
+        when any SDK program starts.
+        '''
+        msg = _clad_to_engine_iface.SetCameraSettings(enableAutoExposure=True)
+        self.conn.send_msg(msg)
+
+    def set_manual_exposure(self, exposure_ms, gain):
+        '''Set manual exposure values for Cozmo's Camera.
+
+        Disable auto exposure on Cozmo's camera and force the specified exposure
+        time and gain values.
+
+        Args:
+            exposure_ms (int): The desired exposure time in milliseconds.
+                Must be within the robot's
+                :attr:`~cozmo.robot.Robot.camera_config` exposure range from
+                :attr:`~cozmo.robot.CameraConfig.min_exposure_time_ms` to
+                :attr:`~cozmo.robot.CameraConfig.max_exposure_time_ms`
+            gain (float): The desired gain value.
+                Must be within the robot's
+                :attr:`~cozmo.robot.Robot.camera_config` gain range from
+                :attr:`~cozmo.robot.CameraConfig.min_camera_gain` to
+                :attr:`~cozmo.robot.CameraConfig.max_camera_gain`
+
+        Raises:
+            :class:`ValueError` if supplied an out-of-range exposure or gain.
+        '''
+        cam = self.camera_config
+
+        if (exposure_ms < cam.min_exposure_time_ms) or (exposure_ms > cam.max_exposure_time_ms):
+            raise ValueError('exposure_ms %s out of range %s..%s' %
+                             (exposure_ms, cam.min_exposure_time_ms, cam.max_exposure_time_ms))
+
+        if (gain < cam.min_camera_gain) or (gain > cam.max_camera_gain):
+            raise ValueError('gain %s out of range %s..%s' %
+                             (gain, cam.min_camera_gain, cam.max_camera_gain))
+
+        msg = _clad_to_engine_iface.SetCameraSettings(enableAutoExposure=False,
+                                                      exposure_ms=exposure_ms,
+                                                      gain=gain)
         self.conn.send_msg(msg)
 
     ### Low-Level Commands ###
