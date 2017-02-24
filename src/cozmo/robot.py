@@ -498,16 +498,23 @@ class CameraConfig:
 
     @property
     def focal_length(self):
-        ''':class:`cozmo.util.Vector2`:  The focal length of the camera.
+        ''':class:`cozmo.util.Vector2`: The focal length of the camera.
 
         This is focal length combined with pixel skew (as the pixels aren't
         perfectly square), so there are subtly different values for x and y.
+        It is in floating point pixel values e.g. <288.87, 288.36>.
         '''
         return self._focal_length
 
     @property
     def center(self):
-        ''':class:`cozmo.util.Vector2`:  The focal center of the camera.'''
+        ''':class:`cozmo.util.Vector2`: The focal center of the camera.
+
+        This is the position of the optical center of projection within the
+        image. It will be close to the center of the image, but adjusted based
+        on the calibration of the lens at the factory. It is in floating point
+        pixel values e.g. <155.11, 111.40>.
+        '''
         return self._center
 
     @property
