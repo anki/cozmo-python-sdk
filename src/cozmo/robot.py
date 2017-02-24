@@ -937,9 +937,10 @@ class Robot(event.Dispatcher):
 
     @property
     def serial(self):
-        '''string: The serial number, as a hex-string, for the robot.
+        '''string: The serial number, as a hex-string (e.g "02e08032"), for the robot.
 
-        This matches the Cozmo Serial value in the settings menu of the app.
+        This matches the Cozmo Serial value in the About section of the settings
+        menu in the app.
         '''
         return "%08x" % self._serial_number_body
 

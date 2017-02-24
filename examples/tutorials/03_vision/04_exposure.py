@@ -16,7 +16,7 @@
 
 '''Demonstrate the manual and auto exposure settings of Cozmo's camera.
 
-This example demonstrates the use of auto-exposure and manual-exposure for
+This example demonstrates the use of auto exposure and manual exposure for
 Cozmo's camera. The current camera settings are overlayed onto the camera
 viewer window.
 '''
@@ -34,12 +34,13 @@ except ImportError:
 import cozmo
 
 
-# A global string value to display in the window to make it more obvious
-# what the example program is currently doing.
+# A global string value to display in the camera viewer window to make it more
+# obvious what the example program is currently doing.
 example_mode = ""
 
 
-# An annotator for live-display of all of the camera info
+# An annotator for live-display of all of the camera info on top of the camera
+# viewer window.
 @cozmo.annotate.annotator
 def camera_info(image, scale, annotator=None, world=None, **kw):
     d = ImageDraw.Draw(image)
@@ -76,7 +77,7 @@ def cozmo_program(robot: cozmo.robot.Robot):
     global example_mode
     robot.world.image_annotator.add_annotator('camera_info', camera_info)
 
-    # Ensure camera is in auto-exposure, demo for 5 seconds
+    # Ensure camera is in auto exposure mode and demonstrate auto exposure for 5 seconds
     robot.enable_auto_exposure()
     example_mode = "Auto Exposure"
     time.sleep(5)
@@ -87,19 +88,19 @@ def cozmo_program(robot: cozmo.robot.Robot):
     auto_exposure_ms = cam.exposure_ms
     auto_gain = cam.camera_gain
 
-    # Demonstrate Manual Exposure, linearly increasing the exposure time
+    # Demonstrate manual exposure, linearly increasing the exposure time
     example_mode = "Manual Exposure - Increasing Exposure, Fixed Gain"
     for exposure in range(cam.min_exposure_time_ms, cam.max_exposure_time_ms+1, 1):
         robot.set_manual_exposure(exposure, auto_gain)
         time.sleep(0.1)
 
-    # Demonstrate Manual Exposure, linearly increasing the gain
+    # Demonstrate manual exposure, linearly increasing the gain
     example_mode = "Manual Exposure - Increasing Gain, Fixed Exposure"
     for gain in np.arange(cam.min_camera_gain, cam.max_camera_gain, 0.05):
         robot.set_manual_exposure(auto_exposure_ms, gain)
         time.sleep(0.1)
 
-    # Switch back to Auto Exposure, demo for a final 5 seconds and then exit
+    # Switch back to auto exposure, demo for a final 5 seconds and then exit
     robot.enable_auto_exposure()
     example_mode = "Mode: Auto Exposure"
     time.sleep(5)
