@@ -29,16 +29,25 @@ action completes (or fails) by calling its
 
 
 Warning:
-    Only one action can be active at a time.  Attempting to trigger another
-    action while one is already in progress will result in a
+    Unless you pass ``in_parallel=True`` when starting the action, no other
+    action can be active at the same time.  Attempting to trigger a non-parallel
+    action when another action is already in progress will result in a
     :class:`~cozmo.exceptions.RobotBusy` exception being raised.
+
+    When using ``in_parallel=True`` you may see an action fail with the result
+    :attr:`ActionResults.TRACKS_LOCKED` - this indicates that another in-progress
+    action has already locked that movement track (e.g. two actions cannot
+    move the head at the same time).
 '''
 
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['ACTION_IDLE', 'ACTION_RUNNING', 'ACTION_SUCCEEDED',
            'ACTION_FAILED', 'ACTION_ABORTING',
-           'EvtActionStarted', 'EvtActionCompleted', 'Action']
+           'EvtActionStarted', 'EvtActionCompleted', 'Action', 'ActionResults']
 
+
+from collections import namedtuple
+import sys
 
 from . import logger
 
@@ -63,6 +72,212 @@ ACTION_FAILED = 'action_failed'
 ACTION_ABORTING = 'action_aborting'
 
 _VALID_STATES = {ACTION_IDLE, ACTION_RUNNING, ACTION_SUCCEEDED, ACTION_FAILED, ACTION_ABORTING}
+
+
+class _ActionResult(namedtuple('_ActionResult', 'name id')):
+    # Tuple mapping between CLAD ActionResult name and ID
+    # All instances will be members of ActionResults
+
+    # Keep _ActionResult as lightweight as a normal namedtuple
+    __slots__ = ()
+
+    def __str__(self):
+        return 'ActionResults.%s' % self.name
+
+
+class ActionResults:
+    """The possible result values for an Action.
+
+    An Action's result is set when the action completes.
+    """
+
+    #: Action completed successfully.
+    SUCCESS = _ActionResult("SUCCESS", _clad_to_game_cozmo.ActionResult.SUCCESS)
+
+    #: Action is still running.
+    RUNNING = _ActionResult("RUNNING", _clad_to_game_cozmo.ActionResult.RUNNING)
+
+    #: Action was cancelled (e.g. via :meth:`~cozmo.robot.Robot.abort_all_actions` or
+    #: :meth:`Action.abort`).
+    CANCELLED = _ActionResult("CANCELLED", _clad_to_game_cozmo.ActionResult.CANCELLED)
+
+    #: Action aborted itself (e.g. had invalid attributes, or a runtime failure).
+    ABORT = _ActionResult("ABORT", _clad_to_game_cozmo.ActionResult.ABORT)
+
+    #: Animation Action aborted itself (e.g. there was an error playing the animation).
+    ANIM_ABORTED = _ActionResult("ANIM_ABORTED", _clad_to_game_cozmo.ActionResult.ANIM_ABORTED)
+
+    #: There was an error related to vision markers.
+    BAD_MARKER = _ActionResult("BAD_MARKER", _clad_to_game_cozmo.ActionResult.BAD_MARKER)
+
+    #: There was a problem with the Object ID provided (e.g. there is no Object with that ID).
+    BAD_OBJECT = _ActionResult("BAD_OBJECT", _clad_to_game_cozmo.ActionResult.BAD_OBJECT)
+
+    #: There was a problem with the Pose provided.
+    BAD_POSE = _ActionResult("BAD_POSE", _clad_to_game_cozmo.ActionResult.BAD_POSE)
+
+    # (Undocumented) The SDK provided tag was bad (shouldn't occur - would indicate a bug in the SDK)
+    BAD_TAG = _ActionResult("BAD_TAG", _clad_to_game_cozmo.ActionResult.BAD_TAG)
+
+    # (Undocumented) Shouldn't occur outside of factory
+    FAILED_SETTING_CALIBRATION = _ActionResult("FAILED_SETTING_CALIBRATION",
+                                               _clad_to_game_cozmo.ActionResult.FAILED_SETTING_CALIBRATION)
+
+    #: There was an error following the planned path.
+    FOLLOWING_PATH_BUT_NOT_TRAVERSING = _ActionResult("FOLLOWING_PATH_BUT_NOT_TRAVERSING",
+                                                      _clad_to_game_cozmo.ActionResult.FOLLOWING_PATH_BUT_NOT_TRAVERSING)
+
+    #: The action was interrupted by another Action or Behavior.
+    INTERRUPTED = _ActionResult("INTERRUPTED", _clad_to_game_cozmo.ActionResult.INTERRUPTED)
+
+    #: The Up Axis of a carried object doesn't match the desired placement pose.
+    MISMATCHED_UP_AXIS = _ActionResult("MISMATCHED_UP_AXIS", _clad_to_game_cozmo.ActionResult.MISMATCHED_UP_AXIS)
+
+    #: No valid Animation name was found.
+    NO_ANIM_NAME = _ActionResult("NO_ANIM_NAME", _clad_to_game_cozmo.ActionResult.NO_ANIM_NAME)
+
+    #: An invalid distance value was given.
+    NO_DISTANCE_SET = _ActionResult("NO_DISTANCE_SET", _clad_to_game_cozmo.ActionResult.NO_DISTANCE_SET)
+
+    #: There was a problem with the Face ID (e.g. Cozmo doesn't no where it is).
+    NO_FACE = _ActionResult("NO_FACE", _clad_to_game_cozmo.ActionResult.NO_FACE)
+
+    #: No goal pose was set.
+    NO_GOAL_SET = _ActionResult("NO_GOAL_SET", _clad_to_game_cozmo.ActionResult.NO_GOAL_SET)
+
+    #: No pre-action poses were found (e.g. could not get into position).
+    NO_PREACTION_POSES = _ActionResult("NO_PREACTION_POSES",
+                                       _clad_to_game_cozmo.ActionResult.NO_PREACTION_POSES)
+
+    #: No object is being carried, but the action requires one.
+    NOT_CARRYING_OBJECT_ABORT = _ActionResult("NOT_CARRYING_OBJECT_ABORT",
+                                              _clad_to_game_cozmo.ActionResult.NOT_CARRYING_OBJECT_ABORT)
+
+    #: Initial state of an Action to indicate it has not yet started.
+    NOT_STARTED = _ActionResult("NOT_STARTED", _clad_to_game_cozmo.ActionResult.NOT_STARTED)
+
+    #: No sub-action was provided.
+    NULL_SUBACTION = _ActionResult("NULL_SUBACTION", _clad_to_game_cozmo.ActionResult.NULL_SUBACTION)
+
+    #: Cozmo was unable to plan a path.
+    PATH_PLANNING_FAILED_ABORT = _ActionResult("PATH_PLANNING_FAILED_ABORT",
+                                               _clad_to_game_cozmo.ActionResult.PATH_PLANNING_FAILED_ABORT)
+
+    #: The object that Cozmo is attempting to pickup is unexpectedly moving (e.g
+    #: it is being moved by someone else).
+    PICKUP_OBJECT_UNEXPECTEDLY_MOVING = _ActionResult("PICKUP_OBJECT_UNEXPECTEDLY_MOVING",
+                                                      _clad_to_game_cozmo.ActionResult.PICKUP_OBJECT_UNEXPECTEDLY_MOVING)
+
+    #: The object that Cozmo thought he was lifting didn't start moving, so he
+    #: must have missed.
+    PICKUP_OBJECT_UNEXPECTEDLY_NOT_MOVING = _ActionResult("PICKUP_OBJECT_UNEXPECTEDLY_NOT_MOVING",
+                                                          _clad_to_game_cozmo.ActionResult.PICKUP_OBJECT_UNEXPECTEDLY_NOT_MOVING)
+
+    # (Undocumented) Shouldn't occur in SDK usage
+    SEND_MESSAGE_TO_ROBOT_FAILED = _ActionResult("SEND_MESSAGE_TO_ROBOT_FAILED",
+                                                 _clad_to_game_cozmo.ActionResult.SEND_MESSAGE_TO_ROBOT_FAILED)
+
+    #: Cozmo is unexpectedly still carrying an object.
+    STILL_CARRYING_OBJECT = _ActionResult("STILL_CARRYING_OBJECT",
+                                          _clad_to_game_cozmo.ActionResult.STILL_CARRYING_OBJECT)
+
+    #: The Action timed out before completing correctly.
+    TIMEOUT = _ActionResult("TIMEOUT", _clad_to_game_cozmo.ActionResult.TIMEOUT)
+
+    #: One or more animation tracks (Head, Lift, Body, Face, Backpack Lights, Audio)
+    #: are already being used by another Action.
+    TRACKS_LOCKED = _ActionResult("TRACKS_LOCKED", _clad_to_game_cozmo.ActionResult.TRACKS_LOCKED)
+
+    #: There was an internal error related to an unexpected type of dock action.
+    UNEXPECTED_DOCK_ACTION = _ActionResult("UNEXPECTED_DOCK_ACTION",
+                                           _clad_to_game_cozmo.ActionResult.UNEXPECTED_DOCK_ACTION)
+
+    # (Undocumented) Shouldn't occur outside of factory.
+    UNKNOWN_TOOL_CODE = _ActionResult("UNKNOWN_TOOL_CODE",
+                                      _clad_to_game_cozmo.ActionResult.UNKNOWN_TOOL_CODE)
+
+    # (Undocumented) There was a problem in the subclass's update.
+    UPDATE_DERIVED_FAILED = _ActionResult("UPDATE_DERIVED_FAILED",
+                                          _clad_to_game_cozmo.ActionResult.UPDATE_DERIVED_FAILED)
+
+    #: Cozmo did not see the expected result (e.g. unable to see cubes in their
+    #: expected position after a related action).
+    VISUAL_OBSERVATION_FAILED = _ActionResult("VISUAL_OBSERVATION_FAILED",
+                                              _clad_to_game_cozmo.ActionResult.VISUAL_OBSERVATION_FAILED)
+
+    #: The Action failed, but may succeed if retried.
+    RETRY = _ActionResult("RETRY", _clad_to_game_cozmo.ActionResult.RETRY)
+
+    #: Failed to get into position.
+    DID_NOT_REACH_PREACTION_POSE = _ActionResult("DID_NOT_REACH_PREACTION_POSE",
+                                                 _clad_to_game_cozmo.ActionResult.DID_NOT_REACH_PREACTION_POSE)
+
+    #: Failed to follow the planned path.
+    FAILED_TRAVERSING_PATH = _ActionResult("FAILED_TRAVERSING_PATH",
+                                           _clad_to_game_cozmo.ActionResult.FAILED_TRAVERSING_PATH)
+
+    #: The previous attempt to pick and place an object failed.
+    LAST_PICK_AND_PLACE_FAILED = _ActionResult("LAST_PICK_AND_PLACE_FAILED",
+                                               _clad_to_game_cozmo.ActionResult.LAST_PICK_AND_PLACE_FAILED)
+
+    #: The required motor isn't movign so the action cannot complete.
+    MOTOR_STOPPED_MAKING_PROGRESS = _ActionResult("MOTOR_STOPPED_MAKING_PROGRESS",
+                                                _clad_to_game_cozmo.ActionResult.MOTOR_STOPPED_MAKING_PROGRESS)
+
+    #: Not carrying an object when it was expected, but may suceed if the action is retried.
+    NOT_CARRYING_OBJECT_RETRY = _ActionResult("NOT_CARRYING_OBJECT_RETRY",
+                                              _clad_to_game_cozmo.ActionResult.NOT_CARRYING_OBJECT_RETRY)
+
+    #: Cozmo was unable to plan a path, but may suceed if the action is retried.
+    PATH_PLANNING_FAILED_RETRY = _ActionResult("PATH_PLANNING_FAILED_RETRY",
+                                               _clad_to_game_cozmo.ActionResult.PATH_PLANNING_FAILED_RETRY)
+
+    #: There is no room to place the object at the desired destination.
+    PLACEMENT_GOAL_NOT_FREE = _ActionResult("PLACEMENT_GOAL_NOT_FREE",
+                                            _clad_to_game_cozmo.ActionResult.PLACEMENT_GOAL_NOT_FREE)
+
+    #: A retriable action failed more times than the ``num_retries`` limit passed in.
+    REACHED_MAX_NUM_RETRIES = _ActionResult("REACHED_MAX_NUM_RETRIES", _clad_to_game_cozmo.ActionResult.REACHED_MAX_NUM_RETRIES)
+
+    #: Cozmo failed to drive off the charger.
+    STILL_ON_CHARGER = _ActionResult("STILL_ON_CHARGER", _clad_to_game_cozmo.ActionResult.STILL_ON_CHARGER)
+
+    #: Cozmo's pitch is at an unexpected angle for the Action.
+    UNEXPECTED_PITCH_ANGLE = _ActionResult("UNEXPECTED_PITCH_ANGLE", _clad_to_game_cozmo.ActionResult.UNEXPECTED_PITCH_ANGLE)
+
+    # Internal support for finding the above enum-esque members by ID
+    _id_to_action_result = dict()
+
+    @classmethod
+    def find_by_id(cls, id):
+        return cls._id_to_action_result.get(id)
+
+
+# The table above is hard-coded so that it can generate the related API docs.
+# To ensure that it stays in sync with the underlying CLAD code, and that the
+# naming and IDs are correct, we validate the table here. Missing entries
+# are automatically added, but a warning is output to identify that they should
+# be added later for documentation purposes.
+for (_name, _id) in _clad_to_game_cozmo.ActionResult.__dict__.items():
+    if not _name.startswith('_') and (_name != 'Count') and _id >= 0:
+        attr = getattr(ActionResults, _name, None)
+        if attr is not None:
+            if attr.id != _id:
+                sys.exit(
+                    'Error incorrect definition for id %s=%s, (should =%s) - line should read:\n'
+                    '%s = _ActionResult("%s", _clad_to_game_cozmo.ActionResult.%s)'
+                    % (_name, attr.id, _id, _name, _name, _name))
+        else:
+            logger.warn('Missing definition for id %s - to document it add:\n'
+                        '%s = _ActionResult("%s", _clad_to_game_cozmo.ActionResult.%s)'
+                        % (_id, _name, _name, _name))
+            setattr(ActionResults, _name, _ActionResult(_name, _id))
+
+
+# populate ActionResults _id_to_behavior_type mapping
+for (_name, _ar) in ActionResults.__dict__.items():
+    if isinstance(_ar, _ActionResult):
+        ActionResults._id_to_action_result[_ar.id] = _ar
 
 
 class EvtActionStarted(event.Event):
@@ -104,6 +319,7 @@ class Action(event.Dispatcher):
         self._state = ACTION_IDLE
         self._failure_code = None
         self._failure_reason = None
+        self._result = None
         self._completed_event = None
 
     def __repr__(self):
@@ -186,6 +402,11 @@ class Action(event.Dispatcher):
         return (self._failure_code, self._failure_reason)
 
     @property
+    def result(self):
+        """An attribute of :class:`ActionResults`: The result of running the action."""
+        return self._result
+
+    @property
     def state(self):
         '''string: The current internal state of the action as a string.
 
@@ -204,6 +425,11 @@ class Action(event.Dispatcher):
     def _recv_msg_robot_completed_action(self, evt, *, msg):
         result = msg.result
         types = _clad_to_game_cozmo.ActionResult
+
+        self._result = ActionResults.find_by_id(result)
+        if self._result is None:
+            logger.error("ActionResults has no entry for result id %s", result)
+
         if result == types.SUCCESS:
             # dispatch to the specific type to extract result info
             self._set_completed(msg)
