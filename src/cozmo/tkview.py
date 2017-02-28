@@ -130,7 +130,6 @@ class TkImageViewer(tkinter.Frame, TkThreadable):
     def image_event(self, evt, *, image, **kw):
         if self._first_image or self.width is None:
             img = image.annotate_image(scale=self.scale)
-            self._first_image = False
         else:
             img = image.annotate_image(fit_size=(self.width, self.height))
         self._img_queue.append(img)
@@ -150,6 +149,7 @@ class TkImageViewer(tkinter.Frame, TkThreadable):
             # no new image
             return
 
+        self._first_image = False
         photoImage = ImageTk.PhotoImage(image)
 
         self.label.configure(image=photoImage)

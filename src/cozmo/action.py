@@ -321,6 +321,7 @@ class Action(event.Dispatcher):
         self._failure_reason = None
         self._result = None
         self._completed_event = None
+        self._completed_event_pending = False
 
     def __repr__(self):
         extra = self._repr_values()
@@ -342,6 +343,7 @@ class Action(event.Dispatcher):
 
     def _set_completed(self, msg):
         self._state = ACTION_SUCCEEDED
+        self._completed_event_pending = False
         self._dispatch_completed_event(msg)
 
     def _dispatch_completed_event(self, msg):
@@ -355,6 +357,7 @@ class Action(event.Dispatcher):
         self._state = ACTION_FAILED
         self._failure_code = code
         self._failure_reason = reason
+        self._completed_event_pending = False
         self._completed_event = EvtActionCompleted(action=self, state=self._state,
                                               failure_code=code,
                                               failure_reason=reason)
@@ -654,6 +657,9 @@ class _ActionDispatcher(event.Dispatcher):
                 action_id_type = self._action_id_type(action_id)
                 logger.error('Received completed action message for sdk-known %s action_id=%s (was_aborted=%s)',
                              action_id_type, action_id, was_aborted)
+
+        action._completed_event_pending = True
+
         if was_aborted:
             if action._enable_abort_logging:
                 logger.debug('Received completed action message for aborted action=%s', action)
@@ -670,13 +676,22 @@ class _ActionDispatcher(event.Dispatcher):
         # message back in the next engine tick, and can basically be considered
         # cancelled from now.
         action._set_aborting()
-        # move from in-progress to aborting dicts
-        self._aborting[action._action_id] = action
-        del self._in_progress[action._action_id]
 
-        msg = _clad_to_engine_iface.CancelActionByIdTag(idTag=action._action_id,
-                                                        robotID=self.robot.robot_id)
-        self.robot.conn.send_msg(msg)
+        if action._completed_event_pending:
+            # The action was marked as still running but the ActionDispatcher
+            # has already received a completion message (and removed it from
+            # _in_progress) - the action is just waiting to receive a
+            # robot_completed_action message that is still being dispatched
+            # via asyncio.ensure_future
+            logger.debug('Not sending abort for action=%s to engine as it just completed', action)
+        else:
+            # move from in-progress to aborting dicts
+            self._aborting[action._action_id] = action
+            del self._in_progress[action._action_id]
+
+            msg = _clad_to_engine_iface.CancelActionByIdTag(idTag=action._action_id,
+                                                            robotID=self.robot.robot_id)
+            self.robot.conn.send_msg(msg)
 
     def _abort_all_actions(self):
         # Mark any in-progress actions as aborting - they should get a "Cancelled"
