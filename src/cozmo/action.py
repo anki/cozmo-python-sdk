@@ -116,7 +116,7 @@ class ActionResults:
     #: There was a problem with the Pose provided.
     BAD_POSE = _ActionResult("BAD_POSE", _clad_to_game_cozmo.ActionResult.BAD_POSE)
 
-    # (Undocumented) The SDK provided tag was bad (shouldn't occur - would indicate a bug in the SDK)
+    # (Undocumented) The SDK-provided tag was bad (shouldn't occur - would indicate a bug in the SDK)
     BAD_TAG = _ActionResult("BAD_TAG", _clad_to_game_cozmo.ActionResult.BAD_TAG)
 
     # (Undocumented) Shouldn't occur outside of factory
@@ -220,15 +220,15 @@ class ActionResults:
     LAST_PICK_AND_PLACE_FAILED = _ActionResult("LAST_PICK_AND_PLACE_FAILED",
                                                _clad_to_game_cozmo.ActionResult.LAST_PICK_AND_PLACE_FAILED)
 
-    #: The required motor isn't movign so the action cannot complete.
+    #: The required motor isn't moving so the action cannot complete.
     MOTOR_STOPPED_MAKING_PROGRESS = _ActionResult("MOTOR_STOPPED_MAKING_PROGRESS",
                                                 _clad_to_game_cozmo.ActionResult.MOTOR_STOPPED_MAKING_PROGRESS)
 
-    #: Not carrying an object when it was expected, but may suceed if the action is retried.
+    #: Not carrying an object when it was expected, but may succeed if the action is retried.
     NOT_CARRYING_OBJECT_RETRY = _ActionResult("NOT_CARRYING_OBJECT_RETRY",
                                               _clad_to_game_cozmo.ActionResult.NOT_CARRYING_OBJECT_RETRY)
 
-    #: Cozmo was unable to plan a path, but may suceed if the action is retried.
+    #: Cozmo was unable to plan a path, but may succeed if the action is retried.
     PATH_PLANNING_FAILED_RETRY = _ActionResult("PATH_PLANNING_FAILED_RETRY",
                                                _clad_to_game_cozmo.ActionResult.PATH_PLANNING_FAILED_RETRY)
 
