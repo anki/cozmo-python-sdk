@@ -702,7 +702,8 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
 
         f (callable): The function to execute, accepts a connected
             :class:`cozmo.robot.Robot` as the parameter.
-        use_viewer (bool): Specifies whether the window should be forced on top of all others
+        use_viewer (bool): Specifies whether to display a view of Cozmo's camera
+            in a window.
         conn_factory (callable): Override the factory function to generate a
             :class:`cozmo.conn.CozmoConnection` (or subclass) instance.
         connector (:class:`DeviceConnector`): Optional instance of a DeviceConnector
