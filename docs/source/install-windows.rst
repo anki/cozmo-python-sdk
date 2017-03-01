@@ -9,6 +9,20 @@ Installation - Windows
 This guide provides instructions on installing the Cozmo SDK for computers running with a Windows operating system.
 
 ^^^^^^^^^^^^^^^^^^^
+Installation Videos
+^^^^^^^^^^^^^^^^^^^
+
+For your convenience, videos are provided showing the installation steps being followed on a Windows computer; one using an iOS device, and one using an Android device. There is also full text-based documentation below these.
+
+.. raw:: html
+
+   <iframe width="690" height="388" src="https://www.youtube.com/embed/gtRS3iqzSuA?rel=0" frameborder="0" allowfullscreen></iframe>
+
+   <iframe width="690" height="388" src="https://www.youtube.com/embed/9TJeK_AEFYo?rel=0" frameborder="0" allowfullscreen></iframe>   
+
+|
+
+^^^^^^^^^^^^^^^^^^^
 Python Installation
 ^^^^^^^^^^^^^^^^^^^
 

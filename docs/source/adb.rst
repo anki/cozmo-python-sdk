@@ -22,7 +22,7 @@ macOS Installation
 Windows Installation
 ^^^^^^^^^^^^^^^^^^^^
 
-1. In your internet browser, navigate to this `link <https://dl.google.com/android/repository/platform-tools-latest-windows.zip>`_ and download file ``platform-tools-latest-windows.zip`` to your Downloads folder.
+1. In your internet browser, navigate to this `link <https://dl.google.com/android/repository/platform-tools-latest-windows.zip>`__ and download file ``platform-tools-latest-windows.zip`` to your Downloads folder.
 2. Open a File Explorer window to your Downloads folder and see that your downloaded file ``platform-tools-latest-windows.zip`` is there.
 3. Open a new File Explorer window and create a new folder in ``C:\Users\your_name`` named ``Android``. Then, navigate into your new Android folder. You should now be inside folder ``C:\Users\your_name\Android``.
 4. Move the zip file you downloaded in step 1, ``platform-tools-latest-windows.zip``, to your new Android folder at ``C:\Users\your_name\Android``.
@@ -46,7 +46,7 @@ Windows Installation
 Linux Installation
 ^^^^^^^^^^^^^^^^^^
 
-1. In your internet browser, navigate to this `link <https://dl.google.com/android/repository/platform-tools-latest-linux.zip>`_ and download file ``platform-tools-latest-linux.zip``. You may need to accept the license before downloading.
+1. In your internet browser, navigate to this `link <https://dl.google.com/android/repository/platform-tools-latest-linux.zip>`__ and download file ``platform-tools-latest-linux.zip``. You may need to accept the license before downloading.
 2. Navigate to the zip file download location (e.g., ~/Downloads) and extract the files. The files will be extracted to folder ``platform-tools``.
 3. In your home directory, create folder ``android-sdk-linux``::
 
