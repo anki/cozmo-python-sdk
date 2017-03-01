@@ -12,7 +12,7 @@ This guide provides instructions on installing the Cozmo SDK for computers runni
 Installation Videos
 ^^^^^^^^^^^^^^^^^^^
 
-For your convenience, videos are provided showing the installation steps being followed on a macOS / OS X computer. One using an iOS device, and one using an Android device. There is also full text-based documenation below these.
+For your convenience, videos are provided showing the installation steps being followed on a macOS / OS X computer; one using an iOS device, and one using an Android device. There is also full text-based documentation below these.
 
 .. raw:: html
 

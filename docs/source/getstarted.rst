@@ -42,7 +42,7 @@ Example Programs
 Walkthrough Video
 ^^^^^^^^^^^^^^^^^
 
-For your convenience, here is a video detailing the first 8 simple example programs. There is also simple text-based walkthrough of running your first program below that.
+For your convenience, here is a video detailing the first few simple example programs. You can also find a simple text-based walkthrough of running your first program below.
 
 .. raw:: html
 
