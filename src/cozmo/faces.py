@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Anki, Inc.
+# Copyright (c) 2016-2017 Anki, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ __all__ = ['FACE_VISIBILITY_TIMEOUT',
            'FACIAL_EXPRESSION_SURPRISED', 'FACIAL_EXPRESSION_ANGRY', 'FACIAL_EXPRESSION_SAD',
            'EvtErasedEnrolledFace', 'EvtFaceAppeared', 'EvtFaceDisappeared',
            'EvtFaceIdChanged', 'EvtFaceObserved', 'EvtFaceRenamed',
-           'EnrollNamedFace', 'Face',
+           'Face',
            'erase_all_enrolled_faces', 'erase_enrolled_face_by_id',
            'update_enrolled_face_by_id']
 
@@ -173,30 +173,6 @@ def update_enrolled_face_by_id(conn, face_id, old_name, new_name):
     conn.send_msg(msg)
 
 
-class EnrollNamedFace(action.Action):
-    '''Represents the enroll named face action in progress.
-
-    Returned by :meth:`cozmo.faces.Face.name_face`
-    '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.ENROLL_NAMED_FACE
-
-    def __init__(self, face, name, **kw):
-        super().__init__(**kw)
-        #: The face (e.g. an instance of :class:`cozmo.faces.Face`) that will be named.
-        self.face = face
-        #: The name that is going to be bound to the face.
-        self.name = name
-
-    def _repr_values(self):
-        return "face=%s name=%s" % (self.face, self.name)
-
-    def _encode(self):
-        return _clad_to_engine_iface.EnrollNamedFace(faceID=self.face.face_id,
-                                                     name=self.name,
-                                                     sequence=_clad_to_engine_cozmo.FaceEnrollmentSequence.Simple)
-
-
 def _clad_facial_expression_to_facial_expression(clad_expression_type):
     if clad_expression_type == _clad_to_game_anki.Vision.FacialExpression.Unknown:
         return FACIAL_EXPRESSION_UNKNOWN
@@ -231,10 +207,6 @@ class Face(objects.ObservableElement):
     #: Length of time in seconds to go without receiving an observed event before
     #: assuming that Cozmo can no longer see a face.
     visibility_timeout = FACE_VISIBILITY_TIMEOUT
-
-    #: callable: The factory function to return an :class:`EnrollNamedFace`
-    #: class or subclass instance.
-    enroll_named_face_factory = EnrollNamedFace
 
     def __init__(self, conn, world, robot, face_id=None, **kw):
         super().__init__(conn, world, robot, **kw)
@@ -387,19 +359,21 @@ class Face(objects.ObservableElement):
 
     #### Commands ####
 
-    def name_face(self, name):
-        '''Assign a name to this face. Cozmo will remember this name between SDK runs.
-
-        Args:
-            name (string): The name that will be assigned to this face
-        Returns:
-            An instance of :class:`cozmo.faces.EnrollNamedFace` action object
-        '''
-        logger.info("Sending enroll named face request for face=%s and name=%s", self, name)
-        action = self.enroll_named_face_factory(face=self, name=name, conn=self.conn,
-                                                robot=self._robot, dispatch_parent=self)
-        self._robot._action_dispatcher._send_single_action(action)
-        return action
+    # TODO: There is no longer an action for naming the face - replace this method
+    #       With usage of the new Behavior for naming the face.
+    # def name_face(self, name):
+    #     '''Assign a name to this face. Cozmo will remember this name between SDK runs.
+    #
+    #     Args:
+    #         name (string): The name that will be assigned to this face
+    #     Returns:
+    #         An instance of :class:`cozmo.faces.EnrollNamedFace` action object
+    #     '''
+    #     logger.info("Sending enroll named face request for face=%s and name=%s", self, name)
+    #     action = self.enroll_named_face_factory(face=self, name=name, conn=self.conn,
+    #                                             robot=self._robot, dispatch_parent=self)
+    #     self._robot._action_dispatcher._send_single_action(action)
+    #     return action
 
     def rename_face(self, new_name):
         '''Change the name assigned to the face. Cozmo will remember this name between SDK runs.

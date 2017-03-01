@@ -9,6 +9,20 @@ Installation - macOS / OS X
 This guide provides instructions on installing the Cozmo SDK for computers running with a macOS operating system.
 
 ^^^^^^^^^^^^^^^^^^^
+Installation Videos
+^^^^^^^^^^^^^^^^^^^
+
+For your convenience, videos are provided showing the installation steps being followed on a macOS / OS X computer; one using an iOS device, and one using an Android device. There is also full text-based documentation below these.
+
+.. raw:: html
+
+   <iframe width="690" height="388" src="https://www.youtube.com/embed/zNgmUwuHq-M?rel=0" frameborder="0" allowfullscreen></iframe>
+
+   <iframe width="690" height="388" src="https://www.youtube.com/embed/6xWuhOtkfsc?rel=0" frameborder="0" allowfullscreen></iframe>   
+
+|
+
+^^^^^^^^^^^^^^^^^^^
 Python Installation
 ^^^^^^^^^^^^^^^^^^^
 

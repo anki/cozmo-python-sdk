@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Anki, Inc.
+# Copyright (c) 2016-2017 Anki, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ normally be a need to modify them or write your own.
 '''
 
 # __all__ should order by constants, event classes, other classes, functions.
-__all__ = ['DeviceConnector', 'IOSConnector', 'AndroidConnector',
+__all__ = ['DeviceConnector', 'IOSConnector', 'AndroidConnector', 'TCPConnector',
            'connect',  'connect_with_tkviewer', 'connect_on_loop',
            'run_program', 'setup_basic_logging']
 

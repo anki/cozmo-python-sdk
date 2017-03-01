@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Anki, Inc.
+# Copyright (c) 2016-2017 Anki, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ class EvtObjectAvailable(event.Event):
     '''Triggered when the engine reports that an object is available (i.e. exists).
 
     This will usually occur at the start of the program in response to the SDK
-    sending RequestAvailableObjects to the engine.
+    sending RequestObjectStates to the engine.
     '''
     obj = 'The object that is available'
     updated = 'A set of field names that have changed'
@@ -286,21 +286,21 @@ class ObservableObject(ObservableElement):
     def _dispatch_disappeared_event(self):
         self.dispatch_event(EvtObjectDisappeared, obj=self)
 
-    def _handle_available_object(self, available_object):
-        # triggered when engine sends available objects
-        # as a response to a RequestAvailableObjects message
+    def _handle_object_state(self, object_state):
+        # triggered when engine sends an ObjectStates message
+        # as a response to a RequestObjectStates message
         if (self.last_observed_robot_timestamp and
-                (self.last_observed_robot_timestamp > available_object.lastObservedTimestamp)):
-            logger.debug("ignoring old available_object=%s obj=%s (last_observed_robot_timestamp=%s)",
-                         available_object, self, self.last_observed_robot_timestamp)
+                (self.last_observed_robot_timestamp > object_state.lastObservedTimestamp)):
+            logger.debug("ignoring old object_state=%s obj=%s (last_observed_robot_timestamp=%s)",
+                         object_state, self, self.last_observed_robot_timestamp)
             return
 
         changed_fields = {'last_observed_robot_timestamp', 'pose'}
 
-        self.last_observed_robot_timestamp = available_object.lastObservedTimestamp
+        self.last_observed_robot_timestamp = object_state.lastObservedTimestamp
 
-        self._pose = util.Pose._create_from_clad(available_object.pose)
-        if available_object.poseState == _clad_to_game_anki.PoseState.Unknown:
+        self._pose = util.Pose._create_from_clad(object_state.pose)
+        if object_state.poseState == _clad_to_game_anki.PoseState.Unknown:
             self._pose.invalidate()
 
         self.dispatch_event(EvtObjectAvailable,
