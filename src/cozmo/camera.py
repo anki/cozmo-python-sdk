@@ -326,7 +326,6 @@ def _minicolor_to_jpeg(minicolor, width, height):
 
 @_require_img_processing
 def _mini_to_jpeg_helper(mini, width, height, header):
-        # Does not work correctly yet
         bufferIn = mini.tolist()
         currLen = len(mini)
 
