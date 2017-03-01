@@ -38,6 +38,18 @@ Starting Up the SDK
 Example Programs
 ----------------
 
+^^^^^^^^^^^^^^^^^
+Walkthrough Video
+^^^^^^^^^^^^^^^^^
+
+For your convenience, here is a video detailing the first 8 simple example programs. There is also simple text-based walkthrough of running your first program below that.
+
+.. raw:: html
+
+   <iframe width="690" height="388" src="https://www.youtube.com/embed/YAQ_USpkxgE?rel=0" frameborder="0" allowfullscreen></iframe>
+
+|
+
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 First Steps - "Hello World"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
