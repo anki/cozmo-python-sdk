@@ -328,7 +328,8 @@ class Action(event.Dispatcher):
         if len(extra) > 0:
             extra = ' '+extra
         if self._state == ACTION_FAILED:
-            extra += " failure_reason=%s failure_code=%s" % (self._failure_reason, self._failure_code)
+            extra += (" failure_reason='%s' failure_code=%s result=%s" %
+                      (self._failure_reason, self._failure_code, self.result))
         return '<%s state=%s%s>' % (self.__class__.__name__, self.state, extra)
 
     def _repr_values(self):
