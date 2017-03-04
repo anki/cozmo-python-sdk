@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) 2016 Anki, Inc.
+# Copyright (c) 2016-2017 Anki, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,26 +25,34 @@ import cozmo
 
 
 def cozmo_program(robot: cozmo.robot.Robot):
+    # Attempt to stack 2 cubes
+
+    # Lookaround until Cozmo knows where at least 2 cubes are:
     lookaround = robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
-
     cubes = robot.world.wait_until_observe_num_objects(num=2, object_type=cozmo.objects.LightCube, timeout=60)
-
     lookaround.stop()
 
     if len(cubes) < 2:
         print("Error: need 2 Cubes but only found", len(cubes), "Cube(s)")
     else:
-        current_action = robot.pickup_object(cubes[0])
+        # Try and pickup the 1st cube
+        current_action = robot.pickup_object(cubes[0], num_retries=3)
         current_action.wait_for_completed()
         if current_action.has_failed:
             code, reason = current_action.failure_reason
-            print("Pickup Cube failed: code=%s reason=%s" % (code, reason))
+            result = current_action.result
+            print("Pickup Cube failed: code=%s reason='%s' result=%s" % (code, reason, result))
+            return
 
-        current_action = robot.place_on_object(cubes[1])
+        # Now try to place that cube on the 2nd one
+        current_action = robot.place_on_object(cubes[1], num_retries=3)
         current_action.wait_for_completed()
         if current_action.has_failed:
             code, reason = current_action.failure_reason
-            print("Place On Cube failed: code=%s reason=%s" % (code, reason))
+            result = current_action.result
+            print("Place On Cube failed: code=%s reason='%s' result=%s" % (code, reason, result))
+            return
 
+        print("Cozmo successfully stacked 2 blocks!")
 
 cozmo.run_program(cozmo_program)

@@ -38,6 +38,18 @@ Starting Up the SDK
 Example Programs
 ----------------
 
+^^^^^^^^^^^^^^^^^
+Walkthrough Video
+^^^^^^^^^^^^^^^^^
+
+For your convenience, here is a video detailing the first few simple example programs. You can also find a simple text-based walkthrough of running your first program below.
+
+.. raw:: html
+
+   <iframe width="690" height="388" src="https://www.youtube.com/embed/YAQ_USpkxgE?rel=0" frameborder="0" allowfullscreen></iframe>
+
+|
+
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 First Steps - "Hello World"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -50,7 +62,17 @@ The Program
 
 1. To run the program, using the same Terminal (macOS/Linux) / Command Prompt (Windows) window mentioned above:
 
-Change to the ``tutorials/01_basics`` sub-directory - to do this type ``cd tutorials/01_basics`` and press **Enter**. Then:
+First, change to the ``01_basics`` sub-directory of the ``tutorials`` directory.
+
+    a. For macOS and Linux systems, type the following and press **Enter**::
+
+        cd tutorials/01_basics
+
+    b. For Windows systems, type the following and press **Enter**::
+
+        cd tutorials\01_basics
+
+Then, run the program.
 
     a. For macOS and Linux systems, type the following and press **Enter**::
 

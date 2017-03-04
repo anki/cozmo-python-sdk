@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Anki, Inc.
+# Copyright (c) 2016-2017 Anki, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -83,13 +83,23 @@ class ImageText:
         align (string): Text alignment for multi-line strings
         color (string): Color to use for the text - see :mod:`PIL.ImageColor`
         font (:mod:`PIL.ImageFont`): Font to use (None for a default font)
+        line_spacing (int): The vertical spacing for multi-line strings
+        outline_color (string): Color to use for the outline - see
+            :mod:`PIL.ImageColor` - use None for no outline.
+        full_outline (bool): True if the outline should surround the text,
+            otherwise a cheaper drop-shadow is displayed. Only relevant if
+            outline_color is specified.
     '''
-    def __init__(self, text, position=BOTTOM_RIGHT, align="left", color="white", font=None):
+    def __init__(self, text, position=BOTTOM_RIGHT, align="left", color="white",
+                 font=None, line_spacing=3, outline_color=None, full_outline=True):
         self.text = text
         self.position = position
         self.align = align
         self.color = color
         self.font = font
+        self.line_spacing = line_spacing
+        self.outline_color = outline_color
+        self.full_outline = full_outline
 
     def render(self, draw, bounds):
         '''Renders the text onto an image within the specified bounding box.
@@ -115,7 +125,25 @@ class ImageText:
         else:
             x = bx2 - text_width
 
-        draw.text((x, y), self.text, font=self.font, fill=self.color, align=self.align)
+        # helper method for each draw call below
+        def _draw_text(pos, color):
+            draw.text(pos, self.text, font=self.font, fill=color,
+                      align=self.align, spacing=self.line_spacing)
+
+        if self.outline_color:
+            # Pillow doesn't support outlined or shadowed text directly.
+            # We manually draw the text multiple times to achieve the effect.
+            if self.full_outline:
+                _draw_text((x-1, y), self.outline_color)
+                _draw_text((x+1, y), self.outline_color)
+                _draw_text((x, y-1), self.outline_color)
+                _draw_text((x, y+1), self.outline_color)
+            else:
+                # just draw a drop shadow (cheaper)
+                _draw_text((x+1, y+1), self.outline_color)
+
+        _draw_text((x,y), self.color)
+
         return draw
 
 

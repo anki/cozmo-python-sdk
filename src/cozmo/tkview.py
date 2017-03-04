@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Anki, Inc.
+# Copyright (c) 2016-2017 Anki, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -130,7 +130,6 @@ class TkImageViewer(tkinter.Frame, TkThreadable):
     def image_event(self, evt, *, image, **kw):
         if self._first_image or self.width is None:
             img = image.annotate_image(scale=self.scale)
-            self._first_image = False
         else:
             img = image.annotate_image(fit_size=(self.width, self.height))
         self._img_queue.append(img)
@@ -150,6 +149,7 @@ class TkImageViewer(tkinter.Frame, TkThreadable):
             # no new image
             return
 
+        self._first_image = False
         photoImage = ImageTk.PhotoImage(image)
 
         self.label.configure(image=photoImage)

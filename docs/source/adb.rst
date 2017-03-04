@@ -22,7 +22,7 @@ macOS Installation
 Windows Installation
 ^^^^^^^^^^^^^^^^^^^^
 
-1. In your internet browser, navigate to this `link <https://dl.google.com/android/repository/platform-tools-latest-windows.zip>`_ and download file ``platform-tools-latest-windows.zip`` to your Downloads folder.
+1. In your internet browser, navigate to this `link <https://dl.google.com/android/repository/platform-tools-latest-windows.zip>`__ and download file ``platform-tools-latest-windows.zip`` to your Downloads folder.
 2. Open a File Explorer window to your Downloads folder and see that your downloaded file ``platform-tools-latest-windows.zip`` is there.
 3. Open a new File Explorer window and create a new folder in ``C:\Users\your_name`` named ``Android``. Then, navigate into your new Android folder. You should now be inside folder ``C:\Users\your_name\Android``.
 4. Move the zip file you downloaded in step 1, ``platform-tools-latest-windows.zip``, to your new Android folder at ``C:\Users\your_name\Android``.
@@ -34,53 +34,39 @@ Windows Installation
   b. Select *Advanced System Settings -> Advanced -> Environment Variables*.
   c. Under *User Variables*, select *PATH* and click **Edit**.
   d. Under *Edit Environment Variables*, click **New** and add the path to the folder containing adb (e.g. ``C:\Users\your_name\Android\platform-tools-latest-windows\platform-tools``). Click OK on all dialog boxes to confirm your change.
+
 8. Confirm that the PATH is correctly pointing to adb.
 
   a. Open new a Command Prompt window. (To find the Command Prompt, you may use the search box in the lower left-hand corner of your screen.)
   b. Type ``adb`` and adb instructions should print out.
+
 9. Continue to :ref:`final-install` below to complete installation.
 
 ^^^^^^^^^^^^^^^^^^
 Linux Installation
 ^^^^^^^^^^^^^^^^^^
 
-1. If you do not yet have the Java Development Kit (JDK) version 8 installed, you must install it.
+1. In your internet browser, navigate to this `link <https://dl.google.com/android/repository/platform-tools-latest-linux.zip>`__ and download file ``platform-tools-latest-linux.zip``. You may need to accept the license before downloading.
+2. Navigate to the zip file download location (e.g., ~/Downloads) and extract the files. The files will be extracted to folder ``platform-tools``.
+3. In your home directory, create folder ``android-sdk-linux``::
 
-  a. To check to see if you have Java installed, enter the following command into the Terminal::
+        cd ~
+        mkdir android-sdk-linux
 
-        java -version
+4. Move the extracted ``platform-tools`` folder to your new ``android-sdk-linux`` folder::
 
-  b. If JDK version 8 is not installed, install it with the following command:
+        mv Downloads/platform-tools android-sdk-linux
 
-    1. On Ubuntu version 14.04::
+5. Confirm you see adb inside ``platform-tools``::
 
-        sudo add-apt-repository ppa:webupd8team/java
-        sudo apt-get update
-        sudo apt-get install oracle-java8-installer
+        cd android-sdk-linux/platform-tools
+        ls adb
 
-    2. On Ubuntu 16.04::
-
-        sudo apt install default-jre
-
-2. Open your internet browser and go to `the Android developer website <https://developer.android.com/studio/index.html#Other>`_ .
-3. Scroll down to *Get just the command line tools*. Download the SDK tools package.
-4. Unzip the file into your chosen directory.
-5. In the downloaded Linux SDK tools, start the Android SDK Manager by executing the program **android** in ``android-sdk-linux/tools`` like this::
-
-        cd YOUR_ANDROID_SDK_LOCATION/android-sdk-linux/tools
-        ./android
-
-6. Perform the following steps in the Android SDK Manager.
-
-  a. Deselect everything except for *Android SDK Platform - tools*.
-  b. Click **Install** once finished.
-  c. Android Debug Bridge (adb) should now be installed to *YOUR_ANDROID_SDK_LOCATION/android-sdk-linux/platform-tools*.
-
-7. Add adb to your PATH.
+6. Add adb to your PATH.
 
   a. Edit your `~/.bashrc` file and add this line::
 
-        export PATH=${PATH}:YOUR_ANDROID_SDK_LOCATION/android-sdk-linux/platform-tools
+        export PATH=${PATH}:~/android-sdk-linux/platform-tools
 
   b. Save `.bashrc` and then call::
 
@@ -88,13 +74,11 @@ Linux Installation
 
   c. Confirm that adb is in your PATH by calling the following command::
 
-        which YOUR_ANDROID_SDK_LOCATION/android-sdk-linux/platform-tools/adb
+        which adb
 
-  d. The result of this command should be::
+  d. The result of this command should be the path where adb is installed.
 
-        adb: YOUR_ANDROID_SDK_LOCATION/android-sdk-linux/platform-tools/adb
-
-8. Continue to :ref:`final-install` below to complete installation.
+7. Continue to :ref:`final-install` below to complete installation.
 
 
 .. _final-install:

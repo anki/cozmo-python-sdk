@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Anki, Inc.
+# Copyright (c) 2016-2017 Anki, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ normally be a need to modify them or write your own.
 '''
 
 # __all__ should order by constants, event classes, other classes, functions.
-__all__ = ['DeviceConnector', 'IOSConnector', 'AndroidConnector',
+__all__ = ['DeviceConnector', 'IOSConnector', 'AndroidConnector', 'TCPConnector',
            'connect',  'connect_with_tkviewer', 'connect_on_loop',
            'run_program', 'setup_basic_logging']
 
@@ -702,7 +702,8 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
 
         f (callable): The function to execute, accepts a connected
             :class:`cozmo.robot.Robot` as the parameter.
-        use_viewer (bool): Specifies whether the window should be forced on top of all others
+        use_viewer (bool): Specifies whether to display a view of Cozmo's camera
+            in a window.
         conn_factory (callable): Override the factory function to generate a
             :class:`cozmo.conn.CozmoConnection` (or subclass) instance.
         connector (:class:`DeviceConnector`): Optional instance of a DeviceConnector

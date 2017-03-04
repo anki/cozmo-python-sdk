@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Anki, Inc.
+# Copyright (c) 2016-2017 Anki, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,7 +73,6 @@ class EvtConnectionClosed(event.Event):
 # Some messages have no robotID but should still be forwarded to the primary robot
 FORCED_ROBOT_MESSAGES = {"AnimationAborted",
                          "AnimationEvent",
-                         "AvailableObjects",
                          "BehaviorObjectiveAchieved",
                          "BehaviorTransition",
                          "BlockPickedUp",
@@ -82,8 +81,10 @@ FORCED_ROBOT_MESSAGES = {"AnimationAborted",
                          "CarryStateUpdate",
                          "ChargerEvent",
                          "CubeLightsStateTransition",
+                         "CurrentCameraParams",
                          "LoadedKnownFace",
                          "ObjectProjectsIntoFOV",
+                         "ObjectStates",
                          "ReactionaryBehaviorTransition",
                          "RobotChangedObservedFaceID",
                          "RobotCliffEventFinished",
@@ -371,10 +372,10 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
                 'cozmoclad_version=%s app_build_version=%s',
                 version.__version__, cozmoclad.__version__, msg.buildVersion)
 
-        # We send RequestAvailableObjects before refreshing the animation names
+        # We send RequestObjectStates before refreshing the animation names
         # as this ensures that we will receive the responses before we mark the
         # robot as ready
-        msg = _clad_to_engine_iface.RequestAvailableObjects()
+        msg = _clad_to_engine_iface.RequestObjectStates()
         self.send_msg(msg)
 
         self.anim_names.refresh()

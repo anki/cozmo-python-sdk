@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Anki, Inc.
+# Copyright (c) 2016-2017 Anki, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -155,10 +155,16 @@ class World(event.Dispatcher):
             if not cube:
                 logger.error('Received invalid cube objecttype=%s msg=%s', msg.objectType, msg)
                 return
+            is_uninitialized_cube = (cube.object_id == None)
             cube.object_id = msg.objectID
             self._objects[cube.object_id] = cube
             cube._robot = self.robot # XXX this will move if/when we have multi-robot support
             logger.debug('Allocated object_id=%d to light cube %s', msg.objectID, cube)
+            # FIXME Temp band-aid hack for EnableLightStates no longer turning
+            # off cubes after each run (since app version 1.2) - force them off
+            # on connection at startup
+            if is_uninitialized_cube:
+                cube.set_lights_off()
             return cube
 
         elif msg.objectFamily == _clad_to_game_cozmo.ObjectFamily.Charger:
@@ -292,7 +298,7 @@ class World(event.Dispatcher):
 
     def _recv_msg_robot_observed_object(self, evt, *, msg):
         #The engine still sends observed messages for fixed custom objects, this is a bug
-        if evt.msg.objectType == _clad_to_game_cozmo.ObjectType.Custom_Fixed:
+        if evt.msg.objectType == _clad_to_game_cozmo.ObjectType.CustomFixedObstacle:
             return
         obj = self._objects.get(msg.objectID)
         if not obj:
@@ -339,13 +345,13 @@ class World(event.Dispatcher):
             return
         obj.dispatch_event(evt)
 
-    def _recv_msg_available_objects(self, evt, *, msg):
-        for available_object in msg.objects:
-            obj = self._objects.get(available_object.objectID)
+    def _recv_msg_object_states(self, evt, *, msg):
+        for object_state in msg.objects:
+            obj = self._objects.get(object_state.objectID)
             if not obj:
-                obj = self._allocate_object_from_msg(available_object)
+                obj = self._allocate_object_from_msg(object_state)
             if obj:
-                obj._handle_available_object(available_object)
+                obj._handle_object_state(object_state)
 
     #### Public Event Handlers ####
 
