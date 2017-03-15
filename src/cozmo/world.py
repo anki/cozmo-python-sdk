@@ -346,7 +346,7 @@ class World(event.Dispatcher):
         obj.dispatch_event(evt)
 
     def _recv_msg_connected_object_states(self, evt, *, msg):
-        # This is received on startup as a response to RequestConnectedObjects
+        # This is received on startup as a response to RequestConnectedObjects.
         for object_state in msg.objects:
             obj = self._objects.get(object_state.objectID)
             if not obj:
@@ -355,8 +355,8 @@ class World(event.Dispatcher):
                 obj._handle_connected_object_state(object_state)
 
     def _recv_msg_located_object_states(self, evt, *, msg):
-        # This is received on startup as a response to RequestLocatedObjectStates
-        # It's also automatically sent from Engine whenever poses are rejiggered
+        # This is received on startup as a response to RequestLocatedObjectStates.
+        # It's also automatically sent from Engine whenever poses are rejiggered.
         updated_objects = set()
         for object_state in msg.objects:
             obj = self._objects.get(object_state.objectID)
@@ -368,12 +368,12 @@ class World(event.Dispatcher):
         # verify that all objects not received have invalidated poses
         for id, obj in self._objects.items():
             if (id not in updated_objects) and obj.pose.is_valid:
-                logger.warn("Object %s still has a valid pose but wasn't part of located_object_state" % obj)
+                logger.warn("Object %s still has a valid pose but wasn't part of located_object_state", obj)
 
     def _recv_msg_robot_deleted_located_object(self, evt, *, msg):
         obj = self._objects.get(msg.objectID)
         if obj is None:
-            logger.warn("Ignoring deleted_located_object for unknown object ID %s" % msg.objectID)
+            logger.warn("Ignoring deleted_located_object for unknown object ID %s", msg.objectID)
         else:
             logger.info("Invalidating pose for deleted located object %s" % obj)
             obj.pose.invalidate()
@@ -381,7 +381,7 @@ class World(event.Dispatcher):
     def _recv_msg_robot_delocalized(self, evt, *, msg):
         # Invalidate the pose for every object
         logger.info("Robot delocalized - invalidating poses for all objects")
-        for _, obj in self._objects.items():
+        for obj in self._objects.values():
             obj.pose.invalidate()
 
     #### Public Event Handlers ####
