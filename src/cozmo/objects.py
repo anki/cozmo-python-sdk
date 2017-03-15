@@ -38,7 +38,7 @@ online documentation.  They will be detected as :class:`CustomObject` instances.
 
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['LightCube1Id', 'LightCube2Id', 'LightCube3Id', 'OBJECT_VISIBILITY_TIMEOUT',
-           'EvtObjectAppeared', 'EvtObjectConnected', 'EvtObjectLocated, 'EvtObjectTapped',
+           'EvtObjectAppeared', 'EvtObjectConnected', 'EvtObjectLocated', 'EvtObjectTapped',
            'EvtObjectConnectChanged', 'EvtObjectDisappeared', 'EvtObjectObserved',
            'ObservableElement', 'ObservableObject', 'LightCube', 'Charger',
            'CustomObject', 'FixedCustomObject']
@@ -331,7 +331,7 @@ class ObservableObject(ObservableElement):
             # Note Dirty currently means either moved (in which case it's really dirty)
             # or inaccurate (e.g. seen from too far away to give an accurate enough pose for localization)
             # TODO: split Dirty into 2 states, and allow SDK to report the distinction.
-            self._pose.is_accurate = False
+            self._pose._is_accurate = False
 
         self.dispatch_event(EvtObjectLocated,
                             obj=self,
