@@ -382,7 +382,7 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
         self.send_msg(msg)
         # Request the pose information for all objects whose location we know
         # (this won't include any objects where the location is currently not known)
-        msg = _clad_to_engine_iface.RequestLocatedObjects()
+        msg = _clad_to_engine_iface.RequestLocatedObjectStates()
         self.send_msg(msg)
 
         self.anim_names.refresh()
