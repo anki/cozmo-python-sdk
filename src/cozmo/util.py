@@ -297,7 +297,7 @@ class Pose:
     Only poses of the same origin_id can safely be compared or operated on
     '''
 
-    __slots__ = ('_position', '_rotation', '_origin_id')
+    __slots__ = ('_position', '_rotation', '_origin_id', '_is_accurate')
 
     def __init__(self, x, y, z, q0=None, q1=None, q2=None, q3=None,
                  angle_z=None, origin_id=-1, is_accurate=True):
