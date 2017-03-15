@@ -80,11 +80,12 @@ FORCED_ROBOT_MESSAGES = {"AnimationAborted",
                          "BlockPoolDataMessage",
                          "CarryStateUpdate",
                          "ChargerEvent",
+                         "ConnectedObjectStates",
                          "CubeLightsStateTransition",
                          "CurrentCameraParams",
                          "LoadedKnownFace",
+                         "LocatedObjectStates",
                          "ObjectProjectsIntoFOV",
-                         "ObjectStates",
                          "ReactionaryBehaviorTransition",
                          "RobotChangedObservedFaceID",
                          "RobotCliffEventFinished",
@@ -372,10 +373,16 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
                 'cozmoclad_version=%s app_build_version=%s',
                 version.__version__, cozmoclad.__version__, msg.buildVersion)
 
-        # We send RequestObjectStates before refreshing the animation names
-        # as this ensures that we will receive the responses before we mark the
-        # robot as ready
-        msg = _clad_to_engine_iface.RequestObjectStates()
+        # We send RequestConnectedObjects and RequestLocatedObjectStates before
+        # refreshing the animation names as this ensures that we will receive
+        # the responses before we mark the robot as ready
+        # Request information on connected objects (e.g. the object ID of each cube)
+        # (this won't provide location/pose info)
+        msg = _clad_to_engine_iface.RequestConnectedObjects()
+        self.send_msg(msg)
+        # Request the pose information for all objects whose location we know
+        # (this won't include any objects where the location is currently not known)
+        msg = _clad_to_engine_iface.RequestLocatedObjects()
         self.send_msg(msg)
 
         self.anim_names.refresh()
