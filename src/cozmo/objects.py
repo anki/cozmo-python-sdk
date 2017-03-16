@@ -38,7 +38,7 @@ online documentation.  They will be detected as :class:`CustomObject` instances.
 
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['LightCube1Id', 'LightCube2Id', 'LightCube3Id', 'OBJECT_VISIBILITY_TIMEOUT',
-           'EvtObjectAppeared', 'EvtObjectAvailable', 'EvtObjectTapped',
+           'EvtObjectAppeared', 'EvtObjectConnected', 'EvtObjectLocated', 'EvtObjectTapped',
            'EvtObjectConnectChanged', 'EvtObjectDisappeared', 'EvtObjectObserved',
            'ObservableElement', 'ObservableObject', 'LightCube', 'Charger',
            'CustomObject', 'FixedCustomObject']
@@ -96,13 +96,24 @@ class EvtObjectAppeared(event.Event):
     pose = 'The cozmo.util.Pose defining the position and rotation of the object'
 
 
-class EvtObjectAvailable(event.Event):
-    '''Triggered when the engine reports that an object is available (i.e. exists).
+class EvtObjectConnected(event.Event):
+    '''Triggered when the engine reports that an object is connected (i.e. exists).
 
     This will usually occur at the start of the program in response to the SDK
-    sending RequestObjectStates to the engine.
+    sending RequestConnectedObjects to the engine.
     '''
-    obj = 'The object that is available'
+    obj = 'The object that is connected'
+    updated = 'A set of field names that have changed'
+    pose = 'The cozmo.util.Pose defining the position and rotation of the object'
+
+
+class EvtObjectLocated(event.Event):
+    '''Triggered when the engine reports that an object is located (i.e. pose is known).
+
+    This will usually occur at the start of the program in response to the SDK
+    sending RequestLocatedObjectStates to the engine.
+    '''
+    obj = 'The object that is located'
     updated = 'A set of field names that have changed'
     pose = 'The cozmo.util.Pose defining the position and rotation of the object'
 
@@ -286,12 +297,25 @@ class ObservableObject(ObservableElement):
     def _dispatch_disappeared_event(self):
         self.dispatch_event(EvtObjectDisappeared, obj=self)
 
-    def _handle_object_state(self, object_state):
-        # triggered when engine sends an ObjectStates message
-        # as a response to a RequestObjectStates message
+    def _handle_connected_object_state(self, object_state):
+        # triggered when engine sends a ConnectedObjectStates message
+        # as a response to a RequestConnectedObjects message
+
+        changed_fields = {'pose'}
+
+        self._pose = util.Pose._create_default()
+
+        self.dispatch_event(EvtObjectConnected,
+                            obj=self,
+                            updated=changed_fields,
+                            pose=self._pose)
+
+    def _handle_located_object_state(self, object_state):
+        # triggered when engine sends a LocatedObjectStates message
+        # as a response to a RequestLocatedObjectStates message
         if (self.last_observed_robot_timestamp and
-                (self.last_observed_robot_timestamp > object_state.lastObservedTimestamp)):
-            logger.debug("ignoring old object_state=%s obj=%s (last_observed_robot_timestamp=%s)",
+            (self.last_observed_robot_timestamp > object_state.lastObservedTimestamp)):
+            logger.warn("Ignoring old located object_state=%s obj=%s (last_observed_robot_timestamp=%s)",
                          object_state, self, self.last_observed_robot_timestamp)
             return
 
@@ -300,10 +324,16 @@ class ObservableObject(ObservableElement):
         self.last_observed_robot_timestamp = object_state.lastObservedTimestamp
 
         self._pose = util.Pose._create_from_clad(object_state.pose)
-        if object_state.poseState == _clad_to_game_anki.PoseState.Unknown:
+        if object_state.poseState == _clad_to_game_anki.PoseState.Invalid:
+            logger.error("Unexpected Invalid pose state received")
             self._pose.invalidate()
+        elif object_state.poseState == _clad_to_game_anki.PoseState.Dirty:
+            # Note Dirty currently means either moved (in which case it's really dirty)
+            # or inaccurate (e.g. seen from too far away to give an accurate enough pose for localization)
+            # TODO: split Dirty into 2 states, and allow SDK to report the distinction.
+            self._pose._is_accurate = False
 
-        self.dispatch_event(EvtObjectAvailable,
+        self.dispatch_event(EvtObjectLocated,
                             obj=self,
                             updated=changed_fields,
                             pose=self._pose)

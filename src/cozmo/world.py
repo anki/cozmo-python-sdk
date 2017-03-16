@@ -345,13 +345,44 @@ class World(event.Dispatcher):
             return
         obj.dispatch_event(evt)
 
-    def _recv_msg_object_states(self, evt, *, msg):
+    def _recv_msg_connected_object_states(self, evt, *, msg):
+        # This is received on startup as a response to RequestConnectedObjects.
         for object_state in msg.objects:
             obj = self._objects.get(object_state.objectID)
             if not obj:
                 obj = self._allocate_object_from_msg(object_state)
             if obj:
-                obj._handle_object_state(object_state)
+                obj._handle_connected_object_state(object_state)
+
+    def _recv_msg_located_object_states(self, evt, *, msg):
+        # This is received on startup as a response to RequestLocatedObjectStates.
+        # It's also automatically sent from Engine whenever poses are rejiggered.
+        updated_objects = set()
+        for object_state in msg.objects:
+            obj = self._objects.get(object_state.objectID)
+            if not obj:
+                obj = self._allocate_object_from_msg(object_state)
+            if obj:
+                obj._handle_located_object_state(object_state)
+            updated_objects.add(object_state.objectID)
+        # verify that all objects not received have invalidated poses
+        for id, obj in self._objects.items():
+            if (id not in updated_objects) and obj.pose.is_valid:
+                logger.warn("Object %s still has a valid pose but wasn't part of located_object_state", obj)
+
+    def _recv_msg_robot_deleted_located_object(self, evt, *, msg):
+        obj = self._objects.get(msg.objectID)
+        if obj is None:
+            logger.warn("Ignoring deleted_located_object for unknown object ID %s", msg.objectID)
+        else:
+            logger.info("Invalidating pose for deleted located object %s" % obj)
+            obj.pose.invalidate()
+
+    def _recv_msg_robot_delocalized(self, evt, *, msg):
+        # Invalidate the pose for every object
+        logger.info("Robot delocalized - invalidating poses for all objects")
+        for obj in self._objects.values():
+            obj.pose.invalidate()
 
     #### Public Event Handlers ####
 
@@ -573,14 +604,6 @@ class World(event.Dispatcher):
         msg = _clad_to_engine_iface.SendAvailableObjects(
                 robotID=self.robot.robot_id, enable=True)
         self.conn.send_msg(msg)
-
-    async def _delete_all_objects(self):
-        # XXX marked this as private as apparently problematic to call
-        # currently as it deletes light cubes too.
-        msg = _clad_to_engine_iface.DeleteAllObjects(robotID=self.robot.robot_id)
-        self.conn.send_msg(msg)
-        await self.wait_for(_clad._MsgRobotDeletedAllObjects)
-        # TODO: reset local object state
 
     async def delete_all_custom_objects(self):
         """Causes the robot to forget about all custom objects it currently knows about."""
