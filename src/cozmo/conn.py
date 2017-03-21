@@ -335,8 +335,8 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
             except AttributeError:
                 pass
 
-            line_seperator = "=" * 80
-            error_message = "\n" + line_seperator + "\n"
+            line_separator = "=" * 80
+            error_message = "\n" + line_separator + "\n"
 
             if not build_versions_match:
 
@@ -379,7 +379,7 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
                                   '"pip3 install --user --ignore-installed cozmo".\n'
                                   'Please also check the app store for a Cozmo app update.\n')
 
-            error_message += line_seperator
+            error_message += line_separator
             logger.error(error_message)
 
             exc = exceptions.SDKVersionMismatch("SDK library does not match software running on device")
