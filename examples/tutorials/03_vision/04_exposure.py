@@ -46,25 +46,25 @@ def camera_info(image, scale, annotator=None, world=None, **kw):
     d = ImageDraw.Draw(image)
     bounds = [3, 0, image.width, image.height]
 
-    cam = world.robot.camera
+    camera = world.robot.camera
     text_to_display = "Example Mode: " + example_mode + "\n\n"
     text_to_display += "Fixed Camera Settings (Calibrated for this Robot):\n\n"
-    text_to_display += 'focal_length: %s\n' % cam.config.focal_length
-    text_to_display += 'center: %s\n' % cam.config.center
-    text_to_display += 'fov: <%.3f, %.3f> degrees\n' % (cam.config.fov_x.degrees,
-                                                        cam.config.fov_y.degrees)
+    text_to_display += 'focal_length: %s\n' % camera.config.focal_length
+    text_to_display += 'center: %s\n' % camera.config.center
+    text_to_display += 'fov: <%.3f, %.3f> degrees\n' % (camera.config.fov_x.degrees,
+                                                        camera.config.fov_y.degrees)
     text_to_display += "\n"
     text_to_display += "Valid exposure and gain ranges:\n\n"
-    text_to_display += 'exposure: %s..%s\n' % (cam.config.min_exposure_time_ms,
-                                               cam.config.max_exposure_time_ms)
-    text_to_display += 'gain: %.3f..%.3f\n' % (cam.config.min_gain,
-                                               cam.config.max_gain)
+    text_to_display += 'exposure: %s..%s\n' % (camera.config.min_exposure_time_ms,
+                                               camera.config.max_exposure_time_ms)
+    text_to_display += 'gain: %.3f..%.3f\n' % (camera.config.min_gain,
+                                               camera.config.max_gain)
     text_to_display += "\n"
     text_to_display += "Current settings:\n\n"
-    text_to_display += 'Auto Exposure Enabled: %s\n' % cam.is_auto_exposure_enabled
-    text_to_display += 'Exposure: %s ms\n' % cam.exposure_ms
-    text_to_display += 'Gain: %.3f\n' % cam.gain
-    color_mode_str = "Color" if cam.color_image_enabled else "Grayscale"
+    text_to_display += 'Auto Exposure Enabled: %s\n' % camera.is_auto_exposure_enabled
+    text_to_display += 'Exposure: %s ms\n' % camera.exposure_ms
+    text_to_display += 'Gain: %.3f\n' % camera.gain
+    color_mode_str = "Color" if camera.color_image_enabled else "Grayscale"
     text_to_display += 'Color Mode: %s\n' % color_mode_str
 
     text = cozmo.annotate.ImageText(text_to_display,
@@ -79,30 +79,30 @@ def demo_camera_exposure(robot: cozmo.robot.Robot):
     global example_mode
 
     # Ensure camera is in auto exposure mode and demonstrate auto exposure for 5 seconds
-    cam = robot.camera
-    cam.enable_auto_exposure()
+    camera = robot.camera
+    camera.enable_auto_exposure()
     example_mode = "Auto Exposure"
     time.sleep(5)
 
     # Grab the current auto exposure/gain values as good defaults for
     # the current lighting conditions
-    auto_exposure_ms = cam.exposure_ms
-    auto_gain = cam.config.min_gain
+    auto_exposure_ms = camera.exposure_ms
+    auto_gain = camera.config.min_gain
 
     # Demonstrate manual exposure, linearly increasing the exposure time
     example_mode = "Manual Exposure - Increasing Exposure, Fixed Gain"
-    for exposure in range(cam.config.min_exposure_time_ms, cam.config.max_exposure_time_ms+1, 1):
-        cam.set_manual_exposure(exposure, auto_gain)
+    for exposure in range(camera.config.min_exposure_time_ms, camera.config.max_exposure_time_ms+1, 1):
+        camera.set_manual_exposure(exposure, auto_gain)
         time.sleep(0.1)
 
     # Demonstrate manual exposure, linearly increasing the gain
     example_mode = "Manual Exposure - Increasing Gain, Fixed Exposure"
-    for gain in np.arange(cam.config.min_gain, cam.config.max_gain, 0.05):
-        cam.set_manual_exposure(auto_exposure_ms, gain)
+    for gain in np.arange(camera.config.min_gain, camera.config.max_gain, 0.05):
+        camera.set_manual_exposure(auto_exposure_ms, gain)
         time.sleep(0.1)
 
     # Switch back to auto exposure, demo for a final 5 seconds and then return
-    cam.enable_auto_exposure()
+    camera.enable_auto_exposure()
     example_mode = "Mode: Auto Exposure"
     time.sleep(5)
 
