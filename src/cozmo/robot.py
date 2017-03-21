@@ -356,10 +356,10 @@ class SetLiftHeight(action.Action):
         super().__init__(**kw)
 
         if height < 0.0:
-            logger.warning("lift height %s too small, should be in 0..1 range - clamping" % height)
+            logger.warning("lift height %s too small, should be in 0..1 range - clamping", height)
             self.lift_height_mm = MIN_LIFT_HEIGHT_MM
         elif height > 1.0:
-            logger.warning("lift height %s too large, should be in 0..1 range - clamping" % height)
+            logger.warning("lift height %s too large, should be in 0..1 range - clamping", height)
             self.lift_height_mm = MAX_LIFT_HEIGHT_MM
         else:
             self.lift_height_mm = MIN_LIFT_HEIGHT_MM + (height * (MAX_LIFT_HEIGHT_MM - MIN_LIFT_HEIGHT_MM))
