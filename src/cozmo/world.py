@@ -341,7 +341,7 @@ class World(event.Dispatcher):
     def _recv_msg_object_tapped(self, evt, *, msg):
         obj = self._objects.get(msg.objectID)
         if not obj:
-            logger.warn('Tap event received for unknown object ID %s', msg.objectID)
+            logger.warning('Tap event received for unknown object ID %s', msg.objectID)
             return
         obj.dispatch_event(evt)
 

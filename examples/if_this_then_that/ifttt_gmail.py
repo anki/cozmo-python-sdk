@@ -131,7 +131,7 @@ async def serve_gmail(request):
                 robot.display_image_file_on_face("../face_images/ifttt_gmail.png")
 
         except cozmo.RobotBusy:
-            cozmo.logger.warn("Robot was busy so didn't read email address: "+ from_email_address)
+            cozmo.logger.warning("Robot was busy so didn't read email address: "+ from_email_address)
 
     # Perform Cozmo's task in the background so the HTTP server responds immediately.
     asyncio.ensure_future(read_name())

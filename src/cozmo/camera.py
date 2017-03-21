@@ -108,7 +108,7 @@ class Camera(event.Dispatcher):
         self._image_stream_enabled = None
         self._color_image_enabled = None
         if np is None:
-            logger.warn("Camera image processing not available due to missng NumPy or Pillow packages: %s" % _img_processing_available)
+            logger.warning("Camera image processing not available due to missng NumPy or Pillow packages: %s" % _img_processing_available)
         else:
             # set property to ensure clad initialization is sent.
             self.image_stream_enabled = False
