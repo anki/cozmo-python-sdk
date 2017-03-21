@@ -268,9 +268,9 @@ for (_name, _id) in _clad_to_game_cozmo.ActionResult.__dict__.items():
                     '%s = _ActionResult("%s", _clad_to_game_cozmo.ActionResult.%s)'
                     % (_name, attr.id, _id, _name, _name, _name))
         else:
-            logger.warn('Missing definition for id %s - to document it add:\n'
-                        '%s = _ActionResult("%s", _clad_to_game_cozmo.ActionResult.%s)'
-                        % (_id, _name, _name, _name))
+            logger.warning('Missing definition for id %s - to document it add:\n'
+                           '%s = _ActionResult("%s", _clad_to_game_cozmo.ActionResult.%s)'
+                           % (_id, _name, _name, _name))
             setattr(ActionResults, _name, _ActionResult(_name, _id))
 
 
@@ -440,7 +440,7 @@ class Action(event.Dispatcher):
 
         elif result == types.RUNNING:
             # XXX what does one do with this? it seems to occur after a cancel request!
-            logger.warn('Received "running" action notification for action=%s', self)
+            logger.warning('Received "running" action notification for action=%s', self)
             self._set_failed('running', 'Action was still running')
 
         elif result == types.NOT_STARTED:

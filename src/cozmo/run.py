@@ -359,7 +359,7 @@ class FirstAvailableConnector(DeviceConnector):
             result = await self._do_connect(self.tcp, *conn_args)
             if not isinstance(result, BaseException):
                 return result
-            logger.warn('No TCP connection found running Cozmo: %s', result)
+            logger.warning('No TCP connection found running Cozmo: %s', result)
 
         android_result = await self._do_connect(self.android, *conn_args)
         if not isinstance(android_result, BaseException):
@@ -369,8 +369,8 @@ class FirstAvailableConnector(DeviceConnector):
         if not isinstance(ios_result, BaseException):
             return ios_result
 
-        logger.warn('No iOS device found running Cozmo: %s', ios_result)
-        logger.warn('No Android device found running Cozmo: %s', android_result)
+        logger.warning('No iOS device found running Cozmo: %s', ios_result)
+        logger.warning('No Android device found running Cozmo: %s', android_result)
 
         raise exceptions.NoDevicesFound('No devices connected running Cozmo in SDK mode')
 
