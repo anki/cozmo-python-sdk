@@ -84,21 +84,20 @@ def demo_camera_exposure(robot: cozmo.robot.Robot):
     example_mode = "Auto Exposure"
     time.sleep(5)
 
-    # Grab the current auto exposure/gain values as good defaults for
-    # the current lighting conditions
-    auto_exposure_ms = camera.exposure_ms
-    auto_gain = camera.config.min_gain
-
-    # Demonstrate manual exposure, linearly increasing the exposure time
+    # Demonstrate manual exposure, linearly increasing the exposure time, while
+    # keeping the gain fixed at a medium value.
     example_mode = "Manual Exposure - Increasing Exposure, Fixed Gain"
+    fixed_gain = (camera.config.min_gain + camera.config.max_gain) * 0.5
     for exposure in range(camera.config.min_exposure_time_ms, camera.config.max_exposure_time_ms+1, 1):
-        camera.set_manual_exposure(exposure, auto_gain)
+        camera.set_manual_exposure(exposure, fixed_gain)
         time.sleep(0.1)
 
-    # Demonstrate manual exposure, linearly increasing the gain
+    # Demonstrate manual exposure, linearly increasing the gain, while keeping
+    # the exposure fixed at a relatively low value.
     example_mode = "Manual Exposure - Increasing Gain, Fixed Exposure"
+    fixed_exposure_ms = 10
     for gain in np.arange(camera.config.min_gain, camera.config.max_gain, 0.05):
-        camera.set_manual_exposure(auto_exposure_ms, gain)
+        camera.set_manual_exposure(fixed_exposure_ms, gain)
         time.sleep(0.1)
 
     # Switch back to auto exposure, demo for a final 5 seconds and then return
@@ -119,4 +118,5 @@ def cozmo_program(robot: cozmo.robot.Robot):
     demo_camera_exposure(robot)
 
 
+cozmo.robot.Robot.drive_off_charger_on_connect = False  # Cozmo can stay on his charger for this example
 cozmo.run_program(cozmo_program, use_viewer=True, force_viewer_on_top=True)
