@@ -155,16 +155,10 @@ class World(event.Dispatcher):
             if not cube:
                 logger.error('Received invalid cube objecttype=%s msg=%s', msg.objectType, msg)
                 return
-            is_uninitialized_cube = (cube.object_id == None)
             cube.object_id = msg.objectID
             self._objects[cube.object_id] = cube
             cube._robot = self.robot # XXX this will move if/when we have multi-robot support
             logger.debug('Allocated object_id=%d to light cube %s', msg.objectID, cube)
-            # FIXME Temp band-aid hack for EnableLightStates no longer turning
-            # off cubes after each run (since app version 1.2) - force them off
-            # on connection at startup
-            if is_uninitialized_cube:
-                cube.set_lights_off()
             return cube
 
         elif msg.objectFamily == _clad_to_game_cozmo.ObjectFamily.Charger:
