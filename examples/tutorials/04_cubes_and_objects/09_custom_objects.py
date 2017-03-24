@@ -31,14 +31,14 @@ from cozmo.objects import CustomObject, CustomObjectMarkers, CustomObjectTypes
 
 
 def handle_object_appeared(evt, **kw):
-    # This will be called whenever an EvtObjectAppeared is dispatched - so
+    # This will be called whenever an EvtObjectAppeared is dispatched -
     # whenever an Object comes into view.
     if isinstance(evt.obj, CustomObject):
         print("Cozmo started seeing a %s" % str(evt.obj.object_type))
 
 
 def handle_object_disappeared(evt, **kw):
-    # This will be called whenever an EvtObjectDisappeared is dispatched - so
+    # This will be called whenever an EvtObjectDisappeared is dispatched -
     # whenever an Object goes out of view.
     if isinstance(evt.obj, CustomObject):
         print("Cozmo stopped seeing a %s" % str(evt.obj.object_type))
@@ -89,7 +89,7 @@ def custom_objects(robot: cozmo.robot.Robot):
         print("One or more object definitions failed!")
         return
 
-    print("Show the above icons to Cozmo and you will see the related objects "
+    print("Show the above markers to Cozmo and you will see the related objects "
           "annotated in Cozmo's view window, you will also see print messages "
           "everytime a custom object enters or exits Cozmo's view.")
 

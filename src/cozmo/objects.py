@@ -41,7 +41,7 @@ __all__ = ['LightCube1Id', 'LightCube2Id', 'LightCube3Id', 'OBJECT_VISIBILITY_TI
            'EvtObjectAppeared', 'EvtObjectAvailable', 'EvtObjectTapped',
            'EvtObjectConnectChanged', 'EvtObjectDisappeared', 'EvtObjectObserved',
            'ObservableElement', 'ObservableObject', 'LightCube', 'Charger',
-           'CustomObject', 'CustomObjectTypes', 'CustomObjectMarkers', 'FixedCustomObject']
+           'CustomObject', 'CustomObjectMarkers', 'CustomObjectTypes', 'FixedCustomObject']
 
 
 import collections

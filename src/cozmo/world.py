@@ -635,13 +635,13 @@ class World(event.Dispatcher):
                 affixed to the left of the object
             marker_right (:class:`cozmo.objects.CustomObjectMarkers`): the marker
                 affixed to the right of the object
-            depth_mm (float): depth of the object (in millimeters) (X axis).
-            width_mm (float): width of the object (in millimeters). (Y axis).
-            height_mm (float): height of the object (in millimeters). (Z axis).
+            depth_mm (float): depth of the object (in millimeters) (X axis)
+            width_mm (float): width of the object (in millimeters) (Y axis)
+            height_mm (float): height of the object (in millimeters) (Z axis)
                 (the height of the object)
             marker_width_mm (float): width of the printed marker (in millimeters).
             maker_height_mm (float): height of the printed marker (in millimeters).
-            is_unique (bool): can the engine assume there is only 1 of this object
+            is_unique (bool): If True, the engine will assume there is only 1 of this object
                 (and therefore only 1 of each of any of these markers) in the world.
 
         Returns:
@@ -704,7 +704,7 @@ class World(event.Dispatcher):
             size_mm: size of each side of the cube (in millimeters).
             marker_width_mm (float): width of the printed marker (in millimeters).
             maker_height_mm (float): height of the printed marker (in millimeters).
-            is_unique (bool): can the engine assume there is only 1 of this object
+            is_unique (bool): If True, the engine will assume there is only 1 of this object
                 (and therefore only 1 of each of any of these markers) in the world.
 
         Returns:
@@ -740,7 +740,7 @@ class World(event.Dispatcher):
                                  width_mm, height_mm,
                                  marker_width_mm, marker_height_mm,
                                  is_unique=True):
-        """Defines a wall of custom width and height and binds it to a specific custom object type.
+        """Defines a wall of custom width and height, with a fixed depth of 10mm, and binds it to a specific custom object type.
 
         The engine will now detect the markers associated with this object and send an
         object_observed message when they are seen. The markers must be placed in the center
@@ -757,7 +757,7 @@ class World(event.Dispatcher):
             height_mm: height of the wall (along Z axis) (in millimeters).
             marker_width_mm (float): width of the printed marker (in millimeters).
             maker_height_mm (float): height of the printed marker (in millimeters).
-            is_unique (bool): can the engine assume there is only 1 of this object
+            is_unique (bool): If True, the engine will assume there is only 1 of this object
                 (and therefore only 1 of each of any of these markers) in the world.
 
         Returns:
