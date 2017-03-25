@@ -116,13 +116,15 @@ class EvtObjectDisappeared(event.Event):
 class EvtObjectMoving(event.Event):
     'Triggered when an active object is currently moving.'
     obj = 'The object that is currently moving'
-    acceleration = 'A Vector3 representing the currently measured acceleration'
+    # :class:`~cozmo.util.Vector3`: The currently measured acceleration
+    acceleration = 'The currently measured acceleration'
     move_duration = 'The current duration of time (in seconds) that the object has spent moving'
 
 class EvtObjectMovingStarted(event.Event):
     'Triggered when an active object starts moving.'
     obj = 'The object that started moving'
-    acceleration = 'A Vector3 representing the currently measured acceleration'
+    #: :class:`~cozmo.util.Vector3`: The currently measured acceleration
+    acceleration = 'The currently measured acceleration'
 
 class EvtObjectMovingStopped(event.Event):
     'Triggered when an active object stops moving.'

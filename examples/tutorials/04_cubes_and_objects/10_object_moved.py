@@ -16,7 +16,7 @@
 
 '''Demonstrate the use of Object Moving events to detect when the cubes are moved.
 
-This script is a simple example of how to subscribe to ObjectMoving* events to
+This script is a simple example of how to subscribe to Object Moving events to
 track when Cozmo detects that a cube is being moved.
 '''
 
