@@ -435,7 +435,7 @@ class PerformOffChargerContext(event.Dispatcher):
     async def __aenter__(self):
         self.was_on_charger = self.robot.is_on_charger
         if self.was_on_charger:
-            await self.robot.drive_off_charger_contacts().wait_for_completed()
+            await self.robot.drive_off_charger_contacts(in_parallel=True).wait_for_completed()
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
@@ -725,7 +725,7 @@ class Robot(event.Dispatcher):
 
     @property
     def is_pathing(self):
-        '''bool: True fi Cozmo currently traversing a path.'''
+        '''bool: True if Cozmo currently traversing a path.'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_PATHING) != 0
 
     @property
@@ -745,7 +745,7 @@ class Robot(event.Dispatcher):
 
     @property
     def is_on_charger(self):
-        '''bool: True fi Cozmo currently on the charger.'''
+        '''bool: True if Cozmo currently on the charger.'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_ON_CHARGER) != 0
 
     @property
