@@ -27,41 +27,28 @@ from . import logger
 class Color:
     '''A Color to be used with a Light.
 
-    One of int_color, rgba or rgb may be used to specify the actual color.
+    Either int_color or rgb may be used to specify the actual color.
+    Any alpha components (from int_color) are ignored - all colors are fully opaque.
 
     Args:
-        int_color (int): A 32 bit value holding the binary RGBA value
-        rgba (tuple): A tuple holding the integer values from 0-255 for (red, green, blue, alpha)
-        rgb (tuple): A tuple holding the integer values from 0-255 for (reg, green, blue) - alpha defaults to 255
+        int_color (int): A 32 bit value holding the binary RGBA value (where A
+            is ignored and forced to be fully opaque).
+        rgb (tuple): A tuple holding the integer values from 0-255 for (reg, green, blue)
         name (str): A name to assign to this color
     '''
 
-    def __init__(self, int_color=None, rgba=None, rgb=None, name=None):
+    def __init__(self, int_color=None, rgb=None, name=None):
         self.name = name
         self._int_color = 0
         if int_color is not None:
-            self._int_color = int_color
+            self._int_color = int_color | 0xff
         elif rgb is not None:
             self._int_color = (rgb[0] << 24) | (rgb[1] << 16) | (rgb[2] << 8) | 0xff
-        elif rgba is not None:
-            self._int_color = (rgba[0] << 24) | (rgba[1] << 16) | (rgba[2] << 8) | rgba[3]
 
     @property
     def int_color(self):
         '''int: The encoded integer value of the color.'''
         return self._int_color
-
-    def with_alpha(self, alpha):
-        """Return the same color with a different alpha value.
-
-        Args:
-            alpha (int): A value from 0-255
-        Returns:
-            A new :class:`Color` instance.
-        """
-        if not 0 < alpha < 255:
-            raise ValueError("Illegal value for alpha")
-        return Color(int_color=(self._int_color & 0xffffff00) | alpha)
 
 
 #: :class:`Color`: Green color instance.

@@ -1,4 +1,4 @@
-Unless otherwise stated in that file, all files in the Cozmo SDK are Copyright (c) 2016-2017 Anki Inc. and licensed under the Apache 2.0 License:
+Unless otherwise stated in that file, or the folder containing that file, all files in the Cozmo SDK are Copyright (c) 2016-2017 Anki Inc. and licensed under the Apache 2.0 License:
 
                            Apache License
                            Version 2.0, January 2004

@@ -50,6 +50,7 @@ import shutil
 import subprocess
 import sys
 import types
+import warnings
 
 from . import logger, logger_protocol
 
@@ -359,7 +360,7 @@ class FirstAvailableConnector(DeviceConnector):
             result = await self._do_connect(self.tcp, *conn_args)
             if not isinstance(result, BaseException):
                 return result
-            logger.warn('No TCP connection found running Cozmo: %s', result)
+            logger.warning('No TCP connection found running Cozmo: %s', result)
 
         android_result = await self._do_connect(self.android, *conn_args)
         if not isinstance(android_result, BaseException):
@@ -369,8 +370,8 @@ class FirstAvailableConnector(DeviceConnector):
         if not isinstance(ios_result, BaseException):
             return ios_result
 
-        logger.warn('No iOS device found running Cozmo: %s', ios_result)
-        logger.warn('No Android device found running Cozmo: %s', android_result)
+        logger.warning('No iOS device found running Cozmo: %s', ios_result)
+        logger.warning('No Android device found running Cozmo: %s', android_result)
 
         raise exceptions.NoDevicesFound('No devices connected running Cozmo in SDK mode')
 
@@ -645,7 +646,8 @@ def connect_with_tkviewer(f, conn_factory=conn.CozmoConnection, connector=None, 
 
 
 def setup_basic_logging(general_log_level=None, protocol_log_level=None,
-        protocol_log_messages=clad_protocol.LOG_ALL, target=sys.stderr):
+        protocol_log_messages=clad_protocol.LOG_ALL, target=sys.stderr,
+        deprecated_filter="default"):
     '''Helper to perform basic setup of the Python logging machinery.
 
     The SDK defines two loggers:
@@ -669,7 +671,15 @@ def setup_basic_logging(general_log_level=None, protocol_log_level=None,
             the COMZO_PROTOCOL_LOG_MESSAGES if available which should be
             a comma separated list of message names (case sensitive).
         target (object): The stream to send the log data to; defaults to stderr
+        deprecated_filter (str): The filter for any DeprecationWarning messages.
+            This is defaulted to "default" which shows the warning once per
+            location. You can hide all deprecated warnings by passing in "ignore",
+            see https://docs.python.org/3/library/warnings.html#warning-filter
+            for more information.
     '''
+    if deprecated_filter is not None:
+        warnings.filterwarnings(deprecated_filter, category=DeprecationWarning)
+
     if general_log_level is None:
         general_log_level = os.environ.get('COZMO_LOG_LEVEL', logging.INFO)
     if protocol_log_level is None:
@@ -695,7 +705,8 @@ def setup_basic_logging(general_log_level=None, protocol_log_level=None,
 
 
 def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
-               connector=None, force_viewer_on_top=False):
+                connector=None, force_viewer_on_top=False,
+                deprecated_filter="default"):
     '''Connect to Cozmo and run the provided program/function f.
 
     Args:
@@ -712,8 +723,13 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
             has the Cozmo app running in SDK mode.
         force_viewer_on_top (bool): Specifies whether the window should be
             forced on top of all others (only relevant if use_viewer is True).
+        deprecated_filter (str): The filter for any DeprecationWarning messages.
+            This is defaulted to "default" which shows the warning once per
+            location. You can hide all deprecated warnings by passing in "ignore",
+            see https://docs.python.org/3/library/warnings.html#warning-filter
+            for more information.
     '''
-    setup_basic_logging()
+    setup_basic_logging(deprecated_filter=deprecated_filter)
 
     # Wrap f (a function that takes in an already created robot)
     # with a function that accepts a cozmo.conn.CozmoConnection

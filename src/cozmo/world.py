@@ -155,16 +155,10 @@ class World(event.Dispatcher):
             if not cube:
                 logger.error('Received invalid cube objecttype=%s msg=%s', msg.objectType, msg)
                 return
-            is_uninitialized_cube = (cube.object_id == None)
             cube.object_id = msg.objectID
             self._objects[cube.object_id] = cube
             cube._robot = self.robot # XXX this will move if/when we have multi-robot support
             logger.debug('Allocated object_id=%d to light cube %s', msg.objectID, cube)
-            # FIXME Temp band-aid hack for EnableLightStates no longer turning
-            # off cubes after each run (since app version 1.2) - force them off
-            # on connection at startup
-            if is_uninitialized_cube:
-                cube.set_lights_off()
             return cube
 
         elif msg.objectFamily == _clad_to_game_cozmo.ObjectFamily.Charger:
@@ -188,7 +182,7 @@ class World(event.Dispatcher):
             custom_object = self.custom_object_factory(self.conn, self, obj.object_type,
                                                        obj.x_size_mm, obj.y_size_mm, obj.z_size_mm,
                                                        obj.marker_width_mm, obj.marker_height_mm,
-                                                       dispatch_parent=self)
+                                                       obj.is_unique, dispatch_parent=self)
             custom_object.object_id = msg.objectID
             self._objects[custom_object.object_id] = custom_object
             logger.debug('Allocated object_id=%s to CustomObject %s', msg.objectID, custom_object)
@@ -338,12 +332,24 @@ class World(event.Dispatcher):
         if pet:
             pet.dispatch_event(evt)
 
-    def _recv_msg_object_tapped(self, evt, *, msg):
+    def _dispatch_object_event(self, evt, msg):
         obj = self._objects.get(msg.objectID)
         if not obj:
-            logger.warn('Tap event received for unknown object ID %s', msg.objectID)
+            logger.warning('%s event received for unknown object ID %s', type(msg).__name__, msg.objectID)
             return
         obj.dispatch_event(evt)
+
+    def _recv_msg_object_tapped(self, evt, *, msg):
+        self._dispatch_object_event(evt, msg)
+
+    def _recv_msg_object_moved(self, evt, *, msg):
+        self._dispatch_object_event(evt, msg)
+
+    def _recv_msg_object_stopped_moving(self, evt, *, msg):
+        self._dispatch_object_event(evt, msg)
+
+    def _recv_msg_object_power_level(self, evt, *, msg):
+        self._dispatch_object_event(evt, msg)
 
     def _recv_msg_object_states(self, evt, *, msg):
         for object_state in msg.objects:
@@ -590,73 +596,207 @@ class World(event.Dispatcher):
         await self.wait_for(_clad._MsgRobotDeletedAllCustomObjects)
         # TODO: reset local object stte
 
-    async def _define_custom_object(self, object_type, x_size_mm, y_size_mm, z_size_mm,
-                                   marker_width_mm=25, marker_height_mm=25):
-        '''Defines a cuboid of custom size and binds it to a specific custom object type.
+    async def _wait_for_defined_custom_object(self, custom_object_archetype):
+        try:
+            msg = await self.wait_for(_clad._MsgDefinedCustomObject, timeout=5)
+        except asyncio.TimeoutError as e:
+            logger.error("Failed (Timed Out) to define: %s", custom_object_archetype)
+            return None
 
-        Warning: This function is currently experimental and has several known issues.
-        1) There seems to be an off by 10x issue related to how the vision reports the object's
-        size and position.
-        2) The ID returned for these objects is not consistent.
-        3) Poor performance and other issues have been seen in the App when using this.
-        We plan to expand and improve upon it in a future release before making
-        it fully public and documented.
+        msg = msg.msg  # get the internal message
+        if msg.success:
+            type_id = custom_object_archetype.object_type.id
+            self.custom_objects[type_id] = custom_object_archetype
+            logger.info("Defined: %s", custom_object_archetype)
+            return custom_object_archetype
+        else:
+            logger.error("Failed to define Custom Object %s", custom_object_archetype)
+            return None
+
+    async def define_custom_box(self, custom_object_type,
+                                marker_front, marker_back,
+                                marker_top, marker_bottom,
+                                marker_left, marker_right,
+                                depth_mm, width_mm, height_mm,
+                                marker_width_mm, marker_height_mm,
+                                is_unique=True):
+        '''Defines a cuboid of custom size and binds it to a specific custom object type.
 
         The engine will now detect the markers associated with this object and send an
         object_observed message when they are seen. The markers must be placed in the center
         of their respective sides.
 
         Args:
-            object_type (:class:`cozmo.objects.CustomObjectTypes`): the object
-                type you are binding this custom object to
-            x_size_mm (float): size of the object (in millimeters) in the x axis.
-            y_size_mm (float): size of the object (in millimeters) in the y axis.
-            z_size_mm (float): size of the object (in millimeters) in the z axis.
+            custom_object_type (:class:`cozmo.objects.CustomObjectTypes`): the
+                object type you are binding this custom object to
+            marker_front (:class:`cozmo.objects.CustomObjectMarkers`): the marker
+                affixed to the front of the object
+            marker_back (:class:`cozmo.objects.CustomObjectMarkers`): the marker
+                affixed to the back of the object
+            marker_top (:class:`cozmo.objects.CustomObjectMarkers`): the marker
+                affixed to the top of the object
+            marker_bottom (:class:`cozmo.objects.CustomObjectMarkers`): the marker
+                affixed to the bottom of the object
+            marker_left (:class:`cozmo.objects.CustomObjectMarkers`): the marker
+                affixed to the left of the object
+            marker_right (:class:`cozmo.objects.CustomObjectMarkers`): the marker
+                affixed to the right of the object
+            depth_mm (float): depth of the object (in millimeters) (X axis)
+            width_mm (float): width of the object (in millimeters) (Y axis)
+            height_mm (float): height of the object (in millimeters) (Z axis)
+                (the height of the object)
             marker_width_mm (float): width of the printed marker (in millimeters).
             maker_height_mm (float): height of the printed marker (in millimeters).
+            is_unique (bool): If True, the engine will assume there is only 1 of this object
+                (and therefore only 1 of each of any of these markers) in the world.
 
         Returns:
             A :class:`cozmo.object.CustomObject` instance with the specified dimensions.
-                This is not included in the world until it has been seen.
+                This is None if the definition failed internally.
+                Note: No instances of this object are added to the world until they have been seen.
 
-        Star Image:
-
-        .. image:: ../images/star5.png
-
-        Arrow Image:
-
-        .. image:: ../images/arrow.png
-
-        The markers must be placed in the same order as listed below:
-
-        Custom_STAR5_Box:
-            * Front - Star5
-            * Back - Arrow
-
-        Custom_STAR5_Cube:
-            * All 6 faces - Star5
-
-        Custom_ARROW_Box:
-            * Front - Arrow
-            * Back - Star5
-
-        Custom_ARROW_Cube:
-            * All 6 faces - Arrow
+        Raises:
+            TypeError if the custom_object_type is of the wrong type.
+            ValueError if is_unique is True but the 6 markers aren't unique.
         '''
-        # TODO make diagram for above docs!
-        if not isinstance(object_type, objects._CustomObjectType):
+        if not isinstance(custom_object_type, objects._CustomObjectType):
             raise TypeError("Unsupported object_type, requires CustomObjectType")
-        custom_object_base = self.custom_object_factory(object_type,
-                                                        x_size_mm, y_size_mm, z_size_mm,
-                                                        marker_width_mm, marker_height_mm,
-                                                        self.conn, self, dispatch_parent=self)
-        self.custom_objects[object_type.id] = custom_object_base
-        msg = _clad_to_engine_iface.DefineCustomObject(objectType=object_type.id,
-                                                       xSize_mm=x_size_mm, ySize_mm=y_size_mm, zSize_mm=z_size_mm,
-                                                       markerWidth_mm=marker_width_mm, markerHeight_mm=marker_height_mm)
+
+        if is_unique:
+            # verify all 6 markers are unique
+            markers = set([marker_front, marker_back, marker_top, marker_bottom, marker_left, marker_right])
+            if len(markers) != 6:
+                raise ValueError("all markers must be unique for a unique object")
+
+        custom_object_archetype = self.custom_object_factory(self.conn, self, custom_object_type,
+                                                             depth_mm, width_mm, height_mm,
+                                                             marker_width_mm, marker_height_mm,
+                                                             is_unique, dispatch_parent=self)
+
+        msg = _clad_to_engine_iface.DefineCustomBox(customType=custom_object_type.id,
+                                                    markerFront=marker_front.id,
+                                                    markerBack=marker_back.id,
+                                                    markerTop=marker_top.id,
+                                                    markerBottom=marker_bottom.id,
+                                                    markerLeft=marker_left.id,
+                                                    markerRight=marker_right.id,
+                                                    xSize_mm=depth_mm,
+                                                    ySize_mm=width_mm,
+                                                    zSize_mm=height_mm,
+                                                    markerWidth_mm=marker_width_mm,
+                                                    markerHeight_mm=marker_height_mm,
+                                                    isUnique=is_unique)
+
         self.conn.send_msg(msg)
-        await self.wait_for(_clad._MsgDefinedCustomObject)
-        return custom_object_base
+
+        return await self._wait_for_defined_custom_object(custom_object_archetype)
+
+    async def define_custom_cube(self, custom_object_type,
+                                 marker,
+                                 size_mm,
+                                 marker_width_mm, marker_height_mm,
+                                 is_unique=True):
+        """Defines a cube of custom size and binds it to a specific custom object type.
+
+        The engine will now detect the markers associated with this object and send an
+        object_observed message when they are seen. The markers must be placed in the center
+        of their respective sides.
+
+        Args:
+            custom_object_type (:class:`cozmo.objects.CustomObjectTypes`): the
+                object type you are binding this custom object to.
+            marker:(:class:`cozmo.objects.CustomObjectMarkers`): the marker
+                affixed to every side of the cube.
+            size_mm: size of each side of the cube (in millimeters).
+            marker_width_mm (float): width of the printed marker (in millimeters).
+            maker_height_mm (float): height of the printed marker (in millimeters).
+            is_unique (bool): If True, the engine will assume there is only 1 of this object
+                (and therefore only 1 of each of any of these markers) in the world.
+
+        Returns:
+            A :class:`cozmo.object.CustomObject` instance with the specified dimensions.
+                This is None if the definition failed internally.
+                Note: No instances of this object are added to the world until they have been seen.
+
+        Raises:
+            TypeError if the custom_object_type is of the wrong type.
+        """
+
+        if not isinstance(custom_object_type, objects._CustomObjectType):
+            raise TypeError("Unsupported object_type, requires CustomObjectType")
+
+        custom_object_archetype = self.custom_object_factory(self.conn, self, custom_object_type,
+                                                             size_mm, size_mm, size_mm,
+                                                             marker_width_mm, marker_height_mm,
+                                                             is_unique, dispatch_parent=self)
+
+        msg = _clad_to_engine_iface.DefineCustomCube(customType=custom_object_type.id,
+                                                     marker=marker.id,
+                                                     size_mm=size_mm,
+                                                     markerWidth_mm=marker_width_mm,
+                                                     markerHeight_mm=marker_height_mm,
+                                                     isUnique=is_unique)
+
+        self.conn.send_msg(msg)
+
+        return await self._wait_for_defined_custom_object(custom_object_archetype)
+
+    async def define_custom_wall(self, custom_object_type,
+                                 marker,
+                                 width_mm, height_mm,
+                                 marker_width_mm, marker_height_mm,
+                                 is_unique=True):
+        """Defines a wall of custom width and height, with a fixed depth of 10mm, and binds it to a specific custom object type.
+
+        The engine will now detect the markers associated with this object and send an
+        object_observed message when they are seen. The markers must be placed in the center
+        of their respective sides.
+
+        Args:
+            custom_object_type (:class:`cozmo.objects.CustomObjectTypes`): the
+                object type you are binding this custom object to.
+            marker:(:class:`cozmo.objects.CustomObjectMarkers`): the marker
+                affixed to the front and back of the wall
+            width_mm (float): width of the object (in millimeters). (Y axis).
+            height_mm (float): height of the object (in millimeters). (Z axis).
+            width_mm: width of the wall (along Y axis) (in millimeters).
+            height_mm: height of the wall (along Z axis) (in millimeters).
+            marker_width_mm (float): width of the printed marker (in millimeters).
+            maker_height_mm (float): height of the printed marker (in millimeters).
+            is_unique (bool): If True, the engine will assume there is only 1 of this object
+                (and therefore only 1 of each of any of these markers) in the world.
+
+        Returns:
+            A :class:`cozmo.object.CustomObject` instance with the specified dimensions.
+                This is None if the definition failed internally.
+                Note: No instances of this object are added to the world until they have been seen.
+
+        Raises:
+            TypeError if the custom_object_type is of the wrong type.
+        """
+
+        if not isinstance(custom_object_type, objects._CustomObjectType):
+            raise TypeError("Unsupported object_type, requires CustomObjectType")
+
+        # TODO: share this hardcoded constant from engine
+        WALL_THICKNESS_MM = 10.0
+
+        custom_object_archetype = self.custom_object_factory(self.conn, self, custom_object_type,
+                                                             WALL_THICKNESS_MM, width_mm, height_mm,
+                                                             marker_width_mm, marker_height_mm,
+                                                             is_unique, dispatch_parent=self)
+
+        msg = _clad_to_engine_iface.DefineCustomWall(customType=custom_object_type.id,
+                                                     marker=marker.id,
+                                                     width_mm=width_mm,
+                                                     height_mm=height_mm,
+                                                     markerWidth_mm=marker_width_mm,
+                                                     markerHeight_mm=marker_height_mm,
+                                                     isUnique=is_unique)
+
+        self.conn.send_msg(msg)
+
+        return await self._wait_for_defined_custom_object(custom_object_archetype)
 
     async def create_custom_fixed_object(self, pose, x_size_mm, y_size_mm, z_size_mm,
                                          relative_to_robot=False, use_robot_origin=True):

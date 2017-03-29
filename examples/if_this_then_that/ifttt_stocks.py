@@ -132,7 +132,7 @@ async def serve_stocks(request):
                 robot.display_image_file_on_face("../face_images/ifttt_stocks.png")
 
         except cozmo.RobotBusy:
-            cozmo.logger.warn("Robot was busy so didn't read stock update: '"+ stock_name + " is up " + percentage + " percent'.")
+            cozmo.logger.warning("Robot was busy so didn't read stock update: '"+ stock_name + " is up " + percentage + " percent'.")
 
     # Perform Cozmo's task in the background so the HTTP server responds immediately.
     asyncio.ensure_future(read_name())

@@ -38,10 +38,12 @@ online documentation.  They will be detected as :class:`CustomObject` instances.
 
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['LightCube1Id', 'LightCube2Id', 'LightCube3Id', 'OBJECT_VISIBILITY_TIMEOUT',
-           'EvtObjectAppeared', 'EvtObjectAvailable', 'EvtObjectTapped',
+           'EvtObjectAppeared', 'EvtObjectAvailable',
+           'EvtObjectMoving', 'EvtObjectMovingStarted', 'EvtObjectMovingStopped',
+           'EvtObjectTapped',
            'EvtObjectConnectChanged', 'EvtObjectDisappeared', 'EvtObjectObserved',
            'ObservableElement', 'ObservableObject', 'LightCube', 'Charger',
-           'CustomObject', 'FixedCustomObject']
+           'CustomObject', 'CustomObjectMarkers', 'CustomObjectTypes', 'FixedCustomObject']
 
 
 import collections
@@ -60,7 +62,7 @@ from ._clad import _clad_to_engine_iface, _clad_to_game_cozmo, _clad_to_engine_c
 
 #: Length of time in seconds to go without receiving an observed event before
 #: assuming that Cozmo can no longer see an object.
-OBJECT_VISIBILITY_TIMEOUT = 0.2
+OBJECT_VISIBILITY_TIMEOUT = 0.4
 
 
 class EvtObjectObserved(event.Event):
@@ -111,6 +113,23 @@ class EvtObjectDisappeared(event.Event):
     '''Triggered whenever an object that was previously being observed is no longer visible.'''
     obj = 'The object that is no longer being observed'
 
+class EvtObjectMoving(event.Event):
+    'Triggered when an active object is currently moving.'
+    obj = 'The object that is currently moving'
+    # :class:`~cozmo.util.Vector3`: The currently measured acceleration
+    acceleration = 'The currently measured acceleration'
+    move_duration = 'The current duration of time (in seconds) that the object has spent moving'
+
+class EvtObjectMovingStarted(event.Event):
+    'Triggered when an active object starts moving.'
+    obj = 'The object that started moving'
+    #: :class:`~cozmo.util.Vector3`: The currently measured acceleration
+    acceleration = 'The currently measured acceleration'
+
+class EvtObjectMovingStopped(event.Event):
+    'Triggered when an active object stops moving.'
+    obj = 'The object that stopped moving'
+    move_duration = 'The duration of time (in seconds) that the object spent moving'
 
 class EvtObjectTapped(event.Event):
     'Triggered when an active object is tapped.'
@@ -324,7 +343,7 @@ class ObservableObject(ObservableElement):
             # We cannot currently rely on Engine ensuring that object ID remains static
             # E.g. in the case of a cube disconnecting and reconnecting it's removed
             # and then re-added to blockworld which results in a new ID.
-            logger.warn("Changing object_id for %s from %s to %s", self.__class__, self._object_id, value)
+            logger.warning("Changing object_id for %s from %s to %s", self.__class__, self._object_id, value)
         else:
             logger.debug("Setting object_id for %s to %s", self.__class__, value)
         self._object_id = value
@@ -367,6 +386,11 @@ class LightCube(ObservableObject):
     '''
     #TODO investigate why the top marker orientation of a cube is a bit strange
 
+    #: Voltage where a cube's battery can be considered empty
+    EMPTY_VOLTAGE = 1.0
+    #: Voltage where a cube's battery can be considered full
+    FULL_VOLTAGE = 1.5
+
     pickupable = True
     place_objects_on_this = True
 
@@ -374,6 +398,7 @@ class LightCube(ObservableObject):
         super().__init__(*a, **kw)
 
         #: float: The time the object was last tapped
+        #: ``None`` if the cube wasn't tapped yet.
         self.last_tapped_time = None
 
         #: int: The robot's timestamp of the last tapped event.
@@ -381,6 +406,36 @@ class LightCube(ObservableObject):
         #: In milliseconds relative to robot epoch.
         self.last_tapped_robot_timestamp = None
 
+        #: float: The time the object was last moved
+        #: ``None`` if the cube wasn't moved yet.
+        self.last_moved_time = None
+
+        #: float: The time the object started moving when last moved
+        self.last_moved_start_time = None
+
+        #: int: The robot's timestamp of the last move event.
+        #: ``None`` if the cube wasn't moved yet.
+        #: In milliseconds relative to robot epoch.
+        self.last_moved_robot_timestamp = None
+
+        #: int: The robot's timestamp of when the object started moving when last moved
+        #: ``None`` if the cube wasn't moved yet.
+        #: In milliseconds relative to robot epoch.
+        self.last_moved_start_robot_timestamp = None
+
+        #: float: Battery voltage.
+        #: ``None`` if no voltage reading has been received yet
+        self.battery_voltage = None
+
+        #: bool: True if the cube's accelerometer indicates that the cube is moving.
+        self.is_moving = False
+
+    def _repr_values(self):
+        super_values = super()._repr_values()
+        if len(super_values) > 0:
+            super_values += ' '
+        return ('{super_values}'
+                'battery={self.battery_str:s}'.format(self=self, super_values=super_values))
 
     #### Private Methods ####
 
@@ -410,17 +465,74 @@ class LightCube(ObservableObject):
 
     #### Properties ####
 
+    @property
+    def battery_percentage(self):
+        """float: Battery level as a percentage."""
+        if self.battery_voltage is None:
+            # not received a voltage measurement yet
+            return None
+        elif self.battery_voltage >= self.FULL_VOLTAGE:
+            return 100.0
+        elif self.battery_voltage <= self.EMPTY_VOLTAGE:
+            return 0.0
+        else:
+            return 100.0 * ((self.battery_voltage - self.EMPTY_VOLTAGE) /
+                            (self.FULL_VOLTAGE - self.EMPTY_VOLTAGE))
+
+    @property
+    def battery_str(self):
+        """str: String representation of the battery level."""
+        if self.battery_voltage is None:
+            return "Unknown"
+        else:
+            return ('{self.battery_percentage:.0f}%'.format(self=self))
+
     #### Private Event Handlers ####
     def _recv_msg_object_tapped(self, evt, *, msg):
-        changed_fields = {'last_event_time', 'last_tapped_time',
-            'last_tapped_robot_timestamp'}
-        self.last_event_time = time.time()
-        self.last_tapped_time = time.time()
+        now = time.time()
+        self.last_event_time = now
+        self.last_tapped_time = now
         self.last_tapped_robot_timestamp = msg.timestamp
         tap_intensity = msg.tapPos - msg.tapNeg
         self.dispatch_event(EvtObjectTapped, obj=self,
             tap_count=msg.numTaps, tap_duration=msg.tapTime, tap_intensity=tap_intensity)
 
+    def _recv_msg_object_moved(self, evt, *, msg):
+        now = time.time()
+        started_moving = not self.is_moving
+        self.is_moving = True
+        self.last_event_time = now
+        self.last_moved_time = now
+        self.last_moved_robot_timestamp = msg.timestamp
+
+        acceleration = util.Vector3(msg.accel.x, msg.accel.y, msg.accel.z)
+
+        if started_moving:
+            self.last_moved_start_time = now
+            self.last_moved_start_robot_timestamp = msg.timestamp
+            self.dispatch_event(EvtObjectMovingStarted, obj=self,
+                                acceleration=acceleration)
+        else:
+            move_duration = now - self.last_moved_start_time
+            self.dispatch_event(EvtObjectMoving, obj=self,
+                                acceleration=acceleration,
+                                move_duration=move_duration)
+
+    def _recv_msg_object_stopped_moving(self, evt, *, msg):
+        now = time.time()
+        if self.is_moving:
+            self.is_moving = False
+            move_duration = now - self.last_moved_start_time
+        else:
+            # This happens for very short movements that are immediately
+            # considered stopped (no acceleration info is present)
+            move_duration = 0.0
+        self.dispatch_event(EvtObjectMovingStopped, obj=self,
+                            move_duration=move_duration)
+
+    def _recv_msg_object_power_level(self, evt, *, msg):
+        self.battery_voltage = msg.batteryLevel * 0.01
+        pass
 
     #### Public Event Handlers ####
 
@@ -470,7 +582,7 @@ class Charger(ObservableObject):
 
 
 class CustomObject(ObservableObject):
-    '''An object defined by the SDK. It is bound to a specific objectType e.g ``Custom_STAR5_Box``.
+    '''An object defined by the SDK. It is bound to a specific objectType e.g ``CustomType00``.
 
     This defined object is given a size in the x,y and z axis. The dimensions
     of the markers on the object are also defined. We get an
@@ -483,7 +595,7 @@ class CustomObject(ObservableObject):
 
     def __init__(self, conn, world, object_type,
                  x_size_mm, y_size_mm, z_size_mm,
-                 marker_width_mm, marker_height_mm, **kw):
+                 marker_width_mm, marker_height_mm, is_unique, **kw):
         super().__init__(conn, world, **kw)
 
         self.object_type = object_type
@@ -492,13 +604,14 @@ class CustomObject(ObservableObject):
         self._z_size_mm = z_size_mm
         self._marker_width_mm = marker_width_mm
         self._marker_height_mm = marker_height_mm
-
+        self._is_unique = is_unique
 
     def _repr_values(self):
         return ('object_type={self.object_type} '
                 'x_size_mm={self.x_size_mm:.1f} '
                 'y_size_mm={self.y_size_mm:.1f} '
-                'z_size_mm={self.z_size_mm:.1f} '.format(self=self))
+                'z_size_mm={self.z_size_mm:.1f} '
+                'is_unique={self.is_unique}'.format(self=self))
 
     #### Private Methods ####
 
@@ -529,6 +642,10 @@ class CustomObject(ObservableObject):
         '''float: Height in millimeters of the marker on this object.'''
         return self._marker_height_mm
 
+    @property
+    def is_unique(self):
+        '''bool: True if there should only be one of this object type in the world.'''
+        return self._is_unique
 
     #### Private Event Handlers ####
 
@@ -537,19 +654,145 @@ class CustomObject(ObservableObject):
     #### Commands ####
 
 
-class CustomObjectTypes:
-    '''Defines all available object types.
+class _CustomObjectType(collections.namedtuple('_CustomObjectType', 'name id')):
+    # Tuple mapping between CLAD ActionResult name and ID
+    # All instances will be members of ActionResults
 
-    For use with :meth:`cozmo.world.World.define_custom_object`.
+    # Keep _ActionResult as lightweight as a normal namedtuple
+    __slots__ = ()
+
+    def __str__(self):
+        return 'CustomObjectTypes.%s' % self.name
+
+
+class CustomObjectTypes:
+    '''Defines all available custom object types.
+
+    For use with world.define_custom methods such as
+    :meth:`cozmo.world.World.define_custom_box`,
+    :meth:`cozmo.world.World.define_custom_cube`, and
+    :meth:`cozmo.world.World.define_custom_wall`
     '''
 
+    #: CustomType00 - the first custom object type
+    CustomType00 = _CustomObjectType("CustomType00", _clad_to_engine_cozmo.ObjectType.CustomType00)
 
-_CustomObjectType = collections.namedtuple('_CustomObjectType', 'name id')
+    #:
+    CustomType01 = _CustomObjectType("CustomType01", _clad_to_engine_cozmo.ObjectType.CustomType01)
 
-for (_name, _id) in _clad_to_engine_cozmo.ObjectType.__dict__.items():
-    if not _name.startswith('_') and _name.startswith('Custom_') and _id > 0:
-        # only index CustomObjects
-        setattr(CustomObjectTypes, _name, _CustomObjectType(_name, _id))
+    #:
+    CustomType02 = _CustomObjectType("CustomType02", _clad_to_engine_cozmo.ObjectType.CustomType02)
+
+    #:
+    CustomType03 = _CustomObjectType("CustomType03", _clad_to_engine_cozmo.ObjectType.CustomType03)
+
+    #:
+    CustomType04 = _CustomObjectType("CustomType04", _clad_to_engine_cozmo.ObjectType.CustomType04)
+
+    #:
+    CustomType05 = _CustomObjectType("CustomType05", _clad_to_engine_cozmo.ObjectType.CustomType05)
+
+    #:
+    CustomType06 = _CustomObjectType("CustomType06", _clad_to_engine_cozmo.ObjectType.CustomType06)
+
+    #:
+    CustomType07 = _CustomObjectType("CustomType07", _clad_to_engine_cozmo.ObjectType.CustomType07)
+
+    #:
+    CustomType08 = _CustomObjectType("CustomType08", _clad_to_engine_cozmo.ObjectType.CustomType08)
+
+    #:
+    CustomType09 = _CustomObjectType("CustomType09", _clad_to_engine_cozmo.ObjectType.CustomType09)
+
+    #:
+    CustomType10 = _CustomObjectType("CustomType10", _clad_to_engine_cozmo.ObjectType.CustomType10)
+
+    #:
+    CustomType11 = _CustomObjectType("CustomType11", _clad_to_engine_cozmo.ObjectType.CustomType11)
+
+    #:
+    CustomType12 = _CustomObjectType("CustomType12", _clad_to_engine_cozmo.ObjectType.CustomType12)
+
+    #:
+    CustomType13 = _CustomObjectType("CustomType13", _clad_to_engine_cozmo.ObjectType.CustomType13)
+
+    #:
+    CustomType14 = _CustomObjectType("CustomType14", _clad_to_engine_cozmo.ObjectType.CustomType14)
+
+    #:
+    CustomType15 = _CustomObjectType("CustomType15", _clad_to_engine_cozmo.ObjectType.CustomType15)
+
+    #:
+    CustomType16 = _CustomObjectType("CustomType16", _clad_to_engine_cozmo.ObjectType.CustomType16)
+
+    #:
+    CustomType17 = _CustomObjectType("CustomType17", _clad_to_engine_cozmo.ObjectType.CustomType17)
+
+    #:
+    CustomType18 = _CustomObjectType("CustomType18", _clad_to_engine_cozmo.ObjectType.CustomType18)
+
+    #: CustomType19 - the last custom object type
+    CustomType19 = _CustomObjectType("CustomType19", _clad_to_engine_cozmo.ObjectType.CustomType19)
+
+
+_CustomObjectMarker = collections.namedtuple('_CustomObjectMarker', 'name id')
+
+class CustomObjectMarkers:
+    '''Defines all available custom object markers.
+
+    For use with world.define_custom methods such as
+    :meth:`cozmo.world.World.define_custom_box`,
+    :meth:`cozmo.world.World.define_custom_cube`, and
+    :meth:`cozmo.world.World.define_custom_wall`
+    '''
+
+    #: .. image:: ../images/custom_markers/SDK_2Circles.png
+    Circles2 = _CustomObjectMarker("Circles2", _clad_to_engine_cozmo.CustomObjectMarker.Circles2)
+
+    #: .. image:: ../images/custom_markers/SDK_3Circles.png
+    Circles3 = _CustomObjectMarker("Circles3", _clad_to_engine_cozmo.CustomObjectMarker.Circles3)
+
+    #: .. image:: ../images/custom_markers/SDK_4Circles.png
+    Circles4 = _CustomObjectMarker("Circles4", _clad_to_engine_cozmo.CustomObjectMarker.Circles4)
+
+    #: .. image:: ../images/custom_markers/SDK_5Circles.png
+    Circles5 = _CustomObjectMarker("Circles5", _clad_to_engine_cozmo.CustomObjectMarker.Circles5)
+
+    #: .. image:: ../images/custom_markers/SDK_2Diamonds.png
+    Diamonds2 = _CustomObjectMarker("Diamonds2", _clad_to_engine_cozmo.CustomObjectMarker.Diamonds2)
+
+    #: .. image:: ../images/custom_markers/SDK_3Diamonds.png
+    Diamonds3 = _CustomObjectMarker("Diamonds3", _clad_to_engine_cozmo.CustomObjectMarker.Diamonds3)
+
+    #: .. image:: ../images/custom_markers/SDK_4Diamonds.png
+    Diamonds4 = _CustomObjectMarker("Diamonds4", _clad_to_engine_cozmo.CustomObjectMarker.Diamonds4)
+
+    #: .. image:: ../images/custom_markers/SDK_5Diamonds.png
+    Diamonds5 = _CustomObjectMarker("Diamonds5", _clad_to_engine_cozmo.CustomObjectMarker.Diamonds5)
+
+    #: .. image:: ../images/custom_markers/SDK_2Hexagons.png
+    Hexagons2 = _CustomObjectMarker("Hexagons2", _clad_to_engine_cozmo.CustomObjectMarker.Hexagons2)
+
+    #: .. image:: ../images/custom_markers/SDK_3Hexagons.png
+    Hexagons3 = _CustomObjectMarker("Hexagons3", _clad_to_engine_cozmo.CustomObjectMarker.Hexagons3)
+
+    #: .. image:: ../images/custom_markers/SDK_4Hexagons.png
+    Hexagons4 = _CustomObjectMarker("Hexagons4", _clad_to_engine_cozmo.CustomObjectMarker.Hexagons4)
+
+    #: .. image:: ../images/custom_markers/SDK_5Hexagons.png
+    Hexagons5 = _CustomObjectMarker("Hexagons5", _clad_to_engine_cozmo.CustomObjectMarker.Hexagons5)
+
+    #: .. image:: ../images/custom_markers/SDK_2Triangles.png
+    Triangles2 = _CustomObjectMarker("Triangles2", _clad_to_engine_cozmo.CustomObjectMarker.Triangles2)
+
+    #: .. image:: ../images/custom_markers/SDK_3Triangles.png
+    Triangles3 = _CustomObjectMarker("Triangles3", _clad_to_engine_cozmo.CustomObjectMarker.Triangles3)
+
+    #: .. image:: ../images/custom_markers/SDK_4Triangles.png
+    Triangles4 = _CustomObjectMarker("Triangles4", _clad_to_engine_cozmo.CustomObjectMarker.Triangles4)
+
+    #: .. image:: ../images/custom_markers/SDK_5Triangles.png
+    Triangles5 = _CustomObjectMarker("Triangles5", _clad_to_engine_cozmo.CustomObjectMarker.Triangles5)
 
 
 class FixedCustomObject():
