@@ -332,12 +332,24 @@ class World(event.Dispatcher):
         if pet:
             pet.dispatch_event(evt)
 
-    def _recv_msg_object_tapped(self, evt, *, msg):
+    def _dispatch_object_event(self, evt, msg):
         obj = self._objects.get(msg.objectID)
         if not obj:
-            logger.warning('Tap event received for unknown object ID %s', msg.objectID)
+            logger.warning('%s event received for unknown object ID %s', type(msg).__name__, msg.objectID)
             return
         obj.dispatch_event(evt)
+
+    def _recv_msg_object_tapped(self, evt, *, msg):
+        self._dispatch_object_event(evt, msg)
+
+    def _recv_msg_object_moved(self, evt, *, msg):
+        self._dispatch_object_event(evt, msg)
+
+    def _recv_msg_object_stopped_moving(self, evt, *, msg):
+        self._dispatch_object_event(evt, msg)
+
+    def _recv_msg_object_power_level(self, evt, *, msg):
+        self._dispatch_object_event(evt, msg)
 
     def _recv_msg_object_states(self, evt, *, msg):
         for object_state in msg.objects:

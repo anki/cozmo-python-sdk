@@ -38,7 +38,9 @@ online documentation.  They will be detected as :class:`CustomObject` instances.
 
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['LightCube1Id', 'LightCube2Id', 'LightCube3Id', 'OBJECT_VISIBILITY_TIMEOUT',
-           'EvtObjectAppeared', 'EvtObjectAvailable', 'EvtObjectTapped',
+           'EvtObjectAppeared', 'EvtObjectAvailable',
+           'EvtObjectMoving', 'EvtObjectMovingStarted', 'EvtObjectMovingStopped',
+           'EvtObjectTapped',
            'EvtObjectConnectChanged', 'EvtObjectDisappeared', 'EvtObjectObserved',
            'ObservableElement', 'ObservableObject', 'LightCube', 'Charger',
            'CustomObject', 'CustomObjectMarkers', 'CustomObjectTypes', 'FixedCustomObject']
@@ -111,6 +113,23 @@ class EvtObjectDisappeared(event.Event):
     '''Triggered whenever an object that was previously being observed is no longer visible.'''
     obj = 'The object that is no longer being observed'
 
+class EvtObjectMoving(event.Event):
+    'Triggered when an active object is currently moving.'
+    obj = 'The object that is currently moving'
+    # :class:`~cozmo.util.Vector3`: The currently measured acceleration
+    acceleration = 'The currently measured acceleration'
+    move_duration = 'The current duration of time (in seconds) that the object has spent moving'
+
+class EvtObjectMovingStarted(event.Event):
+    'Triggered when an active object starts moving.'
+    obj = 'The object that started moving'
+    #: :class:`~cozmo.util.Vector3`: The currently measured acceleration
+    acceleration = 'The currently measured acceleration'
+
+class EvtObjectMovingStopped(event.Event):
+    'Triggered when an active object stops moving.'
+    obj = 'The object that stopped moving'
+    move_duration = 'The duration of time (in seconds) that the object spent moving'
 
 class EvtObjectTapped(event.Event):
     'Triggered when an active object is tapped.'
@@ -367,6 +386,11 @@ class LightCube(ObservableObject):
     '''
     #TODO investigate why the top marker orientation of a cube is a bit strange
 
+    #: Voltage where a cube's battery can be considered empty
+    EMPTY_VOLTAGE = 1.0
+    #: Voltage where a cube's battery can be considered full
+    FULL_VOLTAGE = 1.5
+
     pickupable = True
     place_objects_on_this = True
 
@@ -374,6 +398,7 @@ class LightCube(ObservableObject):
         super().__init__(*a, **kw)
 
         #: float: The time the object was last tapped
+        #: ``None`` if the cube wasn't tapped yet.
         self.last_tapped_time = None
 
         #: int: The robot's timestamp of the last tapped event.
@@ -381,6 +406,36 @@ class LightCube(ObservableObject):
         #: In milliseconds relative to robot epoch.
         self.last_tapped_robot_timestamp = None
 
+        #: float: The time the object was last moved
+        #: ``None`` if the cube wasn't moved yet.
+        self.last_moved_time = None
+
+        #: float: The time the object started moving when last moved
+        self.last_moved_start_time = None
+
+        #: int: The robot's timestamp of the last move event.
+        #: ``None`` if the cube wasn't moved yet.
+        #: In milliseconds relative to robot epoch.
+        self.last_moved_robot_timestamp = None
+
+        #: int: The robot's timestamp of when the object started moving when last moved
+        #: ``None`` if the cube wasn't moved yet.
+        #: In milliseconds relative to robot epoch.
+        self.last_moved_start_robot_timestamp = None
+
+        #: float: Battery voltage.
+        #: ``None`` if no voltage reading has been received yet
+        self.battery_voltage = None
+
+        #: bool: True if the cube's accelerometer indicates that the cube is moving.
+        self.is_moving = False
+
+    def _repr_values(self):
+        super_values = super()._repr_values()
+        if len(super_values) > 0:
+            super_values += ' '
+        return ('{super_values}'
+                'battery={self.battery_str:s}'.format(self=self, super_values=super_values))
 
     #### Private Methods ####
 
@@ -410,17 +465,74 @@ class LightCube(ObservableObject):
 
     #### Properties ####
 
+    @property
+    def battery_percentage(self):
+        """float: Battery level as a percentage."""
+        if self.battery_voltage is None:
+            # not received a voltage measurement yet
+            return None
+        elif self.battery_voltage >= self.FULL_VOLTAGE:
+            return 100.0
+        elif self.battery_voltage <= self.EMPTY_VOLTAGE:
+            return 0.0
+        else:
+            return 100.0 * ((self.battery_voltage - self.EMPTY_VOLTAGE) /
+                            (self.FULL_VOLTAGE - self.EMPTY_VOLTAGE))
+
+    @property
+    def battery_str(self):
+        """str: String representation of the battery level."""
+        if self.battery_voltage is None:
+            return "Unknown"
+        else:
+            return ('{self.battery_percentage:.0f}%'.format(self=self))
+
     #### Private Event Handlers ####
     def _recv_msg_object_tapped(self, evt, *, msg):
-        changed_fields = {'last_event_time', 'last_tapped_time',
-            'last_tapped_robot_timestamp'}
-        self.last_event_time = time.time()
-        self.last_tapped_time = time.time()
+        now = time.time()
+        self.last_event_time = now
+        self.last_tapped_time = now
         self.last_tapped_robot_timestamp = msg.timestamp
         tap_intensity = msg.tapPos - msg.tapNeg
         self.dispatch_event(EvtObjectTapped, obj=self,
             tap_count=msg.numTaps, tap_duration=msg.tapTime, tap_intensity=tap_intensity)
 
+    def _recv_msg_object_moved(self, evt, *, msg):
+        now = time.time()
+        started_moving = not self.is_moving
+        self.is_moving = True
+        self.last_event_time = now
+        self.last_moved_time = now
+        self.last_moved_robot_timestamp = msg.timestamp
+
+        acceleration = util.Vector3(msg.accel.x, msg.accel.y, msg.accel.z)
+
+        if started_moving:
+            self.last_moved_start_time = now
+            self.last_moved_start_robot_timestamp = msg.timestamp
+            self.dispatch_event(EvtObjectMovingStarted, obj=self,
+                                acceleration=acceleration)
+        else:
+            move_duration = now - self.last_moved_start_time
+            self.dispatch_event(EvtObjectMoving, obj=self,
+                                acceleration=acceleration,
+                                move_duration=move_duration)
+
+    def _recv_msg_object_stopped_moving(self, evt, *, msg):
+        now = time.time()
+        if self.is_moving:
+            self.is_moving = False
+            move_duration = now - self.last_moved_start_time
+        else:
+            # This happens for very short movements that are immediately
+            # considered stopped (no acceleration info is present)
+            move_duration = 0.0
+        self.dispatch_event(EvtObjectMovingStopped, obj=self,
+                            move_duration=move_duration)
+
+    def _recv_msg_object_power_level(self, evt, *, msg):
+        self.battery_voltage = msg.batteryLevel * 0.01
+        pass
 
     #### Public Event Handlers ####
 
