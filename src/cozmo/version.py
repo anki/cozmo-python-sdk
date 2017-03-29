@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "0.11.1.dev0"
+__version__ = "0.12.1.dev0"
 
 # Specify the version of cozmoclad that this package requires
 # Releases of the Cozmo package must specify an exact cozmoclad release
 # to ensure compatibility with a specific release of the ios/android app.
 __cozmoclad_version__ = None
-#__cozmoclad_version__ = "1.2.0"
+#__cozmoclad_version__ = "1.3.0"
