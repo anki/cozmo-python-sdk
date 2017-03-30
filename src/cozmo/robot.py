@@ -884,15 +884,45 @@ class Robot(event.Dispatcher):
 
 
     #### Commands ####
-
     def enable_all_reaction_triggers(self, should_enable):
         '''Enable or disable Cozmo's responses to being handled or observing the world.
 
         Args:
             should_enable (bool): True if the robot should react to its environment.
         '''
-        msg = _clad_to_engine_iface.EnableAllReactionTriggers(enabled=should_enable)
-        self.conn.send_msg(msg)
+
+        if(should_enable):
+          allTriggersAffected = TriggersAffected(
+            cliffDetected=true,
+            cubeMoved=true, 
+            doubleTapDetected=true, 
+            facePositionUpdated=true, 
+            fistBump=true, 
+            frustration=true, 
+            motorCalibration=true, 
+            noPreDockPoses=true, 
+            objectPositionUpdated=true, 
+            placedOnCharger=true, 
+            petInitialDetection=true, 
+            pyramidInitialDetection=true, 
+            robotPickedUp=true, 
+            robotPlacedOnSlope=true,
+            returnedToTreads=true,
+            robotOnBack=true,
+            robotOnFace=true,
+            robotOnSide=true,
+            robotShaken=true,
+            sparked=true,
+            stackOfCubesInitialDetection=true,
+            unexpectedMovement=true)
+
+          msg = _clad_to_engine_iface.DisableReactionsWithLock ("sdk", allTriggersAffected)
+          self.conn.send_msg(msg)
+        else:
+          msg = _clad_to_engine_iface.RemoveDisableReactionsLock("sdk")
+          self.conn.send_msg(msg)
+        
+
 
     def set_robot_volume(self, robot_volume):
         '''Set the volume for the speaker in the robot.
