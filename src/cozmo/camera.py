@@ -18,7 +18,9 @@ Cozmo has a built-in camera which he uses to observe the world around him.
 
 The :class:`Camera` class defined in this module is made available as
 :attr:`cozmo.world.World.camera` and can be used to enable/disable image
-sending as well as observe raw unprocessed images being sent by the robot.
+sending, enable/disable color images, modify various camera settings,
+read the robot's unique camera calibration settings, as well as observe
+raw unprocessed images being sent by the robot.
 
 Generally, however, it is more useful to observe
 :class:`cozmo.world.EvtNewCameraImage` events, which include the raw camera
@@ -27,7 +29,7 @@ has identified.
 '''
 
 # __all__ should order by constants, event classes, other classes, functions.
-__all__ = ['EvtNewRawCameraImage', 'Camera']
+__all__ = ['EvtNewRawCameraImage', 'CameraConfig', 'Camera']
 
 import functools
 import io
@@ -44,6 +46,7 @@ except ImportError as exc:
 
 from . import event
 from . import logger
+from . import util
 
 from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo, _clad_to_game_cozmo
 
@@ -87,6 +90,105 @@ class EvtNewRawCameraImage(event.Event):
     image = 'A PIL.Image.Image object'
 
 
+class CameraConfig:
+    """The fixed properties for Cozmo's Camera
+
+    A full 3x3 calibration matrix for doing 3D reasoning based on the camera
+    images would look like:
+
+        +--------------+--------------+---------------+
+        |focal_length.x|      0       |    center.x   |
+        +--------------+--------------+---------------+
+        |       0      |focal_length.y|    center.y   |
+        +--------------+--------------+---------------+
+        |       0      |       0      |        1      |
+        +--------------+--------------+---------------+
+    """
+
+    def __init__(self,
+                 focal_length_x: float,
+                 focal_length_y: float,
+                 center_x: float,
+                 center_y: float,
+                 fov_x_degrees: float,
+                 fov_y_degrees: float,
+                 min_exposure_time_ms: int,
+                 max_exposure_time_ms: int,
+                 min_gain: float,
+                 max_gain: float):
+        self._focal_length = util.Vector2(focal_length_x, focal_length_y)
+        self._center = util.Vector2(center_x, center_y)
+        self._fov_x = util.degrees(fov_x_degrees)
+        self._fov_y = util.degrees(fov_y_degrees)
+        self._min_exposure_time_ms = min_exposure_time_ms
+        self._max_exposure_time_ms = max_exposure_time_ms
+        self._min_gain = min_gain
+        self._max_gain = max_gain
+
+    @classmethod
+    def _create_from_clad(cls, cs):
+        return cls(cs.focalLengthX, cs.focalLengthY,
+                   cs.centerX, cs.centerY,
+                   cs.fovX, cs.fovY,
+                   cs.minCameraExposureTime_ms, cs.maxCameraExposureTime_ms,
+                   cs.minCameraGain, cs.maxCameraGain)
+
+    # Fixed camera properties (calibrated for each robot at the factory).
+
+    @property
+    def focal_length(self):
+        ''':class:`cozmo.util.Vector2`: The focal length of the camera.
+
+        This is focal length combined with pixel skew (as the pixels aren't
+        perfectly square), so there are subtly different values for x and y.
+        It is in floating point pixel values e.g. <288.87, 288.36>.
+        '''
+        return self._focal_length
+
+    @property
+    def center(self):
+        ''':class:`cozmo.util.Vector2`: The focal center of the camera.
+
+        This is the position of the optical center of projection within the
+        image. It will be close to the center of the image, but adjusted based
+        on the calibration of the lens at the factory. It is in floating point
+        pixel values e.g. <155.11, 111.40>.
+        '''
+        return self._center
+
+    @property
+    def fov_x(self):
+        ''':class:`cozmo.util.Angle`: The x (horizontal) field of view.'''
+        return self._fov_x
+
+    @property
+    def fov_y(self):
+        ''':class:`cozmo.util.Angle`: The y (vertical) field of view.'''
+        return self._fov_y
+
+    # The fixed range of values supported for this camera.
+
+    @property
+    def min_exposure_time_ms(self):
+        '''int: The minimum supported exposure time in milliseconds.'''
+        return self._min_exposure_time_ms
+
+    @property
+    def max_exposure_time_ms(self):
+        '''int: The maximum supported exposure time in milliseconds.'''
+        return self._max_exposure_time_ms
+
+    @property
+    def min_gain(self):
+        '''float: The minimum supported camera gain.'''
+        return self._min_gain
+
+    @property
+    def max_gain(self):
+        '''float: The maximum supported camera gain.'''
+        return self._max_gain
+
+
 class Camera(event.Dispatcher):
     '''Represents Cozmo's camera.
 
@@ -107,14 +209,64 @@ class Camera(event.Dispatcher):
         self.robot = robot
         self._image_stream_enabled = None
         self._color_image_enabled = None
+        self._camera_config = None  # type: CameraConfig
+        self._gain = 0.0
+        self._exposure_ms = 0
+        self._auto_exposure_enabled = True
+
         if np is None:
-            logger.warn("Camera image processing not available due to missng NumPy or Pillow packages: %s" % _img_processing_available)
+            logger.warning("Camera image processing not available due to missng NumPy or Pillow packages: %s" % _img_processing_available)
         else:
             # set property to ensure clad initialization is sent.
             self.image_stream_enabled = False
             self.color_image_enabled = False
         self._reset_partial_state()
 
+    def enable_auto_exposure(self):
+        '''Enable auto exposure on Cozmo's Camera.
+
+        Enable auto exposure on Cozmo's camera to constantly update the exposure
+        time and gain values based on the recent images. This is the default mode
+        when any SDK program starts.
+        '''
+        msg = _clad_to_engine_iface.SetCameraSettings(enableAutoExposure=True)
+        self.robot.conn.send_msg(msg)
+
+    def set_manual_exposure(self, exposure_ms, gain):
+        '''Set manual exposure values for Cozmo's Camera.
+
+        Disable auto exposure on Cozmo's camera and force the specified exposure
+        time and gain values.
+
+        Args:
+            exposure_ms (int): The desired exposure time in milliseconds.
+                Must be within the robot's
+                :attr:`~cozmo.camera.Camera.config` exposure range from
+                :attr:`~cozmo.camera.CameraConfig.min_exposure_time_ms` to
+                :attr:`~cozmo.camera.CameraConfig.max_exposure_time_ms`
+            gain (float): The desired gain value.
+                Must be within the robot's
+                :attr:`~cozmo.camera.Camera.camera_config` gain range from
+                :attr:`~cozmo.camera.CameraConfig.min_gain` to
+                :attr:`~cozmo.camera.CameraConfig.max_gain`
+
+        Raises:
+            :class:`ValueError` if supplied an out-of-range exposure or gain.
+        '''
+        cam = self.config
+
+        if (exposure_ms < cam.min_exposure_time_ms) or (exposure_ms > cam.max_exposure_time_ms):
+            raise ValueError('exposure_ms %s out of range %s..%s' %
+                             (exposure_ms, cam.min_exposure_time_ms, cam.max_exposure_time_ms))
+
+        if (gain < cam.min_gain) or (gain > cam.max_gain):
+            raise ValueError('gain %s out of range %s..%s' %
+                             (gain, cam.min_gain, cam.max_gain))
+
+        msg = _clad_to_engine_iface.SetCameraSettings(enableAutoExposure=False,
+                                                      exposure_ms=exposure_ms,
+                                                      gain=gain)
+        self.robot.conn.send_msg(msg)
 
     #### Private Methods ####
 
@@ -125,6 +277,9 @@ class Camera(event.Dispatcher):
         self._partial_size = 0
         self._partial_metadata = None
         self._last_chunk_id = -1
+
+    def _set_config(self, clad_config):
+        self._config = CameraConfig._create_from_clad(clad_config)
 
     #### Properties ####
 
@@ -175,6 +330,29 @@ class Camera(event.Dispatcher):
         msg = _clad_to_engine_iface.EnableColorImages(enable = enabled)
         self.robot.conn.send_msg(msg)
 
+    @property
+    def config(self):
+        ''':class:`cozmo.camera.CameraConfig`: The read-only config/calibration for the camera'''
+        return self._config
+
+    @property
+    def is_auto_exposure_enabled(self):
+        '''bool: True if auto exposure is currently enabled
+
+        If auto exposure is enabled the `gain` and `exposure_ms`
+        values will constantly be updated by Cozmo.
+        '''
+        return self._auto_exposure_enabled
+
+    @property
+    def gain(self):
+        '''float: The current camera gain setting.'''
+        return self._gain
+
+    @property
+    def exposure_ms(self):
+        '''int: The current camera exposure setting in milliseconds.'''
+        return self._exposure_ms
 
     #### Private Event Handlers ####
 
@@ -217,6 +395,11 @@ class Camera(event.Dispatcher):
         if msg.chunkId == (msg.imageChunkCount - 1):
             self._process_completed_image()
             self._reset_partial_state()
+
+    def _recv_msg_current_camera_params(self, evt, *, msg):
+        self._gain = msg.cameraGain
+        self._exposure_ms = msg.exposure_ms
+        self._auto_exposure_enabled = msg.autoExposureEnabled
 
     def _process_completed_image(self):
         data = self._partial_data[0:self._partial_size]

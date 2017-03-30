@@ -92,8 +92,10 @@ def serve_pil_image(pil_img, serve_as_jpeg=False, jpeg_quality=70):
     if serve_as_jpeg:
         pil_img.save(img_io, 'JPEG', quality=jpeg_quality)
         img_io.seek(0)
-        return make_uncached_response(send_file(img_io, mimetype='image/jpeg'))
+        return make_uncached_response(send_file(img_io, mimetype='image/jpeg',
+                                                add_etags=False))
     else:
         pil_img.save(img_io, 'PNG')
         img_io.seek(0)
-        return make_uncached_response(send_file(img_io, mimetype='image/png'))
+        return make_uncached_response(send_file(img_io, mimetype='image/png',
+                                                add_etags=False))

@@ -123,7 +123,7 @@ async def serve_sports(request):
                 robot.display_image_file_on_face("../face_images/ifttt_sports.png")
 
         except cozmo.RobotBusy:
-            cozmo.logger.warn("Robot was busy so didn't read update: '" + alert_body +"'")
+            cozmo.logger.warning("Robot was busy so didn't read update: '" + alert_body +"'")
 
     # Perform Cozmo's task in the background so the HTTP server responds immediately.
     asyncio.ensure_future(read_name())
