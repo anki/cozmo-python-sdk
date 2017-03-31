@@ -891,15 +891,12 @@ class Robot(event.Dispatcher):
         Args:
             should_enable (bool): True if the robot should react to its environment.
         '''
-
         if should_enable:
             msg = _clad_to_engine_iface.RemoveDisableReactionsLock("sdk")
             self.conn.send_msg(msg)
         else:
             msg = _clad_to_engine_iface.DisableAllReactionsWithLock("sdk")
             self.conn.send_msg(msg)
-        
-
 
     def set_robot_volume(self, robot_volume):
         '''Set the volume for the speaker in the robot.
