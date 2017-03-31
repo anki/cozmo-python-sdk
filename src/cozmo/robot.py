@@ -892,34 +892,10 @@ class Robot(event.Dispatcher):
         '''
 
         if(should_enable):
-          allTriggersAffected = TriggersAffected(
-            cliffDetected=true,
-            cubeMoved=true, 
-            doubleTapDetected=true, 
-            facePositionUpdated=true, 
-            fistBump=true, 
-            frustration=true, 
-            motorCalibration=true, 
-            noPreDockPoses=true, 
-            objectPositionUpdated=true, 
-            placedOnCharger=true, 
-            petInitialDetection=true, 
-            pyramidInitialDetection=true, 
-            robotPickedUp=true, 
-            robotPlacedOnSlope=true,
-            returnedToTreads=true,
-            robotOnBack=true,
-            robotOnFace=true,
-            robotOnSide=true,
-            robotShaken=true,
-            sparked=true,
-            stackOfCubesInitialDetection=true,
-            unexpectedMovement=true)
-
-          msg = _clad_to_engine_iface.DisableReactionsWithLock ("sdk", allTriggersAffected)
+          msg = _clad_to_engine_iface.RemoveDisableReactionsLock("sdk")
           self.conn.send_msg(msg)
         else:
-          msg = _clad_to_engine_iface.RemoveDisableReactionsLock("sdk")
+          msg = _clad_to_engine_iface.DisableAllReactionsWithLock("sdk")
           self.conn.send_msg(msg)
         
 
