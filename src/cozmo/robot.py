@@ -884,6 +884,7 @@ class Robot(event.Dispatcher):
 
 
     #### Commands ####
+
     def enable_all_reaction_triggers(self, should_enable):
         '''Enable or disable Cozmo's responses to being handled or observing the world.
 
@@ -891,7 +892,7 @@ class Robot(event.Dispatcher):
             should_enable (bool): True if the robot should react to its environment.
         '''
 
-        if(should_enable):
+        if should_enable:
           msg = _clad_to_engine_iface.RemoveDisableReactionsLock("sdk")
           self.conn.send_msg(msg)
         else:
