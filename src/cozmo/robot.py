@@ -893,11 +893,11 @@ class Robot(event.Dispatcher):
         '''
 
         if should_enable:
-          msg = _clad_to_engine_iface.RemoveDisableReactionsLock("sdk")
-          self.conn.send_msg(msg)
+            msg = _clad_to_engine_iface.RemoveDisableReactionsLock("sdk")
+            self.conn.send_msg(msg)
         else:
-          msg = _clad_to_engine_iface.DisableAllReactionsWithLock("sdk")
-          self.conn.send_msg(msg)
+            msg = _clad_to_engine_iface.DisableAllReactionsWithLock("sdk")
+            self.conn.send_msg(msg)
         
 
 
