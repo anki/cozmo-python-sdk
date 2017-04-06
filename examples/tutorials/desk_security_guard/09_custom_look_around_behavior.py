@@ -14,35 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Desk Security Guard Tutorial - Example 8 - Look Around behavior."""
+"""Desk Security Guard Tutorial - Example 9 - Create our own custom look-around behavior."""
 
 import asyncio
 import cozmo
-
-
-class DeskGuardBehavior:
-    def __init__(self, desk_guard: DeskGuard):
-        self.desk_guard = desk_guard
-
-    def start(self):
-        pass
-
-    def stop(self):
-        pass
-
-
-class LookAroundBehavior(DeskGuardBehavior):
-    def __init__(self, **kw):
-        super().__init__(**kw)
-
-    def start(self):
-        pass
-
-    def stop(self):
-        pass
-
-    async def run(self):
-        pass
+from cozmo.util import degrees  # saves us typing cozmo.util.degrees everywhere
 
 
 class DeskGuard:
@@ -51,8 +27,7 @@ class DeskGuard:
         self.owner_name = owner_name
         robot.add_event_handler(cozmo.faces.EvtFaceAppeared, self.face_appeared)
         robot.add_event_handler(cozmo.faces.EvtFaceDisappeared, self.face_disappeared)
-        #robot.start_behavior(cozmo.behavior.BehaviorTypes.FindFaces)
-        self.behavior = LookAroundBehavior(self)
+        # Note: We're no longer starting a behavior here
 
     def face_appeared(self, evt, face: cozmo.faces.Face, **kwargs):
         if face.name == self.owner_name:
@@ -64,14 +39,16 @@ class DeskGuard:
     def face_disappeared(self, evt, face: cozmo.faces.Face, **kwargs):
         print("Face %s '%s' disappeared" % (face.face_id, face.name))
 
-    def pick_next_behavior(self):
-        return self.behavior
-
     async def run(self):
-        while True:
-            await self.behavior.run()
-            self.behavior = self.pick_next_behavior()
-        #await asyncio.sleep(30)  # Keep the program running for 30 seconds
+        for _ in range(12):
+            # Tilt head up (if necessary) while simultaneously turning 30 degrees
+            action1 = self.robot.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE, in_parallel=True)
+            action2 = self.robot.turn_in_place(degrees(30), in_parallel=True)
+            # Wait for both actions to complete
+            await action1.wait_for_completed()
+            await action2.wait_for_completed()
+            # Force Cozmo to wait for a couple of seconds to improve chance of seeing something
+            await asyncio.sleep(2)
 
 
 async def cozmo_program(robot: cozmo.robot.Robot):

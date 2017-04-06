@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Desk Security Guard Tutorial - Example 8 - Look Around behavior."""
+"""Desk Security Guard Tutorial - Example 8 - Use the FindFaces behavior."""
 
 import asyncio
 import cozmo
