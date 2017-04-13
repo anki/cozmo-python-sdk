@@ -626,7 +626,7 @@ class World(event.Dispatcher):
     async def delete_all_custom_objects(self):
         """Causes the robot to forget about all custom (fixed + marker) objects it currently knows about.
         
-        Note: This includes all fixed objects, and all custom marker object instances, 
+        Note: This includes all fixed custom objects, and all custom marker object instances, 
         BUT this does NOT remove the custom marker object definitions, so Cozmo
         will continue to add new objects if he sees the markers again. To remove
         the definitions for those objects use: :meth:`undefine_all_custom_marker_objects`
@@ -641,7 +641,7 @@ class World(event.Dispatcher):
         """Causes the robot to forget about all custom marker objects it currently knows about.
 
         Note: This removes custom marker object instances only, it does NOT remove
-        fixed objects, nor does it remove the custom marker object definitions, so Cozmo
+        fixed custom objects, nor does it remove the custom marker object definitions, so Cozmo
         will continue to add new objects if he sees the markers again. To remove
         the definitions for those objects use: :meth:`undefine_all_custom_marker_objects`
         """
