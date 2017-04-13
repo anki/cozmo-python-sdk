@@ -613,7 +613,7 @@ class World(event.Dispatcher):
 
     async def delete_all_custom_objects(self):
         """Causes the robot to forget about all custom objects it currently knows about."""
-        msg = _clad_to_engine_iface.DeleteAllCustomObjects(robotID=self.robot.robot_id)
+        msg = _clad_to_engine_iface.DeleteAllCustomObjects()
         self.conn.send_msg(msg)
         # TODO: use a filter to wait only for a message for the active robot
         await self.wait_for(_clad._MsgRobotDeletedAllCustomObjects)
