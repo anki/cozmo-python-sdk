@@ -668,7 +668,7 @@ class World(event.Dispatcher):
         await self.wait_for(_clad._MsgRobotDeletedCustomMarkerObjects)
         self._remove_custom_marker_object_instances()
         # Remove all custom object definitions / archetypes
-        self.custom_objects = {}
+        self.custom_objects.clear()
 
     async def _wait_for_defined_custom_object(self, custom_object_archetype):
         try:
