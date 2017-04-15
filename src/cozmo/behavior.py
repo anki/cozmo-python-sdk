@@ -145,7 +145,7 @@ class Behavior(event.Dispatcher):
         Raises:
             :class:`asyncio.TimeoutError`
         '''
-        if self.is_running:
+        if self.is_running or self.is_completed:
             # Already started running
             return
         await self.wait_for(EvtBehaviorStarted, timeout=timeout)

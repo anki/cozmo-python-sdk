@@ -1343,7 +1343,7 @@ class Robot(event.Dispatcher):
         self._current_behavior = b
         return b
 
-    async def run_timed_behavior(self, behavior_type, max_active_time):
+    async def run_timed_behavior(self, behavior_type, active_time):
         '''Executes a behavior for a set number of seconds.
 
         This call blocks and stops the behavior after active_time seconds.
@@ -1351,13 +1351,13 @@ class Robot(event.Dispatcher):
         Args:
             behavior_type (:class:`cozmo.behavior._BehaviorType): An attribute of
                 :class:`cozmo.behavior.BehaviorTypes`.
-            max_active_time (float): specifies the maximum time to execute in seconds
+            active_time (float): specifies the maximum time to execute in seconds
         Raises:
             :class:`TypeError` if an invalid behavior type is supplied.
         '''
         b = self.start_behavior(behavior_type)
         try:
-            await b.wait_for_completed(timeout=max_active_time)
+            await b.wait_for_completed(timeout=active_time)
         except asyncio.TimeoutError:
             # It didn't complete within the time, stop it
             b.stop()
