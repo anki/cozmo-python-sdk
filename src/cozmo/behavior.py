@@ -56,7 +56,7 @@ BEHAVIOR_REQUESTED = 'behavior_requested'
 #: string: Behavior running state
 BEHAVIOR_RUNNING = 'behavior_running'
 
-#: string: Behavior succeeded state
+#: string: Behavior stopped state
 BEHAVIOR_STOPPED = 'behavior_stopped'
 
 
@@ -100,7 +100,7 @@ class Behavior(event.Dispatcher):
         if self._state != BEHAVIOR_REQUESTED:
             # has not been requested (is an unrelated behavior transition)
             if self.is_running:
-                logger.warning("Behavior '%s' reported started when already running!?")
+                logger.warning("Behavior '%s' unexpectedly reported started when already running")
             return
         self._state = BEHAVIOR_RUNNING
         self.dispatch_event(EvtBehaviorStarted, behavior=self, behavior_type_name=self.type.name)

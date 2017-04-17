@@ -1336,12 +1336,13 @@ class Robot(event.Dispatcher):
         if self._current_behavior is not None:
             self._current_behavior._set_stopped()
 
-        b = self.behavior_factory(self, behavior_type, is_active=True, dispatch_parent=self)
+        new_behavior = self.behavior_factory(self, behavior_type,
+                                             is_active=True, dispatch_parent=self)
         msg = _clad_to_engine_iface.ExecuteBehaviorByExecutableType(
                 behaviorType=behavior_type.id)
         self.conn.send_msg(msg)
-        self._current_behavior = b
-        return b
+        self._current_behavior = new_behavior
+        return new_behavior
 
     async def run_timed_behavior(self, behavior_type, active_time):
         '''Executes a behavior for a set number of seconds.

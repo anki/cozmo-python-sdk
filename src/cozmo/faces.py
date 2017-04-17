@@ -357,16 +357,30 @@ class Face(objects.ObservableElement):
 
     #### Commands ####
 
+    def _is_valid_name(self, name):
+        if not (name and name.isalpha()):
+            return False
+        try:
+            name.encode('ascii')
+        except UnicodeEncodeError:
+            return False
+
+        return True
+
     def name_face(self, name):
         '''Assign a name to this face. Cozmo will remember this name between SDK runs.
 
         Args:
-            name (string): The name that will be assigned to this face
+            name (string): The name that will be assigned to this face. Must
+                be a non-empty ASCII string of alphabetic characters only.
         Returns:
             An instance of :class:`cozmo.behavior.Behavior` object
+        Raises:
+            :class:`ValueError` if name is invalid.
         '''
-        if not name:
-            raise ValueError("Invalid string passed to name_face")
+        if not self._is_valid_name(name):
+            raise ValueError("new_name '%s' is an invalid face name. "
+                             "Must be non-empty and contain only alphabetic ASCII characters." % name)
 
         logger.info("Enrolling face=%s with name='%s'", self, name)
 
@@ -386,8 +400,14 @@ class Face(objects.ObservableElement):
         '''Change the name assigned to the face. Cozmo will remember this name between SDK runs.
 
         Args:
-            new_name (string): The new name for the face
+            new_name (string): The new name that will be assigned to this face. Must
+                be a non-empty ASCII string of alphabetic characters only.
+        Raises:
+            :class:`ValueError` if new_name is invalid.
         '''
+        if not self._is_valid_name(new_name):
+            raise ValueError("new_name '%s' is an invalid face name. "
+                             "Must be non-empty and contain only alphabetic ASCII characters." % new_name)
         update_enrolled_face_by_id(self.conn, self.face_id, self.name, new_name)
 
     def erase_enrolled_face(self):
