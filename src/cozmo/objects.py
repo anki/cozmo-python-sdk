@@ -106,8 +106,13 @@ class EvtObjectConnected(event.Event):
     sending RequestConnectedObjects to the engine.
     '''
     obj = 'The object that is connected'
-    updated = 'A set of field names that have changed'
-    pose = 'The cozmo.util.Pose defining the position and rotation of the object'
+    connected = 'True if the object connected, False if it disconnected'
+
+
+class EvtObjectConnectChanged(event.Event):
+    'Triggered when an active object has connected or disconnected from the robot.'
+    obj = 'The object that connected or disconnected'
+    connected = 'True if the object connected, False if it disconnected'
 
 
 class EvtObjectLocated(event.Event):
@@ -149,12 +154,6 @@ class EvtObjectTapped(event.Event):
     tap_count = 'Number of taps detected'
     tap_duration = 'The duration of the tap in ms'
     tap_intensity = 'The intensity of the tap'
-
-
-class EvtObjectConnectChanged(event.Event):
-    'Triggered when an active object has connected or disconnected from the robot.'
-    obj = 'The object that connected or disconnected'
-    connected = 'True if the object connected, False if it disconnected'
 
 
 class ObservableElement(event.Dispatcher):
@@ -320,15 +319,9 @@ class ObservableObject(ObservableElement):
     def _handle_connected_object_state(self, object_state):
         # triggered when engine sends a ConnectedObjectStates message
         # as a response to a RequestConnectedObjects message
-
-        changed_fields = {'pose'}
-
         self._pose = util.Pose._create_default()
-
-        self.dispatch_event(EvtObjectConnected,
-                            obj=self,
-                            updated=changed_fields,
-                            pose=self._pose)
+        self.is_connected = True
+        self.dispatch_event(EvtObjectConnected, obj=self)
 
     def _handle_located_object_state(self, object_state):
         # triggered when engine sends a LocatedObjectStates message
@@ -381,11 +374,6 @@ class ObservableObject(ObservableElement):
 
     #### Private Event Handlers ####
 
-    def _recv_msg_object_connection_state(self, _, *, msg):
-        if self.connected != msg.connected:
-            self.connected = msg.connected
-            self.dispatch_event(EvtObjectConnectChanged, obj=self, connected=self.connected)
-
     def _recv_msg_robot_observed_object(self, evt, *, msg):
 
         changed_fields = {'pose'}
@@ -403,7 +391,7 @@ class ObservableObject(ObservableElement):
 
 #: LightCube1Id's markers look a bit like a paperclip
 LightCube1Id = _clad_to_game_cozmo.ObjectType.Block_LIGHTCUBE1
-#: LightCube2Id's markers look a bit like a lamp
+#: LightCube2Id's markers look a bit like a lamp (or a heart)
 LightCube2Id = _clad_to_game_cozmo.ObjectType.Block_LIGHTCUBE2
 #: LightCube3Id's markers look a bit like the letters 'ab' over 'T'
 LightCube3Id = _clad_to_game_cozmo.ObjectType.Block_LIGHTCUBE3
@@ -460,6 +448,9 @@ class LightCube(ObservableObject):
 
         #: bool: True if the cube's accelerometer indicates that the cube is moving.
         self.is_moving = False
+
+        #: bool: True if the cube is currently connected to the robot via radio.
+        self.is_connected = False
 
     def _repr_values(self):
         super_values = super()._repr_values()
@@ -563,7 +554,16 @@ class LightCube(ObservableObject):
 
     def _recv_msg_object_power_level(self, evt, *, msg):
         self.battery_voltage = msg.batteryLevel * 0.01
-        pass
+
+    def _recv_msg_object_connection_state(self, evt, *, msg):
+        if self.is_connected != msg.connected:
+            if msg.connected:
+                logger.info("Object connected: %s", self)
+            else:
+                logger.info("Object disconnected: %s", self)
+            self.is_connected = msg.connected
+            self.dispatch_event(EvtObjectConnectChanged, obj=self,
+                                connected=self.is_connected)
 
     #### Public Event Handlers ####
 
