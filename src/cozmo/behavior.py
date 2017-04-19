@@ -33,7 +33,9 @@ behaviors.
 '''
 
 # __all__ should order by constants, event classes, other classes, functions.
-__all__ = ['EvtBehaviorStarted', 'EvtBehaviorStopped',
+__all__ = ['BEHAVIOR_IDLE', 'BEHAVIOR_REQUESTED', 'BEHAVIOR_RUNNING',
+           'BEHAVIOR_STOPPED',
+           'EvtBehaviorRequested', 'EvtBehaviorStarted', 'EvtBehaviorStopped',
            'Behavior', 'BehaviorTypes']
 
 import asyncio
@@ -45,8 +47,27 @@ from . import event
 from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo
 
 
+#: string: Behavior idle state (not requested to run)
+BEHAVIOR_IDLE = 'behavior_idle'
+
+#: string: Behavior requested state (waiting for engine to start it)
+BEHAVIOR_REQUESTED = 'behavior_requested'
+
+#: string: Behavior running state
+BEHAVIOR_RUNNING = 'behavior_running'
+
+#: string: Behavior stopped state
+BEHAVIOR_STOPPED = 'behavior_stopped'
+
+
+class EvtBehaviorRequested(event.Event):
+    '''Triggered when a behavior is requested to start.'''
+    behavior = 'The Behavior object'
+    behavior_type_name = 'The behavior type name - equivalent to behavior.type.name'
+
+
 class EvtBehaviorStarted(event.Event):
-    '''Triggered when a behavior starts.'''
+    '''Triggered when a behavior starts running on the robot.'''
     behavior = 'The Behavior object'
     behavior_type_name = 'The behavior type name - equivalent to behavior.type.name'
 
@@ -55,7 +76,6 @@ class EvtBehaviorStopped(event.Event):
     '''Triggered when a behavior stops.'''
     behavior = 'The behavior type object'
     behavior_type_name = 'The behavior type name - equivalent to behavior.type.name'
-
 
 
 class Behavior(event.Dispatcher):
@@ -68,29 +88,85 @@ class Behavior(event.Dispatcher):
         super().__init__(**kw)
         self.robot = robot
         self.type = behavior_type
-        self._is_active = is_active
+        self._state = BEHAVIOR_IDLE
         if is_active:
-            self.dispatch_event(EvtBehaviorStarted, behavior=self, behavior_type_name=self.type.name)
+            self._state = BEHAVIOR_REQUESTED
+            self.dispatch_event(EvtBehaviorRequested, behavior=self, behavior_type_name=self.type.name)
 
     def __repr__(self):
         return '<%s type="%s">' % (self.__class__.__name__, self.type.name)
+
+    def _on_engine_started(self):
+        if self._state != BEHAVIOR_REQUESTED:
+            # has not been requested (is an unrelated behavior transition)
+            if self.is_running:
+                logger.warning("Behavior '%s' unexpectedly reported started when already running")
+            return
+        self._state = BEHAVIOR_RUNNING
+        self.dispatch_event(EvtBehaviorStarted, behavior=self, behavior_type_name=self.type.name)
+
+    def _set_stopped(self):
+        if not self.is_active:
+            return
+        self._state = BEHAVIOR_STOPPED
+        self.dispatch_event(EvtBehaviorStopped, behavior=self, behavior_type_name=self.type.name)
 
     def stop(self):
         '''Requests that the robot stop performing the behavior.
 
         Has no effect if the behavior is not presently active.
         '''
-        if not self._is_active:
+        if not self.is_active:
             return
-        self.robot._stop_behavior()
-        self._is_active = False
-        self.dispatch_event(EvtBehaviorStopped, behavior=self, behavior_type_name=self.type.name)
+        self.robot._set_none_behavior()
+        self._set_stopped()
 
     @property
     def is_active(self):
-        '''bool: True if the behavior is currently active on the robot.'''
-        return self._is_active
+        '''bool: True if the behavior is currently active and may run on the robot.'''
+        return self._state == BEHAVIOR_REQUESTED or self._state == BEHAVIOR_RUNNING
 
+    @property
+    def is_running(self):
+        '''bool: True if the behavior is currently running on the robot.'''
+        return self._state == BEHAVIOR_RUNNING
+
+    @property
+    def is_completed(self):
+        return self._state == BEHAVIOR_STOPPED
+
+    async def wait_for_started(self, timeout=5):
+        '''Waits for the behavior to start.
+
+        Args:
+            timeout (int or None): Maximum time in seconds to wait for the event.
+                Pass None to wait indefinitely. If a behavior can run it should
+                usually start within ~0.2 seconds.
+        Raises:
+            :class:`asyncio.TimeoutError`
+        '''
+        if self.is_running or self.is_completed:
+            # Already started running
+            return
+        await self.wait_for(EvtBehaviorStarted, timeout=timeout)
+
+    async def wait_for_completed(self, timeout=None):
+        '''Waits for the behavior to complete.
+
+        Args:
+            timeout (int or None): Maximum time in seconds to wait for the event.
+                Pass None to wait indefinitely.
+        Raises:
+            :class:`asyncio.TimeoutError`
+        '''
+        if self.is_completed:
+            # Already complete
+            return
+        # Wait for behavior to start first - it can't complete without starting,
+        # and if it doesn't start within a fraction of a second it probably
+        # never will
+        await self.wait_for_started()
+        await self.wait_for(EvtBehaviorStopped, timeout=timeout)
 
 
 _BehaviorType = collections.namedtuple('_BehaviorType', ['name', 'id'])
@@ -121,6 +197,20 @@ try:
 
         #: Pickup one block, and stack it onto another block.
         StackBlocks = _BehaviorType("StackBlocks", _clad_to_engine_cozmo.ExecutableBehaviorType.StackBlocks)
+
+        # Enroll a Face - for internal use by Face.name_face (requires additional pre/post setup)
+        _EnrollFace = _BehaviorType("EnrollFace", _clad_to_engine_cozmo.ExecutableBehaviorType.EnrollFace)
+
+        _id_to_behavior_type = dict()
+
+        @classmethod
+        def find_by_id(cls, id):
+            return cls._id_to_behavior_type.get(id)
+
+    # populate BehaviorTypes _id_to_behavior_type mapping
+    for (_name, _bt) in BehaviorTypes.__dict__.items():
+        if isinstance(_bt, _BehaviorType):
+            BehaviorTypes._id_to_behavior_type[_bt.id] = _bt
 
 except AttributeError as exc:
     err = ('Incorrect version of cozmoclad package installed.  '

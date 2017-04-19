@@ -40,17 +40,15 @@ __all__ = ['FACE_VISIBILITY_TIMEOUT',
            'update_enrolled_face_by_id']
 
 
-import math
-import time
 
 from . import logger
 
-from . import action
+from . import behavior
 from . import event
 from . import objects
 from . import util
 
-from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo
+from ._clad import _clad_to_engine_iface
 from ._clad import _clad_to_game_anki
 
 
@@ -359,28 +357,57 @@ class Face(objects.ObservableElement):
 
     #### Commands ####
 
-    # TODO: There is no longer an action for naming the face - replace this method
-    #       With usage of the new Behavior for naming the face.
-    # def name_face(self, name):
-    #     '''Assign a name to this face. Cozmo will remember this name between SDK runs.
-    #
-    #     Args:
-    #         name (string): The name that will be assigned to this face
-    #     Returns:
-    #         An instance of :class:`cozmo.faces.EnrollNamedFace` action object
-    #     '''
-    #     logger.info("Sending enroll named face request for face=%s and name=%s", self, name)
-    #     action = self.enroll_named_face_factory(face=self, name=name, conn=self.conn,
-    #                                             robot=self._robot, dispatch_parent=self)
-    #     self._robot._action_dispatcher._send_single_action(action)
-    #     return action
+    def _is_valid_name(self, name):
+        if not (name and name.isalpha()):
+            return False
+        try:
+            name.encode('ascii')
+        except UnicodeEncodeError:
+            return False
+
+        return True
+
+    def name_face(self, name):
+        '''Assign a name to this face. Cozmo will remember this name between SDK runs.
+
+        Args:
+            name (string): The name that will be assigned to this face. Must
+                be a non-empty ASCII string of alphabetic characters only.
+        Returns:
+            An instance of :class:`cozmo.behavior.Behavior` object
+        Raises:
+            :class:`ValueError` if name is invalid.
+        '''
+        if not self._is_valid_name(name):
+            raise ValueError("new_name '%s' is an invalid face name. "
+                             "Must be non-empty and contain only alphabetic ASCII characters." % name)
+
+        logger.info("Enrolling face=%s with name='%s'", self, name)
+
+        # Note: saveID must be 0 if face_id doesn't already have a name
+        msg = _clad_to_engine_iface.SetFaceToEnroll(name=name,
+                                                    observedID=self.face_id,
+                                                    saveID=0,
+                                                    saveToRobot=True,
+                                                    sayName=False,
+                                                    useMusic=False)
+        self.conn.send_msg(msg)
+
+        enroll_behavior = self._robot.start_behavior(behavior.BehaviorTypes._EnrollFace)
+        return enroll_behavior
 
     def rename_face(self, new_name):
         '''Change the name assigned to the face. Cozmo will remember this name between SDK runs.
 
         Args:
-            new_name (string): The new name for the face
+            new_name (string): The new name that will be assigned to this face. Must
+                be a non-empty ASCII string of alphabetic characters only.
+        Raises:
+            :class:`ValueError` if new_name is invalid.
         '''
+        if not self._is_valid_name(new_name):
+            raise ValueError("new_name '%s' is an invalid face name. "
+                             "Must be non-empty and contain only alphabetic ASCII characters." % new_name)
         update_enrolled_face_by_id(self.conn, self.face_id, self.name, new_name)
 
     def erase_enrolled_face(self):

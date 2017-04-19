@@ -551,7 +551,7 @@ class Robot(event.Dispatcher):
     #: as the SDK connects to the engine.  Defaults to True.
     drive_off_charger_on_connect = True  # Required for most movement actions
 
-    _is_behavior_running = False
+    _current_behavior = None  # type: Behavior
     _is_freeplay_mode_active = False
 
     def __init__(self, conn, robot_id, is_primary, **kw):
@@ -635,7 +635,7 @@ class Robot(event.Dispatcher):
             # Note: Robot state is reset on entering SDK mode, and after any SDK program exits
             self.stop_all_motors()
             self.enable_all_reaction_triggers(False)
-            self._stop_behavior()
+            self._set_none_behavior()
 
             # Ensure the SDK has full control of cube lights
             self._set_cube_light_state(False)
@@ -653,12 +653,13 @@ class Robot(event.Dispatcher):
             self.dispatch_event(EvtRobotReady, robot=self)
         asyncio.ensure_future(_init(), loop=self._loop)
 
-    def _stop_behavior(self):
+    def _set_none_behavior(self):
         # Internal helper method called from Behavior.stop etc.
         msg = _clad_to_engine_iface.ExecuteBehaviorByExecutableType(
                 behaviorType=_clad_to_engine_cozmo.ExecutableBehaviorType.NoneBehavior)
         self.conn.send_msg(msg)
-        self._is_behavior_running = False
+        if self._current_behavior is not None:
+            self._current_behavior._set_stopped()
 
     def _set_cube_light_state(self, enable):
         msg = _clad_to_engine_iface.EnableLightStates(enable=enable, objectID=-1)
@@ -784,6 +785,14 @@ class Robot(event.Dispatcher):
         return self._head_angle
 
     @property
+    def current_behavior(self):
+        ''':class:`cozmo.behavior.Behavior`: Cozmo's currently active behavior.'''
+        if self._current_behavior is not None and self._current_behavior.is_active:
+            return self._current_behavior
+        else:
+            return None
+
+    @property
     def is_behavior_running(self):
         '''bool: True if Cozmo is currently running a behavior.
 
@@ -792,7 +801,8 @@ class Robot(event.Dispatcher):
         Cozmo whilst in this mode will likely have unexpected behavior on
         the robot and confuse Cozmo.
         '''
-        return self._is_behavior_running
+        return (self.is_freeplay_mode_active or
+                (self._current_behavior is not None and self._current_behavior.is_active))
 
     @property
     def is_freeplay_mode_active(self):
@@ -879,6 +889,14 @@ class Robot(event.Dispatcher):
 
         if msg.robotID != self.robot_id:
             logger.error("robot ID changed mismatch (msg=%s, self=%s)", msg.robotID, self.robot_id )
+
+    def _recv_msg_behavior_transition(self, evt, *, msg):
+        new_type = behavior.BehaviorTypes.find_by_id(msg.newBehaviorExecType)
+        if self._current_behavior is not None:
+            if new_type == self._current_behavior.type:
+                self._current_behavior._on_engine_started()
+            else:
+                self._current_behavior._set_stopped()
 
     #### Public Event Handlers ####
 
@@ -1314,12 +1332,17 @@ class Robot(event.Dispatcher):
         '''
         if not isinstance(behavior_type, behavior._BehaviorType):
             raise TypeError('Invalid behavior supplied')
-        b = self.behavior_factory(self, behavior_type, is_active=True, dispatch_parent=self)
+
+        if self._current_behavior is not None:
+            self._current_behavior._set_stopped()
+
+        new_behavior = self.behavior_factory(self, behavior_type,
+                                             is_active=True, dispatch_parent=self)
         msg = _clad_to_engine_iface.ExecuteBehaviorByExecutableType(
                 behaviorType=behavior_type.id)
         self.conn.send_msg(msg)
-        self._is_behavior_running = True
-        return b
+        self._current_behavior = new_behavior
+        return new_behavior
 
     async def run_timed_behavior(self, behavior_type, active_time):
         '''Executes a behavior for a set number of seconds.
@@ -1329,13 +1352,16 @@ class Robot(event.Dispatcher):
         Args:
             behavior_type (:class:`cozmo.behavior._BehaviorType): An attribute of
                 :class:`cozmo.behavior.BehaviorTypes`.
-            active_time (float): specifies the time to execute in seconds
+            active_time (float): specifies the maximum time to execute in seconds
         Raises:
             :class:`TypeError` if an invalid behavior type is supplied.
         '''
         b = self.start_behavior(behavior_type)
-        await asyncio.sleep(active_time, loop=self._loop)
-        b.stop()
+        try:
+            await b.wait_for_completed(timeout=active_time)
+        except asyncio.TimeoutError:
+            # It didn't complete within the time, stop it
+            b.stop()
 
     def start_freeplay_behaviors(self):
         '''Start running freeplay behaviors on Cozmo
@@ -1365,7 +1391,7 @@ class Robot(event.Dispatcher):
         self.conn.send_msg(msg)
 
         self._is_freeplay_mode_active = False
-        self._stop_behavior()
+        self._set_none_behavior()
         self.abort_all_actions()
 
     ## Object Commands ##
