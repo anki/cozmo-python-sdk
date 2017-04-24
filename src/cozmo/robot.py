@@ -365,13 +365,13 @@ class SetLiftHeight(action.Action):
         else:
             self.lift_height_mm = MIN_LIFT_HEIGHT_MM + (height * (MAX_LIFT_HEIGHT_MM - MIN_LIFT_HEIGHT_MM))
 
-        #: float: Maximum speed of Cozmo's head in radians per second
+        #: float: Maximum speed of Cozmo's lift in radians per second
         self.max_speed = max_speed
 
-        #: float: Acceleration of Cozmo's head in radians per second squared
+        #: float: Acceleration of Cozmo's lift in radians per second squared
         self.accel = accel
 
-        #: float: Time for Cozmo's head to turn in seconds
+        #: float: Time for Cozmo's lift to turn in seconds
         self.duration = duration
 
     def _repr_values(self):

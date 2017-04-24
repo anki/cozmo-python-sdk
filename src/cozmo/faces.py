@@ -276,12 +276,12 @@ class Face(objects.ObservableElement):
     def expression(self):
         '''string: The facial expression Cozmo has recognized on the face.
 
-        Will be ``FACIAL_EXPRESSION_UNKNOWN`` by default if you haven't called
+        Will be :attr:`FACIAL_EXPRESSION_UNKNOWN` by default if you haven't called
         :meth:`cozmo.robot.Robot.enable_facial_expression_estimation` to enable
         the facial expression estimation. Otherwise it will be equal to one of:
-        ``FACIAL_EXPRESSION_NEUTRAL``, ``FACIAL_EXPRESSION_HAPPY``,
-        ``FACIAL_EXPRESSION_SURPRISED``, ``FACIAL_EXPRESSION_ANGRY``,
-        or ``FACIAL_EXPRESSION_SAD``.
+        :attr:`FACIAL_EXPRESSION_NEUTRAL`, :attr:`FACIAL_EXPRESSION_HAPPY`,
+        :attr:`FACIAL_EXPRESSION_SURPRISED`, :attr:`FACIAL_EXPRESSION_ANGRY`,
+        or :attr:`FACIAL_EXPRESSION_SAD`.
         '''
         return self._expression
 
