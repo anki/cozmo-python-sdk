@@ -647,7 +647,7 @@ class World(event.Dispatcher):
 
         The engine will now detect the markers associated with this object and send an
         object_observed message when they are seen. The markers must be placed in the center
-        of their respective sides.
+        of their respective sides. All 6 markers must be unique.
 
         Args:
             custom_object_type (:class:`cozmo.objects.CustomObjectTypes`): the
@@ -680,16 +680,15 @@ class World(event.Dispatcher):
 
         Raises:
             TypeError if the custom_object_type is of the wrong type.
-            ValueError if is_unique is True but the 6 markers aren't unique.
+            ValueError if the 6 markers aren't unique.
         '''
         if not isinstance(custom_object_type, objects._CustomObjectType):
             raise TypeError("Unsupported object_type, requires CustomObjectType")
 
-        if is_unique:
-            # verify all 6 markers are unique
-            markers = set([marker_front, marker_back, marker_top, marker_bottom, marker_left, marker_right])
-            if len(markers) != 6:
-                raise ValueError("all markers must be unique for a unique object")
+        # verify all 6 markers are unique
+        markers = set([marker_front, marker_back, marker_top, marker_bottom, marker_left, marker_right])
+        if len(markers) != 6:
+            raise ValueError("all markers must be unique for a custom box")
 
         custom_object_archetype = self.custom_object_factory(self.conn, self, custom_object_type,
                                                              depth_mm, width_mm, height_mm,
