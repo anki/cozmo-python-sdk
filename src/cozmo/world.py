@@ -904,7 +904,10 @@ class World(event.Dispatcher):
         self.conn.send_msg(msg)
 
     def disconnect_from_cubes(self):
-        """Disconnect from all cubes (to save battery life etc.)."""
+        """Disconnect from all cubes (to save battery life etc.).
+        
+        Call :meth:`connect_to_cubes` to re-connect to the cubes later.        
+        """
         logger.info("Disconnecting from cubes.")
         for cube in self.connected_light_cubes:
             logger.info("Disconnecting from %s" % cube)
@@ -924,8 +927,6 @@ class World(event.Dispatcher):
                 
         Returns:
             bool: True if all 3 cubes are now connected.
-        Raises:
-            :class:`ValueError` if the cube_id is invalid.
         """
         connected_cubes = list(self.connected_light_cubes)
         num_connected_cubes = len(connected_cubes)
