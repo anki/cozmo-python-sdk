@@ -117,7 +117,7 @@ class World(event.Dispatcher):
         self.custom_objects = {}
 
         #: :class:`CameraImage`: The latest image received, or None.
-        self.latest_image = None
+        self.latest_image = None  # type: CameraImage
 
         self.light_cubes = {}
 
@@ -288,6 +288,42 @@ class World(event.Dispatcher):
         '''
         return self._visible_pet_count
 
+    def get_light_cube(self, cube_id):
+        """Returns the light cube with the given cube ID
+                
+        Args:
+            cube_id (int): The light cube ID - should be one of
+                :attr:`~cozmo.objects.LightCube1Id`,
+                :attr:`~cozmo.objects.LightCube2Id` and
+                :attr:`~cozmo.objects.LightCube3Id`. Note: the cube_id is not
+                the same thing as the object_id.
+        Returns:
+            :class:`cozmo.objects.LightCube`: The LightCube object with that cube_id
+        
+        Raises:
+            :class:`ValueError` if the cube_id is invalid.
+        """
+        if cube_id not in {objects.LightCube1Id, objects.LightCube2Id, objects.LightCube3Id}:
+            raise ValueError("Invalid cube_id %s" % cube_id)
+        cube = self.light_cubes.get(cube_id)
+        # Only return the cube if it has an object_id
+        if cube.object_id is not None:
+            return cube
+        return None
+
+    @property
+    def connected_light_cubes(self):
+        '''generator: yields each LightCube that Cozmo is currently connected to.
+
+        Returns:
+            A generator yielding :class:`cozmo.objects.LightCube` instances
+        '''
+        cube_ids = [objects.LightCube1Id, objects.LightCube2Id, objects.LightCube3Id]
+        for cube_id in cube_ids:
+            cube = self.light_cubes.get(cube_id)
+            if cube and cube.is_connected:
+                yield cube
+
     #### Private Event Handlers ####
 
     def _recv_msg_robot_observed_object(self, evt, *, msg):
@@ -351,6 +387,9 @@ class World(event.Dispatcher):
     def _recv_msg_object_power_level(self, evt, *, msg):
         self._dispatch_object_event(evt, msg)
 
+    def _recv_msg_object_connection_state(self, evt, *, msg):
+        self._dispatch_object_event(evt, msg)
+
     def _recv_msg_connected_object_states(self, evt, *, msg):
         # This is received on startup as a response to RequestConnectedObjects.
         for object_state in msg.objects:
@@ -371,15 +410,15 @@ class World(event.Dispatcher):
             if obj:
                 obj._handle_located_object_state(object_state)
             updated_objects.add(object_state.objectID)
-        # verify that all objects not received have invalidated poses
+        # ensure that all objects not received have invalidated poses
         for id, obj in self._objects.items():
             if (id not in updated_objects) and obj.pose.is_valid:
-                logger.warn("Object %s still has a valid pose but wasn't part of located_object_state", obj)
+                obj.pose.invalidate()
 
     def _recv_msg_robot_deleted_located_object(self, evt, *, msg):
         obj = self._objects.get(msg.objectID)
         if obj is None:
-            logger.warn("Ignoring deleted_located_object for unknown object ID %s", msg.objectID)
+            logger.warning("Ignoring deleted_located_object for unknown object ID %s", msg.objectID)
         else:
             logger.info("Invalidating pose for deleted located object %s" % obj)
             obj.pose.invalidate()
@@ -698,7 +737,7 @@ class World(event.Dispatcher):
 
         The engine will now detect the markers associated with this object and send an
         object_observed message when they are seen. The markers must be placed in the center
-        of their respective sides.
+        of their respective sides. All 6 markers must be unique.
 
         Args:
             custom_object_type (:class:`cozmo.objects.CustomObjectTypes`): the
@@ -731,16 +770,15 @@ class World(event.Dispatcher):
 
         Raises:
             TypeError if the custom_object_type is of the wrong type.
-            ValueError if is_unique is True but the 6 markers aren't unique.
+            ValueError if the 6 markers aren't unique.
         '''
         if not isinstance(custom_object_type, objects._CustomObjectType):
             raise TypeError("Unsupported object_type, requires CustomObjectType")
 
-        if is_unique:
-            # verify all 6 markers are unique
-            markers = set([marker_front, marker_back, marker_top, marker_bottom, marker_left, marker_right])
-            if len(markers) != 6:
-                raise ValueError("all markers must be unique for a unique object")
+        # verify all 6 markers are unique
+        markers = set([marker_front, marker_back, marker_top, marker_bottom, marker_left, marker_right])
+        if len(markers) != 6:
+            raise ValueError("all markers must be unique for a custom box")
 
         custom_object_archetype = self.custom_object_factory(self.conn, self, custom_object_type,
                                                              depth_mm, width_mm, height_mm,
@@ -886,7 +924,7 @@ class World(event.Dispatcher):
                                       the origin_id of Cozmo.
 
         Returns:
-            A :class:`cozmo.object.FixedCustomObject` instance with the specified dimensions and pose.
+            A :class:`cozmo.objects.FixedCustomObject` instance with the specified dimensions and pose.
         '''
         # Override the origin of the pose to be the same as the robot's. This will make sure they are in
         # the same space in the engine every time.
@@ -916,6 +954,79 @@ class World(event.Dispatcher):
         msg = _clad_to_engine_iface.EnableBlockTapFilter(enable=enable)
         self.conn.send_msg(msg)
 
+    def disconnect_from_cubes(self):
+        """Disconnect from all cubes (to save battery life etc.).
+        
+        Call :meth:`connect_to_cubes` to re-connect to the cubes later.        
+        """
+        logger.info("Disconnecting from cubes.")
+        for cube in self.connected_light_cubes:
+            logger.info("Disconnecting from %s" % cube)
+
+        msg = _clad_to_engine_iface.BlockPoolResetMessage(enable=False,
+                                                          maintainPersistentPool=True)
+        self.conn.send_msg(msg)
+
+    async def connect_to_cubes(self):
+        """Connect to all cubes.
+        
+        Request that Cozmo connects to all cubes - this is required if you
+        previously called :meth:`disconnect_from_cubes` or
+        :meth:`auto_disconnect_from_cubes_at_end` with enable=False. Connecting
+        to a cube can take up to about 5 seconds, and this method will wait until
+        either all 3 cubes are connected, or it has timed out waiting for this.
+                
+        Returns:
+            bool: True if all 3 cubes are now connected.
+        """
+        connected_cubes = list(self.connected_light_cubes)
+        num_connected_cubes = len(connected_cubes)
+        num_unconnected_cubes = 3 - num_connected_cubes
+        if num_unconnected_cubes < 1:
+            logger.info("connect_to_cubes skipped - already connected to %s cubes", num_connected_cubes)
+            return True
+        logger.info("Connecting to cubes (already connected to %s, waiting for %s)", num_connected_cubes, num_unconnected_cubes)
+        for cube in connected_cubes:
+            logger.info("Already connected to %s" % cube)
+
+        msg = _clad_to_engine_iface.BlockPoolResetMessage(enable=True,
+                                                          maintainPersistentPool=True)
+        self.conn.send_msg(msg)
+
+        success = True
+
+        try:
+            for _ in range(num_unconnected_cubes):
+                msg = await self.wait_for(_clad._MsgObjectConnectionState, timeout=10)
+        except asyncio.TimeoutError as e:
+            logger.warning("Failed to connect to all cubes in time!")
+            success = False
+
+        if success:
+            logger.info("Connected to all cubes!")
+
+        self.conn._request_connected_objects()
+
+        try:
+            msg = await self.wait_for(_clad._MsgConnectedObjectStates, timeout=5)
+        except asyncio.TimeoutError as e:
+            logger.warning("Failed to receive connected cube states.")
+            success = False
+
+        return success
+
+    def auto_disconnect_from_cubes_at_end(self, enable=True):
+        """Tell the SDK to auto disconnect from cubes at the end of every SDK program.
+
+        This can be used to save cube battery life if you spend a lot of time in
+        SDK mode but aren't running programs as much (as you're busy writing
+        them). Call :meth:`connect_to_cubes` to re-connect to the cubes later. 
+
+        Args:
+            enable (bool): True if cubes should disconnect after every SDK program exits. 
+        """
+        msg = _clad_to_engine_iface.SetShouldAutoDisconnectFromCubesAtEnd(doAutoDisconnect=enable)
+        self.conn.send_msg(msg)
 
 class CameraImage:
     '''A single image from Cozmo's camera.
