@@ -311,6 +311,19 @@ class World(event.Dispatcher):
             return cube
         return None
 
+    @property
+    def connected_light_cubes(self):
+        '''generator: yields each LightCube that Cozmo is currently connected to.
+
+        Returns:
+            A generator yielding :class:`cozmo.objects.LightCube` instances
+        '''
+        cube_ids = [objects.LightCube1Id, objects.LightCube2Id, objects.LightCube3Id]
+        for cube_id in cube_ids:
+            cube = self.light_cubes.get(cube_id)
+            if cube and cube.is_connected:
+                yield cube
+
     #### Private Event Handlers ####
 
     def _recv_msg_robot_observed_object(self, evt, *, msg):
@@ -890,6 +903,78 @@ class World(event.Dispatcher):
         msg = _clad_to_engine_iface.EnableBlockTapFilter(enable=enable)
         self.conn.send_msg(msg)
 
+    def disconnect_from_cubes(self):
+        """Disconnect from all cubes (to save battery life etc.)."""
+        logger.info("Disconnecting from cubes.")
+        for cube in self.connected_light_cubes:
+            logger.info("Disconnecting from %s" % cube)
+
+        msg = _clad_to_engine_iface.BlockPoolResetMessage(enable=False,
+                                                          maintainPersistentPool=True)
+        self.conn.send_msg(msg)
+
+    async def connect_to_cubes(self):
+        """Connect to all cubes.
+        
+        Request that Cozmo connects to all cubes - this is required if you
+        previously called :meth:`disconnect_from_cubes` or
+        :meth:`auto_disconnect_from_cubes_at_end` with enable=False. Connecting
+        to a cube can take up to about 5 seconds, and this method will wait until
+        either all 3 cubes are connected, or it has timed out waiting for this.
+                
+        Returns:
+            bool: True if all 3 cubes are now connected.
+        Raises:
+            :class:`ValueError` if the cube_id is invalid.
+        """
+        connected_cubes = list(self.connected_light_cubes)
+        num_connected_cubes = len(connected_cubes)
+        num_unconnected_cubes = 3 - num_connected_cubes
+        if num_unconnected_cubes < 1:
+            logger.info("connect_to_cubes skipped - already connected to %s cubes", num_connected_cubes)
+            return True
+        logger.info("Connecting to cubes (already connected to %s, waiting for %s)", num_connected_cubes, num_unconnected_cubes)
+        for cube in connected_cubes:
+            logger.info("Already connected to %s" % cube)
+
+        msg = _clad_to_engine_iface.BlockPoolResetMessage(enable=True,
+                                                          maintainPersistentPool=True)
+        self.conn.send_msg(msg)
+
+        success = True
+
+        try:
+            for _ in range(num_unconnected_cubes):
+                msg = await self.wait_for(_clad._MsgObjectConnectionState, timeout=10)
+        except asyncio.TimeoutError as e:
+            logger.warning("Failed to connect to all cubes in time!")
+            success = False
+
+        if success:
+            logger.info("Connected to all cubes!")
+
+        self.conn._request_connected_objects()
+
+        try:
+            msg = await self.wait_for(_clad._MsgConnectedObjectStates, timeout=5)
+        except asyncio.TimeoutError as e:
+            logger.warning("Failed to receive connected cube states.")
+            success = False
+
+        return success
+
+    def auto_disconnect_from_cubes_at_end(self, enable=True):
+        """Tell the SDK to auto disconnect from cubes at the end of every SDK program.
+
+        This can be used to save cube battery life if you spend a lot of time in
+        SDK mode but aren't running programs as much (as you're busy writing
+        them). Call :meth:`connect_to_cubes` to re-connect to the cubes later. 
+
+        Args:
+            enable (bool): True if cubes should disconnect after every SDK program exits. 
+        """
+        msg = _clad_to_engine_iface.SetShouldAutoDisconnectFromCubesAtEnd(doAutoDisconnect=enable)
+        self.conn.send_msg(msg)
 
 class CameraImage:
     '''A single image from Cozmo's camera.
