@@ -297,18 +297,26 @@ class Pose:
     Only poses of the same origin_id can safely be compared or operated on
     '''
 
-    __slots__ = ('_position', '_rotation', '_origin_id')
+    __slots__ = ('_position', '_rotation', '_origin_id', '_is_accurate')
 
-    def __init__(self, x, y, z, q0=None, q1=None, q2=None, q3=None, angle_z=None, origin_id=0):
+    def __init__(self, x, y, z, q0=None, q1=None, q2=None, q3=None,
+                 angle_z=None, origin_id=-1, is_accurate=True):
         self._position = Position(x,y,z)
         self._rotation = Rotation(q0,q1,q2,q3,angle_z)
         self._origin_id = origin_id
+        self._is_accurate = is_accurate
 
     @classmethod
     def _create_from_clad(cls, pose):
         return cls(pose.x, pose.y, pose.z,
                    q0=pose.q0, q1=pose.q1, q2=pose.q2, q3=pose.q3,
                    origin_id=pose.originID)
+
+    @classmethod
+    def _create_default(cls):
+        return cls(0.0, 0.0, 0.0,
+                   q0=1.0, q1=0.0, q2=0.0, q3=0.0,
+                   origin_id=-1)
 
     def __repr__(self):
         return "<%s %s %s origin_id=%d>" % (self.__class__.__name__, self.position, self.rotation, self.origin_id)
@@ -361,7 +369,7 @@ class Pose:
         res_y = y + math.sin(angle_z.radians)*new_x + math.cos(angle_z.radians)*new_y
         res_z = z + new_z
         res_angle = angle_z + new_angle_z
-        return Pose(res_x, res_y, res_z, angle_z=res_angle)
+        return Pose(res_x, res_y, res_z, angle_z=res_angle, origin_id=self._origin_id)
 
     def encode_pose(self):
         x, y, z = self.position.x_y_z
@@ -411,6 +419,16 @@ class Pose:
         if not isinstance(value, int):
             raise TypeError("The type of origin_id must be int")
         self._origin_id = value
+
+    @property
+    def is_accurate(self):
+        '''bool: Returns True if this pose is valid and accurate.
+
+        Poses are marked as inaccurate if we detect movement via accelerometer,
+        or if they were observed from far enough away that we're less certain
+        of the exact pose.
+        '''
+        return self.is_valid and self._is_accurate
 
 
 def pose_quaternion(x, y, z, q0, q1, q2, q3, origin_id=0):

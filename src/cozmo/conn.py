@@ -80,12 +80,14 @@ FORCED_ROBOT_MESSAGES = {"AnimationAborted",
                          "BlockPoolDataMessage",
                          "CarryStateUpdate",
                          "ChargerEvent",
+                         "ConnectedObjectStates",
                          "CubeLightsStateTransition",
                          "CurrentCameraParams",
                          "LoadedKnownFace",
+                         "LocatedObjectStates",
+                         "ObjectConnectionState",
                          "ObjectPowerLevel",
                          "ObjectProjectsIntoFOV",
-                         "ObjectStates",
                          "ReactionaryBehaviorTransition",
                          "RobotChangedObservedFaceID",
                          "RobotCliffEventFinished",
@@ -394,18 +396,29 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
                 'cozmoclad_version=%s app_build_version=%s',
                 version.__version__, cozmoclad.__version__, msg.buildVersion)
 
-        # We send RequestObjectStates before refreshing the animation names
-        # as this ensures that we will receive the responses before we mark the
-        # robot as ready
-        msg = _clad_to_engine_iface.RequestObjectStates()
-        self.send_msg(msg)
+        # We send RequestConnectedObjects and RequestLocatedObjectStates before
+        # refreshing the animation names as this ensures that we will receive
+        # the responses before we mark the robot as ready.
+        self._request_connected_objects()
+        self._request_located_objects()
 
         self.anim_names.refresh()
+
+    def _request_connected_objects(self):
+        # Request information on connected objects (e.g. the object ID of each cube)
+        # (this won't provide location/pose info)
+        msg = _clad_to_engine_iface.RequestConnectedObjects()
+        self.send_msg(msg)
+
+    def _request_located_objects(self):
+        # Request the pose information for all objects whose location we know
+        # (this won't include any objects where the location is currently not known)
+        msg = _clad_to_engine_iface.RequestLocatedObjectStates()
+        self.send_msg(msg)
 
     def _recv_msg_image_chunk(self, evt, *, msg):
         if self._primary_robot:
             self._primary_robot.dispatch_event(evt)
-
 
     #### Public Event Handlers ####
 
