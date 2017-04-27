@@ -14,12 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Set whether Cozmo should auto-disconnect from cubes after each SDK program.
+'''Set whether Cozmo should automatically disconnect from cubes after each SDK program.
 
-This script can be used to turn auto cube disconnection on or off (using args)
-Auto disconnection can be used to help automatically conserve cube battery life
-if you're not actively using the cubes in your programs. You can use
-`connect_cubes.py` later to re-connect to the cubes.
+This script can be used to turn auto cube disconnection on or off (using command
+line arguments -e or -d). Automatic disconnection can be used to help conserve
+cube battery life between SDK program runs. You can use `connect_cubes.py` later
+to re-connect to the cubes.
 '''
 
 import argparse
