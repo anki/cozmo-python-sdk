@@ -34,7 +34,7 @@ def cozmo_program(robot: cozmo.robot.Robot):
     # we recommend using play_anim_trigger above instead.
     # See the remote_control_cozmo.py example in apps for an easy way to see
     # the available animations.
-    robot.play_anim(name="ID_pokedB").wait_for_completed()
+    robot.play_anim(name="id_poked_giggle").wait_for_completed()
 
 
 cozmo.run_program(cozmo_program)
