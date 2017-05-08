@@ -110,6 +110,9 @@ class ActionResults:
     #: There was an error related to vision markers.
     BAD_MARKER = _ActionResult("BAD_MARKER", _clad_to_game_cozmo.ActionResult.BAD_MARKER)
 
+    # (Undocumented) There was a problem related to a subscribed or unsupported message tag (indicates bug in engine)
+    BAD_MESSAGE_TAG = _ActionResult("BAD_MESSAGE_TAG", _clad_to_game_cozmo.ActionResult.BAD_MESSAGE_TAG)
+
     #: There was a problem with the Object ID provided (e.g. there is no Object with that ID).
     BAD_OBJECT = _ActionResult("BAD_OBJECT", _clad_to_game_cozmo.ActionResult.BAD_OBJECT)
 
