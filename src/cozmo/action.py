@@ -239,9 +239,6 @@ class ActionResults:
     PLACEMENT_GOAL_NOT_FREE = _ActionResult("PLACEMENT_GOAL_NOT_FREE",
                                             _clad_to_game_cozmo.ActionResult.PLACEMENT_GOAL_NOT_FREE)
 
-    #: A retriable action failed more times than the ``num_retries`` limit passed in.
-    REACHED_MAX_NUM_RETRIES = _ActionResult("REACHED_MAX_NUM_RETRIES", _clad_to_game_cozmo.ActionResult.REACHED_MAX_NUM_RETRIES)
-
     #: Cozmo failed to drive off the charger.
     STILL_ON_CHARGER = _ActionResult("STILL_ON_CHARGER", _clad_to_game_cozmo.ActionResult.STILL_ON_CHARGER)
 
