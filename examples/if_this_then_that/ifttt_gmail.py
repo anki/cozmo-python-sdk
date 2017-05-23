@@ -54,7 +54,7 @@ Follow these steps to set up and run the example:
             3. Under "Choose a Trigger", select “Any new email in inbox".
         d) Set up your action.
             1. Click “that".
-            2. Select “Maker" to set it as your action channel. Connect to the Maker channel if prompted.
+            2. Select “Maker Webhooks" to set it as your action channel. Connect to the Maker channel if prompted.
             3. Click “Make a web request" and fill out the fields as follows. Remember your publicly
                 accessible URL from above (e.g., http://55e57164.ngrok.io) and use it in the URL field,
                 followed by "/iftttGmail" as shown below:
@@ -92,7 +92,7 @@ import cozmo
 from common import IFTTTRobot
 
 
-app = web.Application()
+app = web.Application(loop=asyncio.get_event_loop())
 
 
 async def serve_gmail(request):
