@@ -92,7 +92,7 @@ import cozmo
 from common import IFTTTRobot
 
 
-app = web.Application(loop=asyncio.get_event_loop())
+app = web.Application()
 
 
 async def serve_gmail(request):
@@ -150,9 +150,11 @@ if __name__ == '__main__':
     cozmo.conn.CozmoConnection.robot_factory = IFTTTRobot
 
     try:
-        sdk_conn = cozmo.connect_on_loop(app.loop)
+        app_loop = asyncio.get_event_loop()  
+        sdk_conn = cozmo.connect_on_loop(app_loop)
+
         # Wait for the robot to become available and add it to the app object.
-        app['robot'] = app.loop.run_until_complete(sdk_conn.wait_for_robot())
+        app['robot'] = app_loop.run_until_complete(sdk_conn.wait_for_robot())
     except cozmo.ConnectionError as e:
         sys.exit("A connection error occurred: %s" % e)
 
