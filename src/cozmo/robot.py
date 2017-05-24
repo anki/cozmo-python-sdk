@@ -36,7 +36,8 @@ methods such as :meth:`~cozmo.event.Dispatcher.wait_for` and
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['MAX_HEAD_ANGLE', 'MIN_HEAD_ANGLE', 'MIN_LIFT_HEIGHT_MM', 'MAX_LIFT_HEIGHT_MM',
            'EvtRobotReady',
-           'GoToPose', 'DisplayOledFaceImage', 'DriveOffChargerContacts',
+           'GoToPose', 'GoToObject', 'DockWithCube', 'RollCube',
+           'DisplayOledFaceImage', 'DriveOffChargerContacts',
            'DriveStraight', 'PerformOffChargerContext', 'PickupObject', 'PlaceOnObject',
            'PlaceObjectOnGroundHere', 'SayText', 'SetHeadAngle',
            'SetLiftHeight', 'TurnInPlace', 'TurnTowardsFace',
@@ -58,9 +59,9 @@ from . import lights
 from . import objects
 from . import util
 from . import world
+from . import alignment
 
 from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo, _clad_to_game_cozmo
-
 
 #### Events
 
@@ -130,6 +131,55 @@ class GoToObject(action.Action):
                                                 useManualSpeed=False,
                                                 usePreDockPose=False)
 
+class DockWithCube(action.Action):
+    '''Represents the dock with cube action in progress.
+
+    Returned by :meth:`~cozmo.robot.Robot.dock_with_cube`
+    '''
+    _action_type = _clad_to_engine_cozmo.RobotActionType.ALIGN_WITH_OBJECT
+
+    def __init__(self, obj, **kw):
+        super().__init__(**kw)
+        #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that is being put down
+        self.obj = obj
+
+    def _repr_values(self):
+        return "object=%s" % (self.obj)
+
+    def _encode(self):
+        return _clad_to_engine_iface.AlignWithObject(objectID=self.obj.object_id,
+                                                     distanceFromMarker_mm=util.distance_mm(0).distance_mm,
+                                                     approachAngle_rad=0, #I've chosen not to expose the approach angle, as it doesn't seem to have any effect
+                                                     alignmentType=alignment.AlignmentTypes.Body.id,
+                                                     useApproachAngle=False,
+                                                     usePreDockPose=False,
+                                                     useManualSpeed=False)
+
+class RollCube(action.Action):
+    '''Represents the roll cube action in progress.
+
+    Returned by :meth:`~cozmo.robot.Robot.roll_cube`
+    '''
+
+    _action_type = _clad_to_engine_cozmo.RobotActionType.ROLL_OBJECT_LOW
+
+    def __init__(self, obj, check_for_object_on_top, **kw):
+        super().__init__(**kw)
+        #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that is being put down
+        self.obj = obj
+        #: bool: whether to check if there is an object on top
+        self.check_for_object_on_top = check_for_object_on_top
+
+    def _repr_values(self):
+        return "object=%s, check_for_object_on_top=%s" % (self.obj, self.check_for_object_on_top)
+
+    def _encode(self):
+        return _clad_to_engine_iface.RollObject(objectID=self.obj.object_id,
+                                                approachAngle_rad = 0, #I've chosen not to expose the approach angle, as it doesn't seem to have any effect
+                                                useApproachAngle = False,
+                                                usePreDockPose = False,
+                                                useManualSpeed = False,
+                                                checkForObjectOnTop = self.check_for_object_on_top)
 
 class DriveOffChargerContacts(action.Action):
     '''Represents the drive off charger contacts action in progress.
@@ -490,6 +540,14 @@ class Robot(event.Dispatcher):
     #: callable: The factory function that returns a
     #: :class:`GoToObject` class or subclass instance.
     go_to_object_factory = GoToObject
+
+    #: callable: The factory function that returns a
+    #: :class:`DockWithCube` class or subclass instance.
+    dock_with_cube_factory = DockWithCube
+
+    #: callable: The factory function that returns a
+    #: :class:`RollCube` class or subclass instance.
+    roll_cube_factory = RollCube
 
     #: callable: The factory function that returns a
     #: :class:`PlaceObjectOnGroundHere` class or subclass instance.
@@ -1577,6 +1635,61 @@ class Robot(event.Dispatcher):
         action = self.go_to_object_factory(object_id=target_object.object_id,
                                            distance_from_object=distance_from_object,
                                            conn=self.conn, robot=self, dispatch_parent=self)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
+        return action
+
+    def dock_with_cube(self, target_object, 
+                       in_parallel=False, num_retries=0):
+        '''Tells Cozmo to dock with a specified cube object.
+
+        Args:
+            target_object (:class:`cozmo.objects.LightCube`): The destination object.
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
+        Returns:
+            A :class:`cozmo.robot.DockWithCube` action object which can be queried
+                to see when it is complete.
+        '''
+
+        if not isinstance(target_object, objects.LightCube):
+            raise TypeError("Target must be a light cube")
+
+        action = self.dock_with_cube_factory(obj=target_object,
+                                             conn=self.conn, robot=self, dispatch_parent=self)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
+        print('actionDispatched!')
+        return action
+
+    def roll_cube(self, target_object, check_for_object_on_top=False, 
+                  in_parallel=False, num_retries=0):
+        '''Tells Cozmo to dock with a specified cube object.
+
+        Args:
+            target_object (:class:`cozmo.objects.LightCube`): The destination object.
+            check_for_object_on_top (bool): only roll the cube if there isn't a cube on top of it
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
+        Returns:
+            A :class:`cozmo.robot.DockWithCube` action object which can be queried
+                to see when it is complete.
+        '''
+
+        if not isinstance(target_object, objects.LightCube):
+            raise TypeError("Target must be a light cube")
+
+        action = self.roll_cube_factory(obj=target_object,
+                                        check_for_object_on_top=check_for_object_on_top,
+                                        conn=self.conn, robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action,
                                                     in_parallel=in_parallel,
                                                     num_retries=num_retries)
