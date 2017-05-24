@@ -99,7 +99,7 @@ class ActionResults:
 
     #: Action was cancelled (e.g. via :meth:`~cozmo.robot.Robot.abort_all_actions` or
     #: :meth:`Action.abort`).
-    CANCELLED = _ActionResult("CANCELLED", _clad_to_game_cozmo.ActionResult.CANCELLED)
+    CANCELLED_WHILE_RUNNING = _ActionResult("CANCELLED_WHILE_RUNNING", _clad_to_game_cozmo.ActionResult.CANCELLED_WHILE_RUNNING)
 
     #: Action aborted itself (e.g. had invalid attributes, or a runtime failure).
     ABORT = _ActionResult("ABORT", _clad_to_game_cozmo.ActionResult.ABORT)
@@ -458,8 +458,8 @@ class Action(event.Dispatcher):
             self._set_failed('bad_tag', 'Action failed due to bad tag')
             logger.error("Received FAILURE_BAD_TAG for action %s", self)
 
-        elif result == types.CANCELLED:
-            self._set_failed('cancelled', 'Action was cancelled')
+        elif result == types.CANCELLED_WHILE_RUNNING:
+            self._set_failed('cancelled', 'Action was cancelled while running')
 
         elif result == types.INTERRUPTED:
             self._set_failed('interrupted', 'Action was interrupted')

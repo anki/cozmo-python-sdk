@@ -119,11 +119,8 @@ async def serve_stocks(request):
                 '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face.'''
                 await robot.get_in_position()
 
-                # First, have Cozmo play animation "ID_pokedB", which tells
-                # Cozmo to raise and lower his lift. To change the animation,
-                # you may replace "ID_pokedB" with another animation. Run
-                # remote_control_cozmo.py to see a list of animations.
-                await robot.play_anim(name='ID_pokedB').wait_for_completed()
+                # First, have Cozmo play an animation
+                await robot.play_anim_trigger(cozmo.anim.Triggers.ReactToPokeStartled).wait_for_completed()
 
                 # Next, have Cozmo say that your stock is up by x percent.
                 await robot.say_text(stock_name + " is up " + percentage + " percent").wait_for_completed()
