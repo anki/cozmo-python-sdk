@@ -133,6 +133,11 @@ class ActionResults:
     #: The action was interrupted by another Action or Behavior.
     INTERRUPTED = _ActionResult("INTERRUPTED", _clad_to_game_cozmo.ActionResult.INTERRUPTED)
 
+    #: The robot ended up in an "off treads state" not valid for this action (e.g.
+    #: the robot was placed on its back while executing a turn)
+    INVALID_OFF_TREADS_STATE = _ActionResult("INVALID_OFF_TREADS_STATE",
+                                             _clad_to_game_cozmo.ActionResult.INVALID_OFF_TREADS_STATE)
+
     #: The Up Axis of a carried object doesn't match the desired placement pose.
     MISMATCHED_UP_AXIS = _ActionResult("MISMATCHED_UP_AXIS", _clad_to_game_cozmo.ActionResult.MISMATCHED_UP_AXIS)
 
