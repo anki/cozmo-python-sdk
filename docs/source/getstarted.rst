@@ -27,12 +27,13 @@ Please visit our `Cozmo SDK Forums <https://forums.anki.com/>`_ where you can:
 Starting Up the SDK
 -------------------
 
-1. Plug the mobile device containing the Cozmo app into your computer.
-2. Open the Cozmo app on the phone. Make sure Cozmo is on and connected to the app via WiFi.
-3. Tap on the gear icon at the top right corner to open the Settings menu.
-4. Swipe left to show the Cozmo SDK option and tap the Enable SDK button.
-5. On the computer, open a Terminal (macOS/Linux) / Command Prompt (Windows) window. Type ``cd cozmo_sdk_examples`` where *cozmo_sdk_examples* is the name of the directory you extracted the SDK examples into and press Enter. The SDK example scripts can be downloaded from the :doc:`Downloads page </downloads>`.
-6. Now you can run any of the example programs.
+1.	Plug the mobile device containing the Cozmo app into your computer.
+2.	Open the Cozmo app on the phone. Make sure Cozmo is on and connected to the app via WiFi.
+3.	Tap on the gear icon at the top right corner to open the Settings menu.
+4.	Swipe left to show the Cozmo SDK option and tap the Enable SDK button.
+5.	Make sure the SDK examples are downloaded from the :doc:`Downloads page </downloads>`.  Remove the version number from the folder name so that it is just called “cozmo_sdk_examples”.
+6.	To run a program, open Terminal (macOS/Linux) or Command Prompt (Windows) and navigate to the folder containing that program. For example, if the cozmo_sdk_examples folder is saved to your desktop, type ``cd Desktop/cozmo_sdk_examples/tutorials/01_basics``
+    NOTE: the forward slash, ‘/‘, is used for macOS/Linux. For Windows, replace forward slash with backslash 
 
 ----------------
 Example Programs
@@ -51,7 +52,7 @@ For your convenience, here is a video detailing the first few simple example pro
 |
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-First Steps - "Hello World"
+"Hello, World!”
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Let's test your new setup by running a very simple program. This program instructs Cozmo to say "Hello, World!" - a perfect way to introduce him and you to the world of programming.
@@ -60,27 +61,31 @@ Let's test your new setup by running a very simple program. This program instruc
 The Program
 """""""""""
 
-1. To run the program, using the same Terminal (macOS/Linux) / Command Prompt (Windows) window mentioned above:
+1. To run the program, using the same Terminal (macOS/Linux) / Command Prompt (Windows) window mentioned above: 
 
 First, change to the ``01_basics`` sub-directory of the ``tutorials`` directory.
 
-    a. For macOS and Linux systems, type the following and press **Enter**::
+  a. For macOS and Linux systems, type the following and press **Enter**::
 
-        cd tutorials/01_basics
+    cd tutorials/01_basics
 
-    b. For Windows systems, type the following and press **Enter**::
+  b. For Windows systems, type the following and press **Enter**::
 
-        cd tutorials\01_basics
+    cd tutorials\01_basics
 
 Then, run the program.
 
-    a. For macOS and Linux systems, type the following and press **Enter**::
+  a. For macOS and Linux systems, type the following and press **Enter**::
 
-        ./01_hello_world.py
+    ./01_hello_world.py
 
-    b. For Windows systems, type the following and press **Enter**::
+	The same can also be achieved by writing
+	
+	python3 01_hello_world.py
 
-        py 01_hello_world.py
+  b. For Windows systems, type the following and press **Enter**::
+
+    py 01_hello_world.py
 
 2. If done correctly, Cozmo will say "Hello, World!"
 
@@ -88,46 +93,75 @@ Then, run the program.
 
 The code for the Hello World program can be `viewed here. <https://github.com/anki/cozmo-python-sdk/tree/master/examples/tutorials/01_basics/01_hello_world.py>`_
 
-We can edit this code to make Cozmo say something new. Let's write our first program using this code.
+
+You are now all set up to run python programs on Cozmo. Next we will go over how to edit the above code to make Cozmo say something new. Let's write our first program.
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Next Steps - "Night-Night"
+"Night-Night"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. Copy ``01_hello_world.py`` to a new file named ``nightnight.py``.
+1. Copy ``01_hello_world.py`` to a new file named ``nightnight.py`` by doing the following:
 
-    a. For macOS and Linux systems, type the following and press **Enter**::
+  a. For macOS and Linux systems, type the following and press **Enter**::
 
-        cp 01_hello_world.py nightnight.py
+    cp 01_hello_world.py nightnight.py
 
-    b. For Windows systems, type the following and press **Enter**::
+  b. For Windows systems, type the following and press **Enter**::
 
-        copy 01_hello_world.py nightnight.py
-    
+    copy 01_hello_world.py nightnight.py
+
+Now, nightnight.py is saved in the same folder as 01_hello_world.py.
+  
 2. Open this new document in a source code editor or plain-text editor. Free source code editors, such as `PyCharm Community Edition <https://www.jetbrains.com/pycharm/>`_ , `Atom <https://atom.io>`_ , `Sublime <https://www.sublimetext.com>`_ , or `TextWrangler <http://www.barebones.com/products/textwrangler/>`_ can be found online. Anki does not provide tech support for third-party source code editors.
 
-3. Each line in the program relates to a specific function. To learn more, see :doc:`the Beginner's Tutorial </tutorial-beginner>`.
+3. The code for the program currently looks like this:
+
+.. code-block:: python
+  :lineno-start: 17
+
+  '''Hello World
+
+  Make Cozmo say 'Hello World' in this simple Cozmo SDK example program.
+  '''
+
+  import cozmo
+
+
+  def cozmo_program(robot: cozmo.robot.Robot):
+      robot.say_text("Hello World").wait_for_completed()
+
+
+  cozmo.run_program(cozmo_program)
+..
+
+
+	a. ``import cozmo`` allows your program to access the Cozmo SDK code contained within the ``cozmo`` module.
+	b. Text sandwiched between three ``'`` marks is a Docstring. Docstrings are like comments, and are placed inside code to give information to the user.
+	c. ``robot.say_text("Hello World").wait_for_completed`` is the core of the program.
+ 		i. ``robot.say_text(…)`` is the function that makes Cozmo speak a string out loud.
+ 		ii. ``"Hello World"`` is the string which Cozmo will speak.
+ 		iii. ``wait_for_completed()`` tells Cozmo to finish speaking before moving to the next line of code. Without this, our program would end before Cozmo said anything!
 
 4. Move to the line that starts with "robot.say_text"
 
-  1. Select the phrase "Hello World". Do NOT select the parentheses or quotation marks around the phrase; those are necessary for Python to properly parse the command.
-  2. Type in the new phrase you would like Cozmo to say. In this example, Cozmo will say "Night Night"::
+	a. Select the phrase "Hello World". Do NOT select the parentheses or quotation marks around the phrase; those are necessary for Python to properly parse the command.
+	b. Type in the new phrase you would like Cozmo to say. In this example, Cozmo will say "Night Night"::
 
-      robot.say_text("Night Night").wait_for_completed()
+   ``robot.say_text("Night Night").wait_for_completed()``
 
 5. Save the nightnight.py file.
 6. Now you can run your program:
 
-        a. For macOS and Linux systems, type the following into the same window and press **Enter**::
+    a. For macOS and Linux systems, type the following into the same Terminal window and press **Enter**::
 
-            ./nightnight.py
+      ./nightnight.py
 
-        b. For Windows systems, type the following into the same window and press **Enter**::
+    b. For Windows systems, type the following into the same Command Prompt window and press **Enter**::
 
-            py nightnight.py
+      py nightnight.py
 
 7. If done correctly, Cozmo will say the new phrase.
 
-----
+Now we will write a Cozmo program more or less from scratch. You will tell Cozmo to drive in a straight line for a short distance, then turn back around and end in his starting position.
 
 `Click here to return to the Cozmo Developer website. <http://developer.anki.com>`_
