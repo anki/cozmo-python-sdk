@@ -14,7 +14,8 @@ macOS Installation
 
 1. Type the following into a Terminal window (requires Homebrew to be installed)::
 
-    brew install android-platform-tools
+    brew tap caskroom/cask
+    brew cask install android-platform-tools
 
 2. Continue to :ref:`final-install` below to complete installation.
 

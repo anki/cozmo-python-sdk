@@ -60,7 +60,7 @@ Follow these steps to set up and run the example:
 
         d) Set up your action.
             1. Click “that".
-            2. Select “Maker" to set it as your action channel. Connect to the Maker channel if prompted.
+            2. Select “Maker Webhooks" to set it as your action channel. Connect to the Maker channel if prompted.
             3. Click “Make a web request" and fill out the fields as follows. Remember your publicly
                 accessible URL from above (e.g., http://55e57164.ngrok.io) and use it in the URL field,
                 followed by "/iftttStocks" as shown below:
@@ -119,11 +119,8 @@ async def serve_stocks(request):
                 '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face.'''
                 await robot.get_in_position()
 
-                # First, have Cozmo play animation "ID_pokedB", which tells
-                # Cozmo to raise and lower his lift. To change the animation,
-                # you may replace "ID_pokedB" with another animation. Run
-                # remote_control_cozmo.py to see a list of animations.
-                await robot.play_anim(name='ID_pokedB').wait_for_completed()
+                # First, have Cozmo play an animation
+                await robot.play_anim_trigger(cozmo.anim.Triggers.ReactToPokeStartled).wait_for_completed()
 
                 # Next, have Cozmo say that your stock is up by x percent.
                 await robot.say_text(stock_name + " is up " + percentage + " percent").wait_for_completed()
@@ -151,9 +148,11 @@ if __name__ == '__main__':
     cozmo.conn.CozmoConnection.robot_factory = IFTTTRobot
 
     try:
-        sdk_conn = cozmo.connect_on_loop(app.loop)
+        app_loop = asyncio.get_event_loop()  
+        sdk_conn = cozmo.connect_on_loop(app_loop)
+
         # Wait for the robot to become available and add it to the app object.
-        app['robot'] = app.loop.run_until_complete(sdk_conn.wait_for_robot())
+        app['robot'] = app_loop.run_until_complete(sdk_conn.wait_for_robot())
     except cozmo.ConnectionError as e:
         sys.exit("A connection error occurred: %s" % e)
 
