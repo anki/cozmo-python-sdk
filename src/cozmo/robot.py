@@ -35,11 +35,10 @@ methods such as :meth:`~cozmo.event.Dispatcher.wait_for` and
 
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['MAX_HEAD_ANGLE', 'MIN_HEAD_ANGLE', 'MIN_LIFT_HEIGHT_MM', 'MAX_LIFT_HEIGHT_MM',
-           'EvtRobotReady',
-           'GoToPose', 'GoToObject', 'DockWithCube', 'RollCube',
-           'DisplayOledFaceImage', 'DriveOffChargerContacts',
-           'DriveStraight', 'PerformOffChargerContext', 'PickupObject', 'PlaceOnObject',
-           'PlaceObjectOnGroundHere', 'SayText', 'SetHeadAngle',
+           'EvtRobotReady',           
+           'DisplayOledFaceImage', 'DriveOffChargerContacts', 'DriveStraight', 
+           'GoToObject', 'GoToPose', 'PerformOffChargerContext', 'PickupObject', 
+           'PlaceObjectOnGroundHere', 'PlaceOnObject', 'RollCube', 'SayText', 'SetHeadAngle',
            'SetLiftHeight', 'TurnInPlace', 'TurnTowardsFace',
            'Robot']
 
@@ -59,7 +58,7 @@ from . import lights
 from . import objects
 from . import util
 from . import world
-from . import alignment
+from . import robotAlignment
 
 from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo, _clad_to_game_cozmo
 
@@ -149,8 +148,8 @@ class DockWithCube(action.Action):
     def _encode(self):
         return _clad_to_engine_iface.AlignWithObject(objectID=self.obj.object_id,
                                                      distanceFromMarker_mm=util.distance_mm(0).distance_mm,
-                                                     approachAngle_rad=0, #I've chosen not to expose the approach angle, as it doesn't seem to have any effect
-                                                     alignmentType=alignment.AlignmentTypes.Body.id,
+                                                     approachAngle_rad=0, #Approach angle is not exposed, as it doesn't seem to have any effect
+                                                     alignmentType=robotAlignment.RobotAlignmentTypes.Body.id,
                                                      useApproachAngle=False,
                                                      usePreDockPose=False,
                                                      useManualSpeed=False)
@@ -1659,7 +1658,6 @@ class Robot(event.Dispatcher):
             A :class:`cozmo.robot.DockWithCube` action object which can be queried
                 to see when it is complete.
         '''
-
         if not isinstance(target_object, objects.LightCube):
             raise TypeError("Target must be a light cube")
 
@@ -1668,12 +1666,11 @@ class Robot(event.Dispatcher):
         self._action_dispatcher._send_single_action(action,
                                                     in_parallel=in_parallel,
                                                     num_retries=num_retries)
-        print('actionDispatched!')
         return action
 
     def roll_cube(self, target_object, check_for_object_on_top=False, 
                   in_parallel=False, num_retries=0):
-        '''Tells Cozmo to dock with a specified cube object.
+        '''Tells Cozmo to roll a specified cube object.
 
         Args:
             target_object (:class:`cozmo.objects.LightCube`): The destination object.
@@ -1684,10 +1681,9 @@ class Robot(event.Dispatcher):
             num_retries (int): Number of times to retry the action if the
                 previous attempt(s) failed.
         Returns:
-            A :class:`cozmo.robot.DockWithCube` action object which can be queried
+            A :class:`cozmo.robot.RollCube` action object which can be queried
                 to see when it is complete.
         '''
-
         if not isinstance(target_object, objects.LightCube):
             raise TypeError("Target must be a light cube")
 
