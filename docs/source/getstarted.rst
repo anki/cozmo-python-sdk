@@ -47,7 +47,7 @@ For your convenience, here is a video detailing the first few simple example pro
 
 .. raw:: html
 
-	 <iframe width="690" height="388" src="https://www.youtube.com/embed/YAQ_USpkxgE?rel=0" frameborder="0" allowfullscreen></iframe>
+   <iframe width="690" height="388" src="https://www.youtube.com/embed/YAQ_USpkxgE?rel=0" frameborder="0" allowfullscreen></iframe>
 
 |
 
@@ -65,27 +65,27 @@ The Program
 
 First, change to the ``01_basics`` sub-directory of the ``tutorials`` directory.
 
-		a. For macOS and Linux systems, type the following and press **Enter**::
+    a. For macOS and Linux systems, type the following and press **Enter**::
 
-			cd tutorials/01_basics
+        cd tutorials/01_basics
 
-		b. For Windows systems, type the following and press **Enter**::
+    b. For Windows systems, type the following and press **Enter**::
 
-			cd tutorials\01_basics
+        cd tutorials\01_basics
 
 Then, run the program.
 
-		a. For macOS and Linux systems, type the following and press **Enter**::
+    a. For macOS and Linux systems, type the following and press **Enter**::
 
-			./01_hello_world.py
+        ./01_hello_world.py
 
-		The same can also be achieved by writing:
+    The same can also be achieved by writing:
 	
-			python3 01_hello_world.py
+        python3 01_hello_world.py
 
-		b. For Windows systems, type the following and press **Enter**::
+    b. For Windows systems, type the following and press **Enter**::
 
-			py 01_hello_world.py
+        py 01_hello_world.py
 
 2. If done correctly, Cozmo will say "Hello, World!"
 
@@ -102,13 +102,13 @@ Next Steps - “Night-Night"
 
 1. Copy ``01_hello_world.py`` to a new file named ``nightnight.py`` by doing the following:
 
-		a. For macOS and Linux systems, type the following and press **Enter**::
+    a. For macOS and Linux systems, type the following and press **Enter**::
 
-			cp 01_hello_world.py nightnight.py
+        cp 01_hello_world.py nightnight.py
 
-		b. For Windows systems, type the following and press **Enter**::
+    b. For Windows systems, type the following and press **Enter**::
 
-			copy 01_hello_world.py nightnight.py
+        copy 01_hello_world.py nightnight.py
 
 Now, nightnight.py is saved in the same folder as 01_hello_world.py.
 	
@@ -116,28 +116,28 @@ Now, nightnight.py is saved in the same folder as 01_hello_world.py.
 
 3. Each line in the program relates to a specific function.
 
-	a. ``import cozmo`` allows your program to access the Cozmo SDK code contained within the ``cozmo`` module.
-	b. Text sandwiched between three ``'`` marks is a Docstring. Docstrings are like comments, and are placed inside code to give information to the user.
-	c. ``robot.say_text("Hello World").wait_for_completed`` is the core of the program.
-		i. ``robot.say_text(…)`` is the function that makes Cozmo speak a string out loud.
-		ii. ``"Hello World"`` is the string which Cozmo will speak.
-		iii. ``wait_for_completed()`` tells Cozmo to finish speaking before moving to the next line of code. Without this, our program would end before Cozmo said anything!
+    a. ``import cozmo`` allows your program to access the Cozmo SDK code contained within the ``cozmo`` module.
+    b. Text sandwiched between three ``'`` marks is a Docstring. Docstrings are like comments, and are placed inside code to give information to the user.
+    c. ``robot.say_text("Hello World").wait_for_completed`` is the core of the program.
+        i. ``robot.say_text(…)`` is the function that makes Cozmo speak a string out loud.
+        ii. ``"Hello World"`` is the string which Cozmo will speak.
+        iii. ``wait_for_completed()`` tells Cozmo to finish speaking before moving to the next line of code. Without this, our program would end before Cozmo said anything!
 
 4. Move to the line that starts with "robot.say_text"
 
-	a. Select the phrase "Hello World". Do NOT select the parentheses or quotation marks around the phrase; those are necessary for Python to properly parse the command.
-	b. Type in the new phrase you would like Cozmo to say. In this example, Cozmo will say "Night Night”, so that line should look like this: ``robot.say_text("Night Night").wait_for_completed()``
+    a. Select the phrase "Hello World". Do NOT select the parentheses or quotation marks around the phrase; those are necessary for Python to properly parse the command.
+    b. Type in the new phrase you would like Cozmo to say. In this example, Cozmo will say "Night Night”, so that line should look like this: ``robot.say_text("Night Night").wait_for_completed()``
 
 5. Save the nightnight.py file.
 6. Now you can run your program:
 
-		a. For macOS and Linux systems, type the following into the same Terminal window and press **Enter**::
+    a. For macOS and Linux systems, type the following into the same Terminal window and press **Enter**::
 
-			./nightnight.py
+        ./nightnight.py
 
-		b. For Windows systems, type the following into the same Command Prompt window and press **Enter**::
+    b. For Windows systems, type the following into the same Command Prompt window and press **Enter**::
 
-			py nightnight.py
+        py nightnight.py
 
 7. If done correctly, Cozmo will say the new phrase.
 
@@ -157,8 +157,8 @@ Now we will write a Cozmo program more or less from scratch. You will tell Cozmo
  from cozmo.util import distance_mm, speed_mmps, degrees
 ..
 
-	a. ``import cozmo`` allows your program to access the Cozmo SDK code contained within the ``cozmo`` module.
-	b. ``from cozmo.util import distance_mm, speed_mmps, degrees`` allows your program to specify distances and speeds for Cozmo to drive at and degrees for Cozmo to turn around.
+    a. ``import cozmo`` allows your program to access the Cozmo SDK code contained within the ``cozmo`` module.
+    b. ``from cozmo.util import distance_mm, speed_mmps, degrees`` allows your program to specify distances and speeds for Cozmo to drive at and degrees for Cozmo to turn around.
 
 3. Next, you need to define the function that Cozmo will execute, called ``cozmo_program``. Type the following lines into the document exactly as shown:
 
@@ -168,8 +168,8 @@ Now we will write a Cozmo program more or less from scratch. You will tell Cozmo
  def cozmo_program(robot: cozmo.robot.Robot):
 ..
 
-	a. In parentheses is the input to the function. Here our input is ``robot: cozmo.robot.Robot``. Before the ``:`` is “robot”, which is the name of our input that we use inside the function.
-	b. After the ``:``, we have ``cozmo.robot.Robot``, which specifies the type of our object.  The type of an object determines the way it can be used - in this example, because ``robot`` is of type ``cozmo.robot.Robot``, we will be able to use the functions ``drive_straight`` and ``turn_in_place``.  To read more about which functions a ``cozmo.robot.Robot`` object can use, go to `our API page for cozmo.robot.Robot. <http://cozmosdk.anki.com/docs/generated/cozmo.robot.html#cozmo.robot.Robot>`_
+    a. In parentheses is the input to the function. Here our input is ``robot: cozmo.robot.Robot``. Before the ``:`` is “robot”, which is the name of our input that we use inside the function.
+    b. After the ``:``, we have ``cozmo.robot.Robot``, which specifies the type of our object.  The type of an object determines the way it can be used - in this example, because ``robot`` is of type ``cozmo.robot.Robot``, we will be able to use the functions ``drive_straight`` and ``turn_in_place``.  To read more about which functions a ``cozmo.robot.Robot`` object can use, go to `our API page for cozmo.robot.Robot. <http://cozmosdk.anki.com/docs/generated/cozmo.robot.html#cozmo.robot.Robot>`_
 
 4. Now type in the following command to have Cozmo drive straight:
 
@@ -179,10 +179,10 @@ Now we will write a Cozmo program more or less from scratch. You will tell Cozmo
 	 robot.drive_straight(distance_mm(150), speed_mmps(50)).wait_for_completed()
 ..
 
-	a. The ``drive_straight`` function creates an action on Cozmo that drives him in a straight line.  It needs a distance and a speed as input.
-	b. ``distance_mm(150)`` is the distance to drive (150 millimeters)
-	c. ``speed_mmps(50)`` is the speed to drive at (50 millimeters per second)
-	d. ``wait_for_completed()`` instructs the program to wait until the drive_straight action has finished before continuing. Recall that we used the same command with say_text in the Hello World and Night Night examples. Say_text and drive_straight are two of cozmo’s “actions” - we used ``wait_for_completed`` to make sure that Cozmo executes these actions one at a time. Later on we will explore how Cozmo can do multiple things at the same time.
+    a. The ``drive_straight`` function creates an action on Cozmo that drives him in a straight line.  It needs a distance and a speed as input.
+    b. ``distance_mm(150)`` is the distance to drive (150 millimeters)
+    c. ``speed_mmps(50)`` is the speed to drive at (50 millimeters per second)
+    d. ``wait_for_completed()`` instructs the program to wait until the drive_straight action has finished before continuing. Recall that we used the same command with say_text in the Hello World and Night Night examples. Say_text and drive_straight are two of cozmo’s “actions” - we used ``wait_for_completed`` to make sure that Cozmo executes these actions one at a time. Later on we will explore how Cozmo can do multiple things at the same time.
 
 5. Now type in the following command to have Cozmo turn around:
 
@@ -192,9 +192,9 @@ Now we will write a Cozmo program more or less from scratch. You will tell Cozmo
  robot.turn_in_place(degrees(180)).wait_for_completed()
 ..
 
-	a. ``robot.turn_in_place`` directs Cozmo to turn in place.
-	b. ``(degrees(180))`` sets how far he turns in relation to where he is. Cozmo's initial position is assumed to be 0 degrees; he will turn 180 degrees, or directly around. To make Cozmo turn clockwise, enter a negative number. For example, entering -90 makes Cozmo turn 90 degrees to the right.
-	c. ``wait_for_completed()`` makes sure Cozmo completes his turn before performing his next action.
+    a. ``robot.turn_in_place`` directs Cozmo to turn in place.
+    b. ``(degrees(180))`` sets how far he turns in relation to where he is. Cozmo's initial position is assumed to be 0 degrees; he will turn 180 degrees, or directly around. To make Cozmo turn clockwise, enter a negative number. For example, entering -90 makes Cozmo turn 90 degrees to the right.
+    c. ``wait_for_completed()`` makes sure Cozmo completes his turn before performing his next action.
 
 6. Now copy and paste lines 5 and 6 so that the completed program should look like this:
 
@@ -217,13 +217,13 @@ Save this file as there_and_back.py.
 
 Now you can run your program:
 
-		a. For macOS and Linux systems, type the following into the same Terminal window and press **Enter**::
+    a. For macOS and Linux systems, type the following into the same Terminal window and press **Enter**::
 
-			./there_and_back.py
+        ./there_and_back.py
 
-		b. For Windows systems, type the following into the same Command Prompt window and press **Enter**::
+    b. For Windows systems, type the following into the same Command Prompt window and press **Enter**::
 
-			py there_and_back.py
+        py there_and_back.py
 
 
 Now that you have written your own Cozmo program, take a look at the rest of the Cozmo SDK package, and at the many other example programs to get more ideas.
@@ -234,10 +234,10 @@ Challenges
 
 Some challenges to try once you have explored the examples (these are hard - try your best!):
 				
-	Have Cozmo drive in a figure-8!
+    Have Cozmo drive in a figure-8!
 				
-	Have Cozmo spin around when you smile at him!
+    Have Cozmo spin around when you smile at him!
 				
-	Have Cozmo count cubes as he picks them up!
+    Have Cozmo count cubes as he picks them up!
 
 `Click here to return to the Cozmo Developer website. <http://developer.anki.com>`_
