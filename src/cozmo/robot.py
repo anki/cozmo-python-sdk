@@ -635,6 +635,7 @@ class Robot(event.Dispatcher):
             # Note: Robot state is reset on entering SDK mode, and after any SDK program exits
             self.stop_all_motors()
             self.enable_all_reaction_triggers(False)
+            self.enable_stop_on_cliff(True)
             self._set_none_behavior()
 
             # Ensure the SDK has full control of cube lights
@@ -915,6 +916,15 @@ class Robot(event.Dispatcher):
         else:
             msg = _clad_to_engine_iface.DisableAllReactionsWithLock("sdk")
             self.conn.send_msg(msg)
+
+    def enable_stop_on_cliff(self, enable):
+        '''Enable or disable Cozmo's ability to drive off a cliff.
+
+        Args:
+            enable (bool): True if the robot should stop moving when a cliff is encountered.
+        '''
+        msg = _clad_to_engine_iface.EnableStopOnCliff(enable=enable)
+        self.conn.send_msg(msg)
 
     def set_robot_volume(self, robot_volume):
         '''Set the volume for the speaker in the robot.
