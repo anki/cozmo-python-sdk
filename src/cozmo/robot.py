@@ -174,7 +174,7 @@ class RollCube(action.Action):
 
     def _encode(self):
         return _clad_to_engine_iface.RollObject(objectID=self.obj.object_id,
-                                                approachAngle_rad = 0, #I've chosen not to expose the approach angle, as it doesn't seem to have any effect
+                                                approachAngle_rad = 0, #Approach angle is not used, as it doesn't seem to have any effect
                                                 useApproachAngle = False,
                                                 usePreDockPose = False,
                                                 useManualSpeed = False,
