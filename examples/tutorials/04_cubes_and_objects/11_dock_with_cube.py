@@ -33,6 +33,6 @@ async def dock_with_cube_test(robot: cozmo.robot.Robot):
       num_retries allows us to specify that he can retry the action if something interrupts the process or if it fails,
       this will increase the reliability of cozmo successfully docking with the cube.
     '''
-    await robot.dock_with_cube( cube, num_retries=2 ).wait_for_completed()
+    await robot.dock_with_cube( cube, approach_angle=cozmo.util.degrees(180), num_retries=2 ).wait_for_completed()
 
 cozmo.run_program(dock_with_cube_test)

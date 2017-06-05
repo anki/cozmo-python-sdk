@@ -36,6 +36,6 @@ async def roll_cube_test(robot: cozmo.robot.Robot):
     The roll behavior can be perfomed on a stack, but may have less
     reliable results.
     '''
-    await robot.roll_cube( cube, check_for_object_on_top=True ).wait_for_completed()
+    await robot.roll_cube( cube, check_for_object_on_top=True, num_retries=2 ).wait_for_completed()
 
 cozmo.run_program(roll_cube_test)

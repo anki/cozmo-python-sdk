@@ -137,10 +137,16 @@ class DockWithCube(action.Action):
     '''
     _action_type = _clad_to_engine_cozmo.RobotActionType.ALIGN_WITH_OBJECT
 
-    def __init__(self, obj, **kw):
+    def __init__(self, obj, approach_angle, **kw):
         super().__init__(**kw)
         #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that is being put down
         self.obj = obj
+        if approach_angle is None:
+            self.useApproachAngle = False
+            self.approachAngle = util.degrees(0)
+        else:
+            self.useApproachAngle = True
+            self.approachAngle = approach_angle
 
     def _repr_values(self):
         return "object=%s" % (self.obj)
@@ -148,10 +154,10 @@ class DockWithCube(action.Action):
     def _encode(self):
         return _clad_to_engine_iface.AlignWithObject(objectID=self.obj.object_id,
                                                      distanceFromMarker_mm=util.distance_mm(0).distance_mm,
-                                                     approachAngle_rad=0, #Approach angle is not exposed, as it doesn't seem to have any effect
+                                                     approachAngle_rad=self.approachAngle.radians,
                                                      alignmentType=robotAlignment.RobotAlignmentTypes.Body.id,
-                                                     useApproachAngle=False,
-                                                     usePreDockPose=False,
+                                                     useApproachAngle=self.useApproachAngle,
+                                                     usePreDockPose=self.useApproachAngle,
                                                      useManualSpeed=False)
 
 class RollCube(action.Action):
@@ -162,23 +168,29 @@ class RollCube(action.Action):
 
     _action_type = _clad_to_engine_cozmo.RobotActionType.ROLL_OBJECT_LOW
 
-    def __init__(self, obj, check_for_object_on_top, **kw):
+    def __init__(self, obj, approach_angle, check_for_object_on_top, **kw):
         super().__init__(**kw)
         #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that is being put down
         self.obj = obj
         #: bool: whether to check if there is an object on top
         self.check_for_object_on_top = check_for_object_on_top
+        if approach_angle is None:
+            self.useApproachAngle = False
+            self.approachAngle = util.degrees(0)
+        else:
+            self.useApproachAngle = True
+            self.approachAngle = approach_angle
 
     def _repr_values(self):
         return "object=%s, check_for_object_on_top=%s" % (self.obj, self.check_for_object_on_top)
 
     def _encode(self):
         return _clad_to_engine_iface.RollObject(objectID=self.obj.object_id,
-                                                approachAngle_rad = 0, #Approach angle is not used, as it doesn't seem to have any effect
-                                                useApproachAngle = False,
-                                                usePreDockPose = False,
-                                                useManualSpeed = False,
-                                                checkForObjectOnTop = self.check_for_object_on_top)
+                                                approachAngle_rad=self.approachAngle.radians,
+                                                useApproachAngle=self.useApproachAngle,
+                                                usePreDockPose=self.useApproachAngle,
+                                                useManualSpeed=False,
+                                                checkForObjectOnTop=self.check_for_object_on_top)
 
 class DriveOffChargerContacts(action.Action):
     '''Represents the drive off charger contacts action in progress.
@@ -1643,12 +1655,13 @@ class Robot(event.Dispatcher):
                                                     num_retries=num_retries)
         return action
 
-    def dock_with_cube(self, target_object, 
+    def dock_with_cube(self, target_object, approach_angle=None,
                        in_parallel=False, num_retries=0):
         '''Tells Cozmo to dock with a specified cube object.
 
         Args:
             target_object (:class:`cozmo.objects.LightCube`): The destination object.
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
                 be already complete.
@@ -1661,19 +1674,20 @@ class Robot(event.Dispatcher):
         if not isinstance(target_object, objects.LightCube):
             raise TypeError("Target must be a light cube")
 
-        action = self.dock_with_cube_factory(obj=target_object,
+        action = self.dock_with_cube_factory(obj=target_object, approach_angle=approach_angle,
                                              conn=self.conn, robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action,
                                                     in_parallel=in_parallel,
                                                     num_retries=num_retries)
         return action
 
-    def roll_cube(self, target_object, check_for_object_on_top=False, 
+    def roll_cube(self, target_object, approach_angle=None, check_for_object_on_top=False, 
                   in_parallel=False, num_retries=0):
         '''Tells Cozmo to roll a specified cube object.
 
         Args:
             target_object (:class:`cozmo.objects.LightCube`): The destination object.
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.
             check_for_object_on_top (bool): only roll the cube if there isn't a cube on top of it
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
@@ -1687,7 +1701,7 @@ class Robot(event.Dispatcher):
         if not isinstance(target_object, objects.LightCube):
             raise TypeError("Target must be a light cube")
 
-        action = self.roll_cube_factory(obj=target_object,
+        action = self.roll_cube_factory(obj=target_object, approach_angle=approach_angle,
                                         check_for_object_on_top=check_for_object_on_top,
                                         conn=self.conn, robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action,
