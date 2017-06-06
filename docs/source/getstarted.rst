@@ -33,7 +33,6 @@ Starting Up the SDK
 4. Swipe left to show the Cozmo SDK option and tap the Enable SDK button.
 5. Make sure the SDK examples are downloaded from the :doc:`Downloads page </downloads>`.
 6. On the computer, open Terminal (macOS/Linux) or Command Prompt (Windows) and navigate to the folder containing that program. For example, if the cozmo_sdk_examples folder is saved to your desktop, type ``cd Desktop/cozmo_sdk_examples``
-	NOTE: the forward slash, ‘/‘, is used for macOS/Linux. For Windows, replace forward slash with backslash, '\'
 
 ----------------
 Example Programs
@@ -175,8 +174,8 @@ Now we will write a Cozmo program more or less from scratch. You will tell Cozmo
 
 .. code-block:: python
  :lineno-start: 5
-
-	 robot.drive_straight(distance_mm(150), speed_mmps(50)).wait_for_completed()
+    
+    robot.drive_straight(distance_mm(150), speed_mmps(50)).wait_for_completed()
 ..
 
     a. The ``drive_straight`` function creates an action on Cozmo that drives him in a straight line.  It needs a distance and a speed as input.
