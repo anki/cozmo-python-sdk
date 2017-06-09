@@ -556,7 +556,7 @@ class Robot(event.Dispatcher):
 
     def __init__(self, conn, robot_id, is_primary, **kw):
         super().__init__(**kw)
-        #: :class:`cozmo.conn.CozmoConnectoin`: The active connection to the engine.
+        #: :class:`cozmo.conn.CozmoConnection`: The active connection to the engine.
         self.conn = conn
         #: int: The internal ID number of the robot.
         self.robot_id = robot_id
