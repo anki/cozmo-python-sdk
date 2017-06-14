@@ -48,6 +48,9 @@ from . import world
 
 class TkThreadable:
     '''A mixin for adding threadsafe calls to tkinter methods.'''
+    # Pylint seems confused by our mixin calling function that we will assume to be added in the main heirarchy.
+    # @TODO: Maybe there is a cleaner way of doing this?
+    #pylint: disable=no-member
     def __init__(self, *a, **kw):
         self._thread_queue = queue.Queue()
         self.after(50, self._thread_call_dispatch)
@@ -115,6 +118,8 @@ class TkImageViewer(tkinter.Frame, TkThreadable):
             self.handler.disable()
         self.call_threadsafe(self.quit)
 
+    # The base class configure doesn't take an event
+    #pylint: disable=arguments-differ
     def configure(self, event):
         # hack to interrupt feedback loop between image resizing
         # and frame resize detection; there has to be a better solution to this.
