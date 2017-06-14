@@ -344,6 +344,7 @@ class FirstAvailableConnector(DeviceConnector):
     This is the default connector used by ``connect_`` functions.
     '''
     def __init__(self):
+        super().__init__(self, enable_env_vars=False)
         self.tcp = TCPConnector()
         self.ios = IOSConnector()
         self.android = AndroidConnector()
