@@ -87,7 +87,7 @@ class DeviceConnector:
         if enable_env_vars:
             self.parse_env_vars()
 
-    async def connect(self, loop, protocol_factory):
+    async def connect(self, loop, protocol_factory, conn_check):
         '''Connect attempts to open a connection transport to the Cozmo app on a device.
 
         On opening a transport it will create a protocol from the supplied
