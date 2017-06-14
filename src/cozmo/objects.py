@@ -241,7 +241,7 @@ class ObservableElement(event.Dispatcher):
 
     def _on_observed(self, image_box, timestamp, changed_fields):
         # Called from subclasses on their corresponding observed messages
-        newly_visible = self._is_visible == False
+        newly_visible = self._is_visible is False
         self._is_visible = True
 
         changed_fields |= {'last_observed_time', 'last_observed_robot_timestamp',
