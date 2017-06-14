@@ -94,7 +94,7 @@ class DeviceConnector:
         factory and connect it to the transport, returning a (transport, protocol)
         tuple. See :meth:`asyncio.BaseEventLoop.create_connection`
         '''
-        raise NotImplemented()
+        raise NotImplementedError
 
     def parse_env_vars(self):
         try:
