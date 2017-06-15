@@ -767,7 +767,7 @@ class Robot(event.Dispatcher):
 
     @property
     def is_localized(self):
-        '''bool: True if Cozmo is localized (i.e. knows where he is, and has both treads on the ground).'''
+        '''bool: True if Cozmo is localized (i.e. knows where he is with respect to a cube, and has both treads on the ground).'''
         return (self._game_status_flags & _clad_to_game_cozmo.GameStatusFlag.IsLocalized) != 0
 
     @property
