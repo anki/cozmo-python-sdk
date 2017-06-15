@@ -50,5 +50,5 @@ try:
 except AttributeError as exc:
     err = ('Incorrect version of cozmoclad package installed.  '
             'run "pip3 install --user --ignore-installed cozmoclad==%s" '
-            '(error: %s in robotAlignment.py)' % (__cozmoclad_version__, exc))
+            '(error: %s in robot_alignment.py)' % (__cozmoclad_version__, exc))
     raise ImportError(err) from exc

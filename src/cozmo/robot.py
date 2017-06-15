@@ -58,7 +58,7 @@ from . import lights
 from . import objects
 from . import util
 from . import world
-from . import robotAlignment
+from . import robot_alignment
 
 from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo, _clad_to_game_cozmo
 
@@ -155,7 +155,7 @@ class DockWithCube(action.Action):
         return _clad_to_engine_iface.AlignWithObject(objectID=self.obj.object_id,
                                                      distanceFromMarker_mm=util.distance_mm(0).distance_mm,
                                                      approachAngle_rad=self.approachAngle.radians,
-                                                     alignmentType=robotAlignment.RobotAlignmentTypes.Body.id,
+                                                     alignmentType=robot_alignment.RobotAlignmentTypes.Body.id,
                                                      useApproachAngle=self.useApproachAngle,
                                                      usePreDockPose=self.useApproachAngle,
                                                      useManualSpeed=False)
