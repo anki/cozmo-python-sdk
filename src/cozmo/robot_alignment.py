@@ -28,12 +28,18 @@ try:
     class RobotAlignmentTypes:
         '''Defines all robot alignment types.
         '''
+        #: Align the tips of the lift fingers with the target object
         LiftFinger = _RobotAlignmentType("LiftFinger", _clad_to_engine_cozmo.AlignmentType.LIFT_FINGER)
 
+        #: Align the flat part of the life with the object
+        #: (Useful for getting the fingers in the cube's grooves)
         LiftPlate = _RobotAlignmentType("LiftPlate", _clad_to_engine_cozmo.AlignmentType.LIFT_PLATE)
 
+        #: Align the front of cozmo's body
+        #: (Useful for when the lift is up)
         Body = _RobotAlignmentType("Body", _clad_to_engine_cozmo.AlignmentType.BODY)
 
+        #: For use with distanceFromMarker parameter
         Custom = _RobotAlignmentType("Custom", _clad_to_engine_cozmo.AlignmentType.CUSTOM)
 
         _id_to_robot_alignment_type = dict()

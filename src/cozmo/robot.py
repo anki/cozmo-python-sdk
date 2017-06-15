@@ -137,7 +137,7 @@ class DockWithCube(action.Action):
     '''
     _action_type = _clad_to_engine_cozmo.RobotActionType.ALIGN_WITH_OBJECT
 
-    def __init__(self, obj, approach_angle, **kw):
+    def __init__(self, obj, approach_angle, alignment_type, distance_from_marker, **kw):
         super().__init__(**kw)
         #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that is being put down
         self.obj = obj
@@ -148,14 +148,24 @@ class DockWithCube(action.Action):
             self.useApproachAngle = True
             self.approachAngle = approach_angle
 
+        if alignment_type is None:
+            self.alignmentType = robot_alignment.RobotAlignmentTypes.LiftPlate.id
+        else:
+            self.alignmentType = alignment_type
+
+        if distance_from_marker is None:
+            self.distanceFromMarker = util.distance_mm(0)
+        else:
+            self.distanceFromMarker = distance_from_marker
+
     def _repr_values(self):
         return "object=%s" % (self.obj)
 
     def _encode(self):
         return _clad_to_engine_iface.AlignWithObject(objectID=self.obj.object_id,
-                                                     distanceFromMarker_mm=util.distance_mm(0).distance_mm,
+                                                     distanceFromMarker_mm=self.distanceFromMarker.distance_mm,
                                                      approachAngle_rad=self.approachAngle.radians,
-                                                     alignmentType=robot_alignment.RobotAlignmentTypes.Body.id,
+                                                     alignmentType=self.alignmentType.id,
                                                      useApproachAngle=self.useApproachAngle,
                                                      usePreDockPose=self.useApproachAngle,
                                                      useManualSpeed=False)
@@ -1656,12 +1666,15 @@ class Robot(event.Dispatcher):
         return action
 
     def dock_with_cube(self, target_object, approach_angle=None,
+                       alignment_type=None, distance_from_marker=None,
                        in_parallel=False, num_retries=0):
         '''Tells Cozmo to dock with a specified cube object.
 
         Args:
             target_object (:class:`cozmo.objects.LightCube`): The destination object.
             approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.
+            alignment_type (:class:`cozmo.robot_alignment.RobotAlignmentTypes`): which part of the robot to line up with the object
+            distance_from_marker (:class:`cozmo.util.Distance`): distance from the cube marker to stop when using Custom alignment
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
                 be already complete.
@@ -1675,6 +1688,7 @@ class Robot(event.Dispatcher):
             raise TypeError("Target must be a light cube")
 
         action = self.dock_with_cube_factory(obj=target_object, approach_angle=approach_angle,
+                                             alignment_type=alignment_type, distance_from_marker=distance_from_marker,
                                              conn=self.conn, robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action,
                                                     in_parallel=in_parallel,
