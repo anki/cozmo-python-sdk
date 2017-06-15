@@ -1108,7 +1108,7 @@ class Robot(event.Dispatcher):
         '''Tell Cozmo's head to turn to a given angle.
 
         Args:
-            angle: (:class:`cozmo.util.Angle`): Desired angle in radians for
+            angle: (:class:`cozmo.util.Angle`): Desired angle for
                 Cozmo's head. (:const:`MIN_HEAD_ANGLE` to
                 :const:`MAX_HEAD_ANGLE`).
             accel (float): Acceleration of Cozmo's head in radians per second squared.
