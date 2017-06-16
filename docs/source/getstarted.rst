@@ -130,13 +130,13 @@ Now, nightnight.py is saved in the same folder as 01_hello_world.py.
 5. Save the nightnight.py file.
 6. Now you can run your program:
 
-    a. For macOS and Linux systems, type the following into the same Terminal window and press **Enter**::
+        a. For macOS and Linux systems, type the following into the same Terminal window and press **Enter**::
 
-        ./nightnight.py
+            ./nightnight.py
 
-    b. For Windows systems, type the following into the same Command Prompt window and press **Enter**::
+        b. For Windows systems, type the following into the same Command Prompt window and press **Enter**::
 
-        py nightnight.py
+            py nightnight.py
 
 7. If done correctly, Cozmo will say the new phrase.
 
