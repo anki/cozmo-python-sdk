@@ -1,22 +1,22 @@
 [
     {
       "question": "What is 3 times 4?",
-      "anwer_options": ["twelve", "nine", "fifteen", "fourteen"]
+      "answer_options": ["twelve", "nine", "fifteen", "fourteen"]
     },
     {
       "question": "Which of these is not a type of penguin?",
-      "anwer_options": ["Rigatoni", "Fairy", "Macaroni", "Adelie"]
+      "answer_options": ["Rigatoni", "Fairy", "Macaroni", "Adelie"]
     },
     {
       "question": "Which of these is not a species of rodent?",
-      "anwer_options": ["Rabbit", "Beaver", "Lemming", "Capybara"]
+      "answer_options": ["Rabbit", "Beaver", "Lemming", "Capybara"]
     },
     {
       "question": "In physics, which of these forces is real?",
-      "anwer_options": ["Centripetal", "Coriolis", "Centrifugal", "Euler"]
+      "answer_options": ["Centripetal", "Coriolis", "Centrifugal", "Euler"]
     },
     {
       "question": "What is the 8th digit of Pi?",
-      "anwer_options": ["six", "five", "two", "three"]
+      "answer_options": ["six", "five", "two", "three"]
     }
 ]
