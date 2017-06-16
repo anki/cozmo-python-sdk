@@ -143,16 +143,4 @@ Now, nightnight.py is saved in the same folder as 01_hello_world.py.
 
 Now that you have written your own Cozmo program, take a look at the rest of the Cozmo SDK package, and at the many other example programs to get more ideas.
 
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-Challenges
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Some challenges to try once you have explored the examples (these are hard - try your best!):
-				
-    Have Cozmo drive in a figure-8!
-				
-    Have Cozmo spin around when you smile at him!
-				
-    Have Cozmo count cubes as he picks them up!
-
 `Click here to return to the Cozmo Developer website. <http://developer.anki.com>`_
