@@ -91,7 +91,7 @@ class CozmoQuizPlayer:
         # Return True if and only if the player was setup correctly and has a connected cube.
         success = True
         if self._cube is None:
-            cozmo.logger.warning("Cozmo is not connected to a cube %s - check the battery.", (self.index+1))
+            cozmo.logger.warning("Cozmo is not connected to a cube %s - check the battery.", (self._index+1))
             success = False
         return success
 
@@ -100,19 +100,22 @@ class CozmoQuizPlayer:
         self._has_buzzed_in = False
 
     def turn_light_off(self):
-        self._cube.set_lights_off()
+        if self._cube is not None:
+            self._cube.set_lights_off()
 
     def turn_light_on(self):
-        self._cube.set_lights(self._color)
+        if self._cube is not None:
+            self._cube.set_lights(self._color)
 
     def set_answer_light(self):
-        # lights up from 1 to 4 lights in a clockwise order to indicate the
-        # current selected answer.
-        cols = [cozmo.lights.off_light] * 4
-        for i in range(self.answer_number):
-            # We index cols in reverse order so they light up in a clockwise order.
-            cols[3-i] = self._color
-        self._cube.set_light_corners(*cols)
+        if self._cube is not None:
+            # lights up from 1 to 4 lights in a clockwise order to indicate the
+            # current selected answer.
+            cols = [cozmo.lights.off_light] * 4
+            for i in range(self.answer_number):
+                # We index cols in reverse order so they light up in a clockwise order.
+                cols[3-i] = self._color
+            self._cube.set_light_corners(*cols)
 
     def on_buzzed_in(self):
         # Called when the player buzzes in for a question.
@@ -130,6 +133,13 @@ class CozmoQuizPlayer:
         if self._answer_index > 3:
             self._answer_index = 0
         self.set_answer_light()
+
+    @property
+    def object_id(self):
+        if self._cube is None:
+            return None
+        else:
+            return self._cube.object_id
 
     @property
     def has_buzzed_in(self):
@@ -156,7 +166,7 @@ class CozmoQuizMaster:
         # initialize the list of players
         cube_ids = cozmo.objects.LightCubeIDs
         cube_colors = [cozmo.lights.red_light, cozmo.lights.green_light, cozmo.lights.blue_light]
-        player_names = ["red", "green", "blue"]
+        player_names = ["Red", "Green", "Blue"]
         self._players = []  # type: list of CozmoQuizPlayer
         for i in range(len(cube_ids)):
             cube = robot.world.get_light_cube(cube_ids[i])
@@ -178,15 +188,15 @@ class CozmoQuizMaster:
 
     def verify_setup(self):
         # return True if and only if everything is setup correctly
-        success = True
+        num_valid_players = 0
         for player in self._players:
-            if not player.verify_setup():
-                success = False
-        return success
+            if player.verify_setup():
+                num_valid_players += 1
+        return (num_valid_players > 0)
 
     def get_player_for_object_id(self, object_id):
         for player in self._players:
-            if player._cube.object_id == object_id:
+            if player.object_id == object_id:
                 return player
         cozmo.logger.warn("No player for object_id %s", object_id)
         return None
@@ -221,10 +231,12 @@ class CozmoQuizMaster:
 
     def create_option_string(self, list_of_options) -> str:
         # Build a string that lists all of the options in order.
-        text = "is it "
+        text = "Is it "
         for i in range(len(list_of_options)):
-            is_last_option = (i == (len(list_of_options) - 1))
-            conjunction = " or " if is_last_option else ", "
+            conjunction = ""
+            if i > 0:
+                is_last_option = (i == (len(list_of_options) - 1))
+                conjunction = " or " if is_last_option else ", "
             text += conjunction + str(i+1) + ": " + list_of_options[i]
         return text
 
@@ -236,7 +248,7 @@ class CozmoQuizMaster:
         # Wait for player's answer (whatever they leave selected after x seconds)
         # This is after Cozmo has finished speaking, so we've already given the
         # player a few seconds.
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(2.0)
         return player.answer_number
 
     def get_winning_players(self):
@@ -254,7 +266,7 @@ class CozmoQuizMaster:
         winning_players = self.get_winning_players()
         winning_score = winning_players[0].score
         points_string = "points" if (winning_score != 1) else "point"
-        winning_score_str = winning_score + " " + points_string
+        winning_score_str = "%s %s" % (winning_score, points_string)
 
         if len(winning_players) == len(self._players):
             if is_final_score:
@@ -267,7 +279,7 @@ class CozmoQuizMaster:
                 # separate winner names with commas, but use 'and' for the last one
                 is_last_player = (i == (len(winning_players)-1))
                 conjunction = " and " if is_last_player else ", "
-            winner_names = winner_names + conjunction + winning_players[i].name
+                winner_names = winner_names + conjunction + winning_players[i].name
 
             if is_final_score:
                 action = self.say_text("%s won with %s" % (winner_names, winning_score_str))
@@ -286,7 +298,7 @@ class CozmoQuizMaster:
         # Let the player(s) buzz in and answer
         for _ in range(len(self._players)):
             if num_answers > 0:
-                read_options_action = self.say_text("anyone else?")
+                read_options_action = self.say_text("Anyone else?")
 
             # wait for a player to buzz in before the answer finishes
             while not read_options_action.is_completed and self._answering_player is None:
@@ -356,6 +368,8 @@ class CozmoQuizMaster:
         else:
             # Correct
             action = self._robot.play_anim_trigger(cozmo.anim.Triggers.ReactToBlockPickupSuccess)
+            await action.wait_for_completed()
+            action = self.say_text("Correct it was %s: %s" % (question.answer_number, question.answer_str))
             await action.wait_for_completed()
 
     async def run(self):

@@ -1,7 +1,7 @@
 [
     {
       "question": "What is 3 times 4?",
-      "options": ["12", "9", "15", "14"]
+      "options": ["twelve", "nine", "fifteen", "fourteen"]
     },
     {
       "question": "Which of these is not a type of penguin?",
