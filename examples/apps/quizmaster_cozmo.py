@@ -31,38 +31,39 @@ class QuizQuestion:
     
     Args:
         question (str): The question.
-        options (list of str): 4 multiple choice answers where the
-            1st element is the correct answer. (They will be shuffled each time)
+        anwer_options (list of str): 4 multiple choice answers where the
+            1st element is the correct answer. (Choices will be shuffled each time.)
     Raises:
-        :class:`ValueError` if not supplied exactly 4 options.
+        :class:`ValueError` if not supplied exactly 4 anwer_options.
     """
-    def __init__(self, question, options):
-        if len(options) != 4:
-            raise ValueError("Expected 4 options, got %s" % len(options))
+    def __init__(self, question, anwer_options):
+        if len(anwer_options) != 4:
+            raise ValueError("Expected 4 anwer_options, got %s" % len(anwer_options))
         self.question = question
         self._answer_index = 0
-        self.options = list(options)  # copy the options, so we can shuffle them
-        self.shuffle_options()
+        self.anwer_options = list(anwer_options)  # copy the anwer_options, so we can shuffle them
+        self.shuffle_anwer_options()
 
     @property
     def answer_number(self):
-        """int: The number (1..4) representing the correct answer."""
+        """int: The number (i.e. 1, 2, 3 or 4) representing the correct answer."""
         return self._answer_index + 1
 
     @property
     def answer_str(self):
         """str: The string representing the correct answer."""
-        return self.options[self._answer_index]
+        return self.anwer_options[self._answer_index]
 
-    def shuffle_options(self):
-        """Shuffle the options so that they're not always read in the same order."""
+    def shuffle_anwer_options(self):
+        """Shuffle the anwer_options so that they're not always read in the same order."""
+
         # to shuffle whilst keeping track of the answer, we first pop the
         # answer out, shuffle the rest, and then insert the answer at a random
         # known point.
-        answer = self.options.pop(self._answer_index)
-        shuffle(self.options)
-        self._answer_index = randrange(len(self.options)+1)
-        self.options.insert(self._answer_index, answer)
+        answer = self.anwer_options.pop(self._answer_index)
+        shuffle(self.anwer_options)
+        self._answer_index = randrange(len(self.anwer_options)+1)
+        self.anwer_options.insert(self._answer_index, answer)
 
 
 class CozmoQuizPlayer:
@@ -71,7 +72,7 @@ class CozmoQuizPlayer:
     Args:
         robot (:class:`cozmo.robot.Robot`): The cozmo robot.
         cube (:class:`cozmo.objects.LightCube`): This player's cube.
-        index(int): The number (0..2) specifying the index of this player and cube.
+        index(int): The number (i.e. 0, 1 or 2) specifying the index of this player and cube.
         color(:class:`cozmo.lights.Light`): The light color for this player.
         name(str): The name of this player.
     """
@@ -128,7 +129,7 @@ class CozmoQuizPlayer:
         self.set_answer_light()
 
     def cycle_answer(self):
-        # Called every time a player taps the cube to cycle through the 4 answer options.
+        # Called every time a player taps the cube to cycle through the 4 answer anwer_options.
         self._answer_index += 1
         if self._answer_index > 3:
             self._answer_index = 0
@@ -183,8 +184,8 @@ class CozmoQuizMaster:
 
         for quiz_question_json in data:
             question = quiz_question_json["question"]
-            options = quiz_question_json["options"]
-            self._questions.append(QuizQuestion(question, options))
+            anwer_options = quiz_question_json["anwer_options"]
+            self._questions.append(QuizQuestion(question, anwer_options))
 
     def verify_setup(self):
         # return True if and only if everything is setup correctly
@@ -229,15 +230,15 @@ class CozmoQuizMaster:
             print("Out of questions!")
             return None
 
-    def create_option_string(self, list_of_options) -> str:
-        # Build a string that lists all of the options in order.
+    def create_anwer_options_string(self, list_of_anwer_options) -> str:
+        # Build a string that lists all of the anwer_options in order.
         text = "Is it "
-        for i in range(len(list_of_options)):
+        for i in range(len(list_of_anwer_options)):
             conjunction = ""
             if i > 0:
-                is_last_option = (i == (len(list_of_options) - 1))
+                is_last_option = (i == (len(list_of_anwer_options) - 1))
                 conjunction = " or " if is_last_option else ", "
-            text += conjunction + str(i+1) + ": " + list_of_options[i]
+            text += conjunction + str(i+1) + ": " + list_of_anwer_options[i]
         return text
 
     def say_text(self, text, in_parallel=False):
@@ -245,7 +246,7 @@ class CozmoQuizMaster:
         return self._robot.say_text(text, in_parallel=in_parallel)
 
     async def wait_for_answer(self, player):
-        # Wait for player's answer (whatever they leave selected after x seconds)
+        # Wait for player's answer (whatever the player leaves selected after x seconds)
         # This is after Cozmo has finished speaking, so we've already given the
         # player a few seconds.
         await asyncio.sleep(2.0)
@@ -262,7 +263,7 @@ class CozmoQuizMaster:
         return winning_players
 
     async def report_leader(self, is_final_score):
-        # report however is currently winning / won
+        # Report the leading / winning player(s)
         winning_players = self.get_winning_players()
         winning_score = winning_players[0].score
         points_string = "points" if (winning_score != 1) else "point"
@@ -291,8 +292,8 @@ class CozmoQuizMaster:
         await action.wait_for_completed()
 
     async def get_correct_player(self, question: QuizQuestion):
-        # Read the options
-        read_options_action = self.say_text(self.create_option_string(question.options))
+        # Read the anwer_options
+        read_options_action = self.say_text(self.create_anwer_options_string(question.anwer_options))
         num_answers = 0
 
         # Let the player(s) buzz in and answer
@@ -343,7 +344,7 @@ class CozmoQuizMaster:
                 await action.wait_for_completed()
 
     async def ask_question(self, question: QuizQuestion):
-        # Reset everyone for the question
+        # Reset for a new question
         for player in self._players:
             player.reset_for_question()
         self._answering_player = None
