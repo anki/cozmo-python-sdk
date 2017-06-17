@@ -1386,8 +1386,8 @@ class Robot(event.Dispatcher):
         You shouldn't attempt to drive Cozmo during this, as it will clash
         with whatever the current behavior is attempting to do.
         '''
-        msg = _clad_to_engine_iface.ActivateBehaviorChooser(
-            _clad_to_engine_cozmo.BehaviorChooserType.Freeplay)
+        msg = _clad_to_engine_iface.ActivateHighLevelActivity(
+            _clad_to_engine_cozmo.HighLevelActivity.Freeplay)
         self.conn.send_msg(msg)
 
         self._is_behavior_running = True  # The chooser will run them automatically
@@ -1400,8 +1400,8 @@ class Robot(event.Dispatcher):
         behaviors and actions.
         '''
 
-        msg = _clad_to_engine_iface.ActivateBehaviorChooser(
-            _clad_to_engine_cozmo.BehaviorChooserType.Selection)
+        msg = _clad_to_engine_iface.ActivateHighLevelActivity(
+            _clad_to_engine_cozmo.HighLevelActivity.Selection)
         self.conn.send_msg(msg)
 
         self._is_freeplay_mode_active = False
