@@ -670,9 +670,11 @@ class World(event.Dispatcher):
         will continue to add new objects if he sees the markers again. To remove
         the definitions for those objects use: :meth:`undefine_all_custom_marker_objects`
         """
-        #pylint: disable=no-member
         msg = _clad_to_engine_iface.DeleteAllCustomObjects()
         self.conn.send_msg(msg)
+        # _MsgRobotDeletedAllCustomObjects isn't strictly a defined class, and as such it confuses the lint pass.  
+        #  I still want no-member errors surfaced in the rest of the file, just not this line
+        #pylint: disable=no-member
         await self.wait_for(_clad._MsgRobotDeletedAllCustomObjects)
         self._remove_custom_marker_object_instances()
         self._remove_fixed_custom_object_instances()
@@ -685,9 +687,9 @@ class World(event.Dispatcher):
         will continue to add new objects if he sees the markers again. To remove
         the definitions for those objects use: :meth:`undefine_all_custom_marker_objects`
         """
-        #pylint: disable=no-member
         msg = _clad_to_engine_iface.DeleteCustomMarkerObjects()
         self.conn.send_msg(msg)
+        #pylint: disable=no-member
         await self.wait_for(_clad._MsgRobotDeletedCustomMarkerObjects)
         self._remove_custom_marker_object_instances()
 
@@ -697,25 +699,25 @@ class World(event.Dispatcher):
         Note: This removes fixed custom objects only, it does NOT remove
         the custom marker object instances or definitions.
         """
-        #pylint: disable=no-member
         msg = _clad_to_engine_iface.DeleteFixedCustomObjects()
         self.conn.send_msg(msg)
+        #pylint: disable=no-member
         await self.wait_for(_clad._MsgRobotDeletedFixedCustomObjects)
         self._remove_fixed_custom_object_instances()
 
     async def undefine_all_custom_marker_objects(self):
         """Remove all custom marker object definitions, and any instances of them in the world."""
-        #pylint: disable=no-member
         msg = _clad_to_engine_iface.UndefineAllCustomMarkerObjects()
         self.conn.send_msg(msg)
+        #pylint: disable=no-member
         await self.wait_for(_clad._MsgRobotDeletedCustomMarkerObjects)
         self._remove_custom_marker_object_instances()
         # Remove all custom object definitions / archetypes
         self.custom_objects.clear()
 
     async def _wait_for_defined_custom_object(self, custom_object_archetype):
-        #pylint: disable=no-member
         try:
+            #pylint: disable=no-member
             msg = await self.wait_for(_clad._MsgDefinedCustomObject, timeout=5)
         except asyncio.TimeoutError as e:
             logger.error("Failed (Timed Out) to define: %s", custom_object_archetype)
@@ -931,7 +933,6 @@ class World(event.Dispatcher):
         Returns:
             A :class:`cozmo.objects.FixedCustomObject` instance with the specified dimensions and pose.
         '''
-        #pylint: disable=no-member
         # Override the origin of the pose to be the same as the robot's. This will make sure they are in
         # the same space in the engine every time.
         if use_robot_origin:
@@ -942,6 +943,7 @@ class World(event.Dispatcher):
         msg = _clad_to_engine_iface.CreateFixedCustomObject(pose=pose.encode_pose(),
                                                             xSize_mm=x_size_mm, ySize_mm=y_size_mm, zSize_mm=z_size_mm)
         self.conn.send_msg(msg)
+        #pylint: disable=no-member
         response = await self.wait_for(_clad._MsgCreatedFixedCustomObject)
         fixed_custom_object = objects.FixedCustomObject(pose, x_size_mm, y_size_mm, z_size_mm, response.msg.objectID)
         self._objects[fixed_custom_object.object_id] = fixed_custom_object
@@ -985,7 +987,6 @@ class World(event.Dispatcher):
         Returns:
             bool: True if all 3 cubes are now connected.
         """
-        #pylint: disable=no-member
         connected_cubes = list(self.connected_light_cubes)
         num_connected_cubes = len(connected_cubes)
         num_unconnected_cubes = 3 - num_connected_cubes
@@ -1004,6 +1005,7 @@ class World(event.Dispatcher):
 
         try:
             for _ in range(num_unconnected_cubes):
+                #pylint: disable=no-member
                 msg = await self.wait_for(_clad._MsgObjectConnectionState, timeout=10)
         except asyncio.TimeoutError as e:
             logger.warning("Failed to connect to all cubes in time!")
@@ -1015,6 +1017,7 @@ class World(event.Dispatcher):
         self.conn._request_connected_objects()
 
         try:
+            #pylint: disable=no-member
             msg = await self.wait_for(_clad._MsgConnectedObjectStates, timeout=5)
         except asyncio.TimeoutError as e:
             logger.warning("Failed to receive connected cube states.")
