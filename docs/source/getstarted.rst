@@ -6,6 +6,8 @@ Getting Started With the Cozmo SDK
 
 To make sure you get the best experience possible out of the SDK, please ensure you have followed the steps in the :doc:`Initial Setup </initial>`.
 
+Cozmo is programmed in Python. If you are new to Python, `After Hours Programming <http://www.afterhoursprogramming.com/tutorial/Python/Overview/>`_ and `Codecademy <http://www.codecademy.com/tracks/python>`_ offer beginner's courses in learning Python; `Python.org's website <https://wiki.python.org/moin/BeginnersGuide/NonProgrammers>`_ offers a more comprehensive list of video and web tutorials. This tutorial assumes you have a minimal understanding of programming in general.
+
 ----------------
 Cozmo SDK Forums
 ----------------
@@ -33,6 +35,13 @@ Starting Up the SDK
 4. Swipe left to show the Cozmo SDK option and tap the Enable SDK button.
 5. Make sure the SDK examples are downloaded from the :doc:`Downloads page </downloads>`.
 6. On the computer, open Terminal (macOS/Linux) or Command Prompt (Windows) and navigate to the folder containing that program. For example, if the cozmo_sdk_examples folder is saved to your desktop, type ``cd Desktop/cozmo_sdk_examples``.
+
+
+.. important:: Do NOT save example programs to the *cozmo_sdk_examples* directory. Doing so will overwrite the original baseline programs.
+
+.. important:: The usbmuxd (USB Multiplexor Daemon) must be installed on any computer system paired with an iOS device before running any programs. Installing `iTunes <http://www.apple.com/itunes/download/>`_ will also install the usbmuxd on those systems. Linux users can install the usbmuxd module through the command line with `sudo apt-get install usbmuxd`.
+
+.. important:: Make sure adb (Android Debug Bridge) is installed on your system prior to running a program with an Android device. See the :ref:`Install page <initial>` for instructions.
 
 ----------------
 Example Programs
@@ -78,7 +87,7 @@ Then, run the program.
 
         ./01_hello_world.py
 
-    The same can also be achieved by writing:
+    The same can also be achieved on macOS/Linux with:
 	
         python3 01_hello_world.py
 
