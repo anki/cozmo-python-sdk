@@ -34,7 +34,7 @@ Starting Up the SDK
 3. Tap on the gear icon at the top right corner to open the Settings menu.
 4. Swipe left to show the Cozmo SDK option and tap the Enable SDK button.
 5. Make sure the SDK examples are downloaded from the :doc:`Downloads page </downloads>`.
-6. On the computer, open Terminal (macOS/Linux) or Command Prompt (Windows) and navigate to the folder containing that program. For example, if the cozmo_sdk_examples folder is saved to your desktop, type ``cd Desktop/cozmo_sdk_examples``.
+6. On the computer, open Terminal (macOS/Linux) or Command Prompt (Windows) and navigate to the folder containing that program.
 
 
 .. important:: Do NOT save example programs to the *cozmo_sdk_examples* directory. Doing so will overwrite the original baseline programs.
@@ -102,10 +102,10 @@ Then, run the program.
 The code for the Hello World program can be `viewed here. <https://github.com/anki/cozmo-python-sdk/tree/master/examples/tutorials/01_basics/01_hello_world.py>`_
 
 
-You are now all set up to run python programs on Cozmo. Next we will go over how to edit the above code to make Cozmo say something new. Let's write our first program.
+You are now all set up to run Python programs on Cozmo. Next we will go over how to edit the above code to make Cozmo say something new. Let's write our first program.
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Next Steps - “Night-Night"
+Next Steps - "Night-Night"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. Copy ``01_hello_world.py`` to a new file named ``nightnight.py`` by doing the following:
@@ -134,7 +134,7 @@ Now, nightnight.py is saved in the same folder as 01_hello_world.py.
 4. Move to the line that starts with "robot.say_text"
 
     a. Select the phrase "Hello World". Do NOT select the parentheses or quotation marks around the phrase; those are necessary for Python to properly parse the command.
-    b. Type in the new phrase you would like Cozmo to say. In this example, Cozmo will say "Night Night”, so that line should look like this: ``robot.say_text("Night Night").wait_for_completed()``
+    b. Type in the new phrase you would like Cozmo to say. In this example, Cozmo will say "Night Night", so that line should look like this: ``robot.say_text("Night Night").wait_for_completed()``
 
 5. Save the nightnight.py file.
 6. Now you can run your program:
@@ -150,6 +150,6 @@ Now, nightnight.py is saved in the same folder as 01_hello_world.py.
 7. If done correctly, Cozmo will say the new phrase.
 
 
-Now that you have written your own Cozmo program, take a look at the rest of the Cozmo SDK package, and at the many other example programs to get more ideas.
+Now that you have written your own Cozmo program, take a look at the rest of the Cozmo SDK and at the many other example programs to get more ideas.
 
 `Click here to return to the Cozmo Developer website. <http://developer.anki.com>`_
