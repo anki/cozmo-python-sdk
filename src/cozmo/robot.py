@@ -657,7 +657,7 @@ class Robot(event.Dispatcher):
     def _set_none_behavior(self):
         # Internal helper method called from Behavior.stop etc.
         msg = _clad_to_engine_iface.ExecuteBehaviorByExecutableType(
-                behaviorType=_clad_to_engine_cozmo.ExecutableBehaviorType.NoneBehavior)
+                behaviorType=_clad_to_engine_cozmo.ExecutableBehaviorType.Wait)
         self.conn.send_msg(msg)
         if self._current_behavior is not None:
             self._current_behavior._set_stopped()
