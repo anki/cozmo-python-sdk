@@ -365,8 +365,10 @@ class Pose:
         new_x,new_y,new_z = new_pose.position.x_y_z
         new_angle_z = new_pose.rotation.angle_z
 
-        res_x = x + math.cos(angle_z.radians)*new_x - math.sin(angle_z.radians)*new_y
-        res_y = y + math.sin(angle_z.radians)*new_x + math.cos(angle_z.radians)*new_y
+        cos_angle = math.cos(angle_z.radians)
+        sin_angle = math.sin(angle_z.radians)
+        res_x = x + (cos_angle * new_x) - (sin_angle * new_y)
+        res_y = y + (sin_angle * new_x) + (cos_angle * new_y)
         res_z = z + new_z
         res_angle = angle_z + new_angle_z
         return Pose(res_x, res_y, res_z, angle_z=res_angle, origin_id=self._origin_id)
