@@ -32,7 +32,7 @@ Starting Up the SDK
 3. Tap on the gear icon at the top right corner to open the Settings menu.
 4. Swipe left to show the Cozmo SDK option and tap the Enable SDK button.
 5. Make sure the SDK examples are downloaded from the :doc:`Downloads page </downloads>`.
-6. On the computer, open Terminal (macOS/Linux) or Command Prompt (Windows) and navigate to the folder containing that program.
+6. On the computer, open Terminal (macOS/Linux) or Command Prompt (Windows) and type ``cd cozmo_sdk_examples``, where *cozmo_sdk_examples* is the directory you extracted the examples into (for example, ``cd Desktop/cozmo_sdk_examples_0.14.0``), and press **Enter**.
 
 ----------------
 Example Programs
@@ -101,8 +101,6 @@ You are now all set up to run Python programs on Cozmo. Next we will go over how
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Next Steps - "Night-Night"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. important:: Do NOT save example programs to the *cozmo_sdk_examples* directory. Doing so will overwrite the original baseline programs.
 
 1. Copy ``01_hello_world.py`` to a new file named ``nightnight.py`` by doing the following:
 
