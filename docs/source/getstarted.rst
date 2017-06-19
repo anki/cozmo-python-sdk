@@ -60,7 +60,7 @@ For your convenience, here is a video detailing the first few simple example pro
 |
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-First Steps - “Hello, World!”
+First Steps - "Hello, World!"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Let's test your new setup by running a very simple program. This program instructs Cozmo to say "Hello, World!" - a perfect way to introduce him and you to the world of programming.
