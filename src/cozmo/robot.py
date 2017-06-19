@@ -1662,7 +1662,7 @@ class Robot(event.Dispatcher):
         return action
 
     def dock_with_cube(self, target_object, approach_angle=None,
-                       alignment_type=robot_alignment.RobotAlignmentTypes.LiftPlate.id, 
+                       alignment_type=robot_alignment.RobotAlignmentTypes.LiftPlate,
                        distance_from_marker=None,
                        in_parallel=False, num_retries=0):
         '''Tells Cozmo to dock with a specified cube object.
