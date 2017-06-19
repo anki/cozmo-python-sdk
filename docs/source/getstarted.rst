@@ -32,7 +32,7 @@ Starting Up the SDK
 3. Tap on the gear icon at the top right corner to open the Settings menu.
 4. Swipe left to show the Cozmo SDK option and tap the Enable SDK button.
 5. Make sure the SDK examples are downloaded from the :doc:`Downloads page </downloads>`.
-6. On the computer, open Terminal (macOS/Linux) or Command Prompt (Windows) and type ``cd cozmo_sdk_examples``, where *cozmo_sdk_examples* is the directory you extracted the examples into (for example, ``cd Desktop/cozmo_sdk_examples_0.14.0``), and press **Enter**.
+6. On the computer, open Terminal (macOS/Linux) or Command Prompt (Windows) and type ``cd cozmo_sdk_examples``, where *cozmo_sdk_examples* is the directory you extracted the examples into, and press **Enter**.
 
 ----------------
 Example Programs
