@@ -14,25 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Tell Cozmo to drive up to a cube that he sees placed in front of him
+'''Tell Cozmo to drive up to a cube that he sees placed in front of him.
 
-This is a test / example usage of the robot.dock_with_cube call which creates a
-DockWithCube action, that can be used to drive up to a light cube in a position
-that will allow for lifting.
+This example demonstrates Cozmo driving to and docking with a cube, without
+picking it up.  You must place a cube in front of Cozmo so that he can see it.
 '''
 
-import asyncio
 import cozmo
 
-async def dock_with_cube_test(robot: cozmo.robot.Robot):
-    '''The core of the dock with cube test program'''
+async def dock_with_cube(robot: cozmo.robot.Robot):
 
-    # Wait for a cube
+    print("Cozmo is waiting until he sees a cube")
+
     cube = await robot.world.wait_for_observed_light_cube()
-    ''' Tell cozmo to move to the cube and position himself so that it will be easy to pick up.
-      num_retries allows us to specify that he can retry the action if something interrupts the process or if it fails,
-      this will increase the reliability of cozmo successfully docking with the cube.
-    '''
-    await robot.dock_with_cube( cube, approach_angle=cozmo.util.degrees(180), num_retries=2 ).wait_for_completed()
 
-cozmo.run_program(dock_with_cube_test)
+    # Cozmo will approach the cube he has seen
+    # using a 180 approach angle will cause him to drive past the cube and approach from the opposite side
+    # num_retries allows us to specify how many times Cozmo will retry the action in the event of it failing
+    await robot.dock_with_cube(cube, approach_angle=cozmo.util.degrees(180), num_retries=2).wait_for_completed()
+
+cozmo.run_program(dock_with_cube)

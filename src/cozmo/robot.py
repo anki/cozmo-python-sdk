@@ -36,7 +36,7 @@ methods such as :meth:`~cozmo.event.Dispatcher.wait_for` and
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['MAX_HEAD_ANGLE', 'MIN_HEAD_ANGLE', 'MIN_LIFT_HEIGHT_MM', 'MAX_LIFT_HEIGHT_MM',
            'EvtRobotReady',           
-           'DisplayOledFaceImage', 'DriveOffChargerContacts', 'DriveStraight', 
+           'DisplayOledFaceImage', 'DockWithCube', 'DriveOffChargerContacts', 'DriveStraight',
            'GoToObject', 'GoToPose', 'PerformOffChargerContext', 'PickupObject', 
            'PlaceObjectOnGroundHere', 'PlaceOnObject', 'RollCube', 'SayText', 'SetHeadAngle',
            'SetLiftHeight', 'TurnInPlace', 'TurnTowardsFace',
@@ -141,33 +141,29 @@ class DockWithCube(action.Action):
         super().__init__(**kw)
         #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that is being put down
         self.obj = obj
+        self.alignment_type = alignment_type
         if approach_angle is None:
-            self.useApproachAngle = False
-            self.approachAngle = util.degrees(0)
+            self.use_approach_angle = False
+            self.approach_angle = util.degrees(0)
         else:
-            self.useApproachAngle = True
-            self.approachAngle = approach_angle
-
-        if alignment_type is None:
-            self.alignmentType = robot_alignment.RobotAlignmentTypes.LiftPlate.id
-        else:
-            self.alignmentType = alignment_type
+            self.use_approach_angle = True
+            self.approach_angle = approach_angle
 
         if distance_from_marker is None:
-            self.distanceFromMarker = util.distance_mm(0)
+            self.distance_from_marker = util.distance_mm(0)
         else:
-            self.distanceFromMarker = distance_from_marker
+            self.distance_from_marker = distance_from_marker
 
     def _repr_values(self):
         return "object=%s" % (self.obj)
 
     def _encode(self):
         return _clad_to_engine_iface.AlignWithObject(objectID=self.obj.object_id,
-                                                     distanceFromMarker_mm=self.distanceFromMarker.distance_mm,
-                                                     approachAngle_rad=self.approachAngle.radians,
-                                                     alignmentType=self.alignmentType.id,
-                                                     useApproachAngle=self.useApproachAngle,
-                                                     usePreDockPose=self.useApproachAngle,
+                                                     distanceFromMarker_mm=self.distance_from_marker.distance_mm,
+                                                     approachAngle_rad=self.approach_angle.radians,
+                                                     alignmentType=self.alignment_type.id,
+                                                     useApproachAngle=self.use_approach_angle,
+                                                     usePreDockPose=self.use_approach_angle,
                                                      useManualSpeed=False)
 
 class RollCube(action.Action):
@@ -185,20 +181,20 @@ class RollCube(action.Action):
         #: bool: whether to check if there is an object on top
         self.check_for_object_on_top = check_for_object_on_top
         if approach_angle is None:
-            self.useApproachAngle = False
-            self.approachAngle = util.degrees(0)
+            self.use_approach_angle = False
+            self.approach_angle = util.degrees(0)
         else:
-            self.useApproachAngle = True
-            self.approachAngle = approach_angle
+            self.use_approach_angle = True
+            self.approach_angle = approach_angle
 
     def _repr_values(self):
-        return "object=%s, check_for_object_on_top=%s" % (self.obj, self.check_for_object_on_top)
+        return "object=%s, check_for_object_on_top=%s, approach_angle=%s" % (self.obj, self.check_for_object_on_top, self.approach_angle)
 
     def _encode(self):
         return _clad_to_engine_iface.RollObject(objectID=self.obj.object_id,
-                                                approachAngle_rad=self.approachAngle.radians,
-                                                useApproachAngle=self.useApproachAngle,
-                                                usePreDockPose=self.useApproachAngle,
+                                                approachAngle_rad=self.approach_angle.radians,
+                                                useApproachAngle=self.use_approach_angle,
+                                                usePreDockPose=self.use_approach_angle,
                                                 useManualSpeed=False,
                                                 checkForObjectOnTop=self.check_for_object_on_top)
 
@@ -1666,14 +1662,15 @@ class Robot(event.Dispatcher):
         return action
 
     def dock_with_cube(self, target_object, approach_angle=None,
-                       alignment_type=None, distance_from_marker=None,
+                       alignment_type=robot_alignment.RobotAlignmentTypes.LiftPlate.id, 
+                       distance_from_marker=None,
                        in_parallel=False, num_retries=0):
         '''Tells Cozmo to dock with a specified cube object.
 
         Args:
-            target_object (:class:`cozmo.objects.LightCube`): The destination object.
-            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.
-            alignment_type (:class:`cozmo.robot_alignment.RobotAlignmentTypes`): which part of the robot to line up with the object
+            target_object (:class:`cozmo.objects.LightCube`): The cube to dock with.
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.  For example, 180 will cause cozmo to drive past the cube and approach it from behind.
+            alignment_type (:class:`cozmo.robot_alignment.RobotAlignmentTypes`): which part of the robot to line up with the front of the object.
             distance_from_marker (:class:`cozmo.util.Distance`): distance from the cube marker to stop when using Custom alignment
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
@@ -1700,9 +1697,9 @@ class Robot(event.Dispatcher):
         '''Tells Cozmo to roll a specified cube object.
 
         Args:
-            target_object (:class:`cozmo.objects.LightCube`): The destination object.
-            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.
-            check_for_object_on_top (bool): only roll the cube if there isn't a cube on top of it
+            target_object (:class:`cozmo.objects.LightCube`): The cube to roll.
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.   For example, 180 will cause cozmo to drive past the cube and approach it from behind.
+            check_for_object_on_top (bool): only roll the cube if there isn't a cube on top of it.  If there is the cube will be ignored.
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
                 be already complete.
