@@ -209,7 +209,7 @@ class Camera(event.Dispatcher):
         self.robot = robot
         self._image_stream_enabled = None
         self._color_image_enabled = None
-        self._camera_config = None  # type: CameraConfig
+        self._config = None  # type: CameraConfig
         self._gain = 0.0
         self._exposure_ms = 0
         self._auto_exposure_enabled = True

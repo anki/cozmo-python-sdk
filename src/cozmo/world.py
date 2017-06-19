@@ -303,7 +303,7 @@ class World(event.Dispatcher):
         Raises:
             :class:`ValueError` if the cube_id is invalid.
         """
-        if cube_id not in {objects.LightCube1Id, objects.LightCube2Id, objects.LightCube3Id}:
+        if cube_id not in objects.LightCubeIDs:
             raise ValueError("Invalid cube_id %s" % cube_id)
         cube = self.light_cubes.get(cube_id)
         # Only return the cube if it has an object_id
@@ -318,8 +318,7 @@ class World(event.Dispatcher):
         Returns:
             A generator yielding :class:`cozmo.objects.LightCube` instances
         '''
-        cube_ids = [objects.LightCube1Id, objects.LightCube2Id, objects.LightCube3Id]
-        for cube_id in cube_ids:
+        for cube_id in objects.LightCubeIDs:
             cube = self.light_cubes.get(cube_id)
             if cube and cube.is_connected:
                 yield cube
