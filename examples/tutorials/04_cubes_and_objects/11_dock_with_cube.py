@@ -23,7 +23,6 @@ picking it up.  You must place a cube in front of Cozmo so that he can see it.
 import cozmo
 
 async def dock_with_cube(robot: cozmo.robot.Robot):
-
     print("Cozmo is waiting until he sees a cube")
 
     cube = await robot.world.wait_for_observed_light_cube()

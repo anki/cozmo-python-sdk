@@ -1669,7 +1669,7 @@ class Robot(event.Dispatcher):
 
         Args:
             target_object (:class:`cozmo.objects.LightCube`): The cube to dock with.
-            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.  For example, 180 will cause cozmo to drive past the cube and approach it from behind.
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.  For example, 180 degrees will cause cozmo to drive past the cube and approach it from behind.
             alignment_type (:class:`cozmo.robot_alignment.RobotAlignmentTypes`): which part of the robot to line up with the front of the object.
             distance_from_marker (:class:`cozmo.util.Distance`): distance from the cube marker to stop when using Custom alignment
             in_parallel (bool): True to run this action in parallel with
@@ -1698,8 +1698,8 @@ class Robot(event.Dispatcher):
 
         Args:
             target_object (:class:`cozmo.objects.LightCube`): The cube to roll.
-            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.   For example, 180 will cause cozmo to drive past the cube and approach it from behind.
-            check_for_object_on_top (bool): only roll the cube if there isn't a cube on top of it.  If there is the cube will be ignored.
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.   For example, 180 degrees will cause cozmo to drive past the cube and approach it from behind.
+            check_for_object_on_top (bool): If there is a cube on top of the specified cube, and check_for_object_on_top is True, then Cozmo will ignore the action.
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
                 be already complete.
