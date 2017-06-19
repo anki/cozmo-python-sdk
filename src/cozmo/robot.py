@@ -635,6 +635,7 @@ class Robot(event.Dispatcher):
             # Note: Robot state is reset on entering SDK mode, and after any SDK program exits
             self.stop_all_motors()
             self.enable_all_reaction_triggers(False)
+            self.enable_stop_on_cliff(True)
             self._set_none_behavior()
 
             # Ensure the SDK has full control of cube lights
@@ -656,7 +657,7 @@ class Robot(event.Dispatcher):
     def _set_none_behavior(self):
         # Internal helper method called from Behavior.stop etc.
         msg = _clad_to_engine_iface.ExecuteBehaviorByExecutableType(
-                behaviorType=_clad_to_engine_cozmo.ExecutableBehaviorType.NoneBehavior)
+                behaviorType=_clad_to_engine_cozmo.ExecutableBehaviorType.Wait)
         self.conn.send_msg(msg)
         if self._current_behavior is not None:
             self._current_behavior._set_stopped()
@@ -766,7 +767,7 @@ class Robot(event.Dispatcher):
 
     @property
     def is_localized(self):
-        '''bool: True if Cozmo is localized (i.e. knows where he is, and has both treads on the ground).'''
+        '''bool: True if Cozmo is localized (i.e. knows where he is with respect to a cube, and has both treads on the ground).'''
         return (self._game_status_flags & _clad_to_game_cozmo.GameStatusFlag.IsLocalized) != 0
 
     @property
@@ -915,6 +916,15 @@ class Robot(event.Dispatcher):
         else:
             msg = _clad_to_engine_iface.DisableAllReactionsWithLock("sdk")
             self.conn.send_msg(msg)
+
+    def enable_stop_on_cliff(self, enable):
+        '''Enable or disable Cozmo's ability to drive off a cliff.
+
+        Args:
+            enable (bool): True if the robot should stop moving when a cliff is encountered.
+        '''
+        msg = _clad_to_engine_iface.EnableStopOnCliff(enable=enable)
+        self.conn.send_msg(msg)
 
     def set_robot_volume(self, robot_volume):
         '''Set the volume for the speaker in the robot.
@@ -1376,8 +1386,8 @@ class Robot(event.Dispatcher):
         You shouldn't attempt to drive Cozmo during this, as it will clash
         with whatever the current behavior is attempting to do.
         '''
-        msg = _clad_to_engine_iface.ActivateBehaviorChooser(
-            _clad_to_engine_cozmo.BehaviorChooserType.Freeplay)
+        msg = _clad_to_engine_iface.ActivateHighLevelActivity(
+            _clad_to_engine_cozmo.HighLevelActivity.Freeplay)
         self.conn.send_msg(msg)
 
         self._is_behavior_running = True  # The chooser will run them automatically
@@ -1390,8 +1400,8 @@ class Robot(event.Dispatcher):
         behaviors and actions.
         '''
 
-        msg = _clad_to_engine_iface.ActivateBehaviorChooser(
-            _clad_to_engine_cozmo.BehaviorChooserType.Selection)
+        msg = _clad_to_engine_iface.ActivateHighLevelActivity(
+            _clad_to_engine_cozmo.HighLevelActivity.Selection)
         self.conn.send_msg(msg)
 
         self._is_freeplay_mode_active = False
