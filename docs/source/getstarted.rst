@@ -120,7 +120,8 @@ Now, nightnight.py is saved in the same folder as 01_hello_world.py.
 
     a. ``import cozmo`` allows your program to access the Cozmo SDK code contained within the ``cozmo`` module.
     b. Text sandwiched between three ``'`` marks is a Docstring. Docstrings are like comments, and are placed inside code to give information to the user.
-    c. ``robot.say_text("Hello World").wait_for_completed`` is the core of the program.
+    c. ``robot.say_text("Hello, World!").wait_for_completed()`` is the core of the program:
+
         i. ``robot.say_text(…)`` is the function that makes Cozmo speak a string out loud.
         ii. ``"Hello World"`` is the string which Cozmo will speak.
         iii. ``wait_for_completed()`` tells Cozmo to finish speaking before moving to the next line of code. Without this, our program would end before Cozmo said anything!
