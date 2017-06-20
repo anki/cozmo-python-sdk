@@ -671,6 +671,8 @@ class World(event.Dispatcher):
         """
         msg = _clad_to_engine_iface.DeleteAllCustomObjects()
         self.conn.send_msg(msg)
+        # suppression for _MsgRobotDeletedAllCustomObjects "no-member" on pylint
+        #pylint: disable=no-member
         await self.wait_for(_clad._MsgRobotDeletedAllCustomObjects)
         self._remove_custom_marker_object_instances()
         self._remove_fixed_custom_object_instances()
@@ -685,6 +687,7 @@ class World(event.Dispatcher):
         """
         msg = _clad_to_engine_iface.DeleteCustomMarkerObjects()
         self.conn.send_msg(msg)
+        #pylint: disable=no-member
         await self.wait_for(_clad._MsgRobotDeletedCustomMarkerObjects)
         self._remove_custom_marker_object_instances()
 
@@ -696,6 +699,7 @@ class World(event.Dispatcher):
         """
         msg = _clad_to_engine_iface.DeleteFixedCustomObjects()
         self.conn.send_msg(msg)
+        #pylint: disable=no-member
         await self.wait_for(_clad._MsgRobotDeletedFixedCustomObjects)
         self._remove_fixed_custom_object_instances()
 
@@ -703,6 +707,7 @@ class World(event.Dispatcher):
         """Remove all custom marker object definitions, and any instances of them in the world."""
         msg = _clad_to_engine_iface.UndefineAllCustomMarkerObjects()
         self.conn.send_msg(msg)
+        #pylint: disable=no-member
         await self.wait_for(_clad._MsgRobotDeletedCustomMarkerObjects)
         self._remove_custom_marker_object_instances()
         # Remove all custom object definitions / archetypes
@@ -710,6 +715,7 @@ class World(event.Dispatcher):
 
     async def _wait_for_defined_custom_object(self, custom_object_archetype):
         try:
+            #pylint: disable=no-member
             msg = await self.wait_for(_clad._MsgDefinedCustomObject, timeout=5)
         except asyncio.TimeoutError as e:
             logger.error("Failed (Timed Out) to define: %s", custom_object_archetype)
@@ -935,6 +941,7 @@ class World(event.Dispatcher):
         msg = _clad_to_engine_iface.CreateFixedCustomObject(pose=pose.encode_pose(),
                                                             xSize_mm=x_size_mm, ySize_mm=y_size_mm, zSize_mm=z_size_mm)
         self.conn.send_msg(msg)
+        #pylint: disable=no-member
         response = await self.wait_for(_clad._MsgCreatedFixedCustomObject)
         fixed_custom_object = objects.FixedCustomObject(pose, x_size_mm, y_size_mm, z_size_mm, response.msg.objectID)
         self._objects[fixed_custom_object.object_id] = fixed_custom_object
@@ -996,6 +1003,7 @@ class World(event.Dispatcher):
 
         try:
             for _ in range(num_unconnected_cubes):
+                #pylint: disable=no-member
                 msg = await self.wait_for(_clad._MsgObjectConnectionState, timeout=10)
         except asyncio.TimeoutError as e:
             logger.warning("Failed to connect to all cubes in time!")
@@ -1007,6 +1015,7 @@ class World(event.Dispatcher):
         self.conn._request_connected_objects()
 
         try:
+            #pylint: disable=no-member
             msg = await self.wait_for(_clad._MsgConnectedObjectStates, timeout=5)
         except asyncio.TimeoutError as e:
             logger.warning("Failed to receive connected cube states.")

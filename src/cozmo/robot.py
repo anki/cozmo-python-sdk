@@ -1351,6 +1351,9 @@ class Robot(event.Dispatcher):
 
     def clear_idle_animation(self):
         '''Clears any Idle Animation currently playing on Cozmo'''
+
+        #NOTE: pylint doesn't identify the member "Count" on this namedTuple which is added at runtime
+        #pylint: disable=no-member
         self.set_idle_animation(anim.Triggers.Count)
 
     # Cozmo's Face animation commands
