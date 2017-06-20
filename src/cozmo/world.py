@@ -672,7 +672,7 @@ class World(event.Dispatcher):
         """
         msg = _clad_to_engine_iface.DeleteAllCustomObjects()
         self.conn.send_msg(msg)
-        # suppression for _MsgRobotDeletedAllCustomObjects "no-memeber" on pylint
+        # suppression for _MsgRobotDeletedAllCustomObjects "no-member" on pylint
         #pylint: disable=no-member
         await self.wait_for(_clad._MsgRobotDeletedAllCustomObjects)
         self._remove_custom_marker_object_instances()
