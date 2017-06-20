@@ -21,6 +21,7 @@ The API
     cozmo.objects
     cozmo.pets
     cozmo.robot
+    cozmo.robot_alignment
     cozmo.run
     cozmo.tkview
     cozmo.util
