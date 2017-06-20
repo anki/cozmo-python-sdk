@@ -176,10 +176,8 @@ class Event(metaclass=_AutoRegister):
     #_first_raised_by = "The object that generated the event"
     #_last_raised_by = "The object that last relayed the event to the dispatched handler"
 
-    #NOTE: In general I want the no-member error, but in the case of the Event Metaclassing, I'd rather not work out
-    #      how to get the lint parser to work out the nonexistance of members injected by the metaclass, especially
-    #      since setting said variables to "None" at this scope causes other fallout
     #pylint: disable=no-member
+    # Event Metaclass raises "no-member" pylint errors in pylint within this scope.
 
     def __init__(self, **kwargs):
         unset = self._props.copy()
