@@ -43,9 +43,6 @@ class EvtAnimationCompleted(action.EvtActionCompleted):
 
 class Animation(action.Action):
     '''An Animation describes an actively-playing animation on a robot.'''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.PLAY_ANIMATION
-
     def __init__(self, anim_name, loop_count, **kw):
         super().__init__(**kw)
 
@@ -75,9 +72,6 @@ class AnimationTrigger(action.Action):
     Asking Cozmo to play an AnimationTrigger causes him to pick one of the
     animations represented by the group.
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.PLAY_ANIMATION
-
     def __init__(self, trigger, loop_count, **kw):
         super().__init__(**kw)
 

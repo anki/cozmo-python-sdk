@@ -92,9 +92,6 @@ class GoToPose(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.go_to_pose`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.DRIVE_TO_POSE
-
     def __init__(self, pose, **kw):
         super().__init__(**kw)
         self.pose = pose
@@ -113,9 +110,6 @@ class GoToObject(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.go_to_object`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.DRIVE_TO_OBJECT
-
     def __init__(self, object_id, distance_from_object, **kw):
         super().__init__(**kw)
         self.object_id = object_id
@@ -135,8 +129,6 @@ class DockWithCube(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.dock_with_cube`
     '''
-    _action_type = _clad_to_engine_cozmo.RobotActionType.ALIGN_WITH_OBJECT
-
     def __init__(self, obj, approach_angle, alignment_type, distance_from_marker, **kw):
         super().__init__(**kw)
         #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that is being put down
@@ -171,9 +163,6 @@ class RollCube(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.roll_cube`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.ROLL_OBJECT_LOW
-
     def __init__(self, obj, approach_angle, check_for_object_on_top, **kw):
         super().__init__(**kw)
         #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that is being put down
@@ -203,9 +192,6 @@ class DriveOffChargerContacts(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.drive_off_charger_contacts`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.DRIVE_OFF_CHARGER_CONTACTS
-
     def __init__(self, **kw):
         super().__init__(**kw)
 
@@ -221,9 +207,6 @@ class DriveStraight(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.drive_straight`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.DRIVE_STRAIGHT
-
     def __init__(self, distance, speed, should_play_anim, **kw):
         super().__init__(**kw)
         #: :class:`cozmo.util.Distance`: The distance to drive
@@ -247,9 +230,6 @@ class DisplayOledFaceImage(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.display_oled_face_image`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.DISPLAY_FACE_IMAGE
-
     # Face images are sent so frequently, with the previous face image always
     # aborted, that logging each event would spam the log.
     _enable_abort_logging = False
@@ -296,7 +276,6 @@ class PlaceOnObject(action.Action):
 
     return by :meth:`~cozmo.robot.Robot.place_on_object`
     '''
-
     def __init__(self, obj, use_pre_dock_pose=True, **kw):
         super().__init__(**kw)
         #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that the held object will be placed on
@@ -317,9 +296,6 @@ class PlaceObjectOnGroundHere(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.place_object_on_ground_here`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.PLACE_OBJECT_LOW
-
     def __init__(self, obj, **kw):
         super().__init__(**kw)
         #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that is being put down
@@ -337,9 +313,6 @@ class SayText(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.say_text`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.SAY_TEXT
-
     def __init__(self, text, play_excited_animation, use_cozmo_voice, duration_scalar, voice_pitch, **kw):
         super().__init__(**kw)
         self.text = text
@@ -378,9 +351,6 @@ class SetHeadAngle(action.Action):
     '''Represents the Set Head Angle action in progress.
        Returned by :meth:`~cozmo.robot.Robot.set_head_angle`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.MOVE_HEAD_TO_ANGLE
-
     def __init__(self, angle, max_speed, accel, duration, **kw):
         super().__init__(**kw)
 
@@ -417,9 +387,6 @@ class SetLiftHeight(action.Action):
     '''Represents the Set Lift Height action in progress.
        Returned by :meth:`~cozmo.robot.Robot.set_lift_height`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.MOVE_LIFT_TO_HEIGHT
-
     def __init__(self, height, max_speed, accel, duration, **kw):
         super().__init__(**kw)
 
@@ -457,7 +424,6 @@ class TurnInPlace(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.turn_in_place`
     '''
-
     def __init__(self, angle, **kw):
         super().__init__(**kw)
         # :class:`cozmo.util.Angle`: The angle to turn
@@ -477,7 +443,6 @@ class TurnTowardsFace(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.turn_towards_face`
     '''
-
     def __init__(self, face, **kw):
         super().__init__(**kw)
         #: :class:`~cozmo.faces.Face`: The face to turn towards
