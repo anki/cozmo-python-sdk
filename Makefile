@@ -12,8 +12,8 @@ copy-clad:
 license_targets = src/cozmo/LICENSE.txt examples/LICENSE.txt
 example_targets = dist/cozmo_sdk_examples.tar.gz dist/cozmo_sdk_examples.zip
 
-example_filenames = $(shell cd examples && find . -name '*.py' -o -name '*.txt' -o -name '*.png' -o -name '*.md')
-example_pathnames = $(shell find examples -name '*.py' -o -name '*.txt' -o -name '*.png' -o -name '*.md')
+example_filenames = $(shell cd examples && find . -name '*.py' -o -name '*.txt' -o -name '*.png' -o -name '*.md' -o -name '*.json')
+example_pathnames = $(shell find examples -name '*.py' -o -name '*.txt' -o -name '*.png' -o -name '*.md' -o -name '*.json')
 sdist_filename = dist/cozmo-$(version).tar.gz
 wheel_filename = dist/cozmo-$(version)-py3-none-any.whl
 

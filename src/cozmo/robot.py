@@ -556,7 +556,7 @@ class Robot(event.Dispatcher):
 
     def __init__(self, conn, robot_id, is_primary, **kw):
         super().__init__(**kw)
-        #: :class:`cozmo.conn.CozmoConnectoin`: The active connection to the engine.
+        #: :class:`cozmo.conn.CozmoConnection`: The active connection to the engine.
         self.conn = conn
         #: int: The internal ID number of the robot.
         self.robot_id = robot_id
@@ -1140,7 +1140,7 @@ class Robot(event.Dispatcher):
         '''Tell Cozmo's head to turn to a given angle.
 
         Args:
-            angle: (:class:`cozmo.util.Angle`): Desired angle in radians for
+            angle: (:class:`cozmo.util.Angle`): Desired angle for
                 Cozmo's head. (:const:`MIN_HEAD_ANGLE` to
                 :const:`MAX_HEAD_ANGLE`).
             accel (float): Acceleration of Cozmo's head in radians per second squared.
