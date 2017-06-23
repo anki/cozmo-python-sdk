@@ -1,4 +1,4 @@
-.PHONY: copy-clad dist examples license wheel vagrant
+.PHONY: copy-clad dist examples license wheel vagrant installer
 
 version = $(shell perl -ne '/__version__ = "([^"]+)/ && print $$1;' src/cozmo/version.py)
 
@@ -64,3 +64,17 @@ dist/vagrant_bundle.zip: dist/vagrant_bundle.tar.gz
 vagrant: dist/vagrant_bundle.tar.gz dist/vagrant_bundle.zip
 
 dist: $(sdist_filename) $(wheel_filename) examples vagrant
+
+installer:
+	rm -f dist/*.whl
+	$(MAKE) $(wheel_filename)
+	rm -f ../cozmoclad/dist/cozmoclad-*.whl
+	make -C ../cozmoclad dist
+	cp ../cozmoclad/dist/cozmoclad-*.whl dist
+	rm -rf dist/sdk_package_$(version)
+	mkdir dist/sdk_package_$(version)
+	$(shell echo "#!/bin/bash\n\nworking_dir=\"\`dirname \\\"\$$0\\\"\`\"\n\npip3 uninstall -y cozmoclad\npip3 uninstall -y cozmo\npip3 install \$$working_dir/dist/cozmoclad-*.whl\npip3 install \$$working_dir/$(wheel_filename)" > dist/install.sh)
+	tar -c dist/*.whl | tar -C dist/sdk_package_$(version)  -xv
+	mv dist/install.sh dist/sdk_package_$(version)/install
+	chmod +x dist/sdk_package_$(version)/install
+	cd dist && zip -r sdk_package_$(version).zip sdk_package_$(version)
