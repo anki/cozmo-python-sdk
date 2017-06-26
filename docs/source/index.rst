@@ -24,21 +24,15 @@ Welcome to the Cozmo SDK Beta!
 
 .. toctree::
     :maxdepth: 2
-    :caption: Get Started
-
-    getstarted.rst
-
-.. toctree::
-    :maxdepth: 2
     :caption: Downloads
 
     downloads.rst
 
 .. toctree::
     :maxdepth: 2
-    :caption: Beginner Tutorial
+    :caption: Get Started
 
-    tutorial-beginner.rst
+    getstarted.rst
 
 .. toctree::
     :maxdepth: 2

@@ -33,6 +33,7 @@ from . import oled_face
 from . import lights
 from . import objects
 from . import robot
+from . import robot_alignment
 from . import run
 from . import util
 from . import world
@@ -45,5 +46,5 @@ from .version import __version__, __cozmoclad_version__
 
 __all__ = ['logger', 'logger_protocol'] + \
     ['action', 'anim', 'annotate', 'behavior', 'conn', 'event', 'exceptions'] + \
-    ['oled_face', 'lights', 'objects', 'robot', 'run', 'util', 'world'] + \
+    ['oled_face', 'lights', 'objects', 'robot', 'robot_alignment', 'run', 'util', 'world'] + \
         (run.__all__ + exceptions.__all__)

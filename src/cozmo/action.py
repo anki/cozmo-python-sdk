@@ -301,12 +301,6 @@ class EvtActionCompleted(event.Event):
 class Action(event.Dispatcher):
     """An action holds the state of an in-progress robot action
     """
-
-    # Note: This is used for aborting the action, UNKNOWN will cancel any action.
-    # Override this for any Actions that have a single, known, type used in Engine
-    # TODO: abort by ID instead, and remove _action_type
-    _action_type = _clad_to_engine_cozmo.RobotActionType.UNKNOWN
-
     # We allow sub-classes of Action to optionally disable logging messages
     # related to those actions being aborted - this is useful for actions
     # that are aborted frequently (by design) and would otherwise spam the log
