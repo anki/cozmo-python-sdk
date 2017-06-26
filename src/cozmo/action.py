@@ -110,6 +110,9 @@ class ActionResults:
     #: There was an error related to vision markers.
     BAD_MARKER = _ActionResult("BAD_MARKER", _clad_to_game_cozmo.ActionResult.BAD_MARKER)
 
+    # (Undocumented) There was a problem related to a subscribed or unsupported message tag (indicates bug in engine)
+    BAD_MESSAGE_TAG = _ActionResult("BAD_MESSAGE_TAG", _clad_to_game_cozmo.ActionResult.BAD_MESSAGE_TAG)
+
     #: There was a problem with the Object ID provided (e.g. there is no Object with that ID).
     BAD_OBJECT = _ActionResult("BAD_OBJECT", _clad_to_game_cozmo.ActionResult.BAD_OBJECT)
 
@@ -235,9 +238,6 @@ class ActionResults:
     #: There is no room to place the object at the desired destination.
     PLACEMENT_GOAL_NOT_FREE = _ActionResult("PLACEMENT_GOAL_NOT_FREE",
                                             _clad_to_game_cozmo.ActionResult.PLACEMENT_GOAL_NOT_FREE)
-
-    #: A retriable action failed more times than the ``num_retries`` limit passed in.
-    REACHED_MAX_NUM_RETRIES = _ActionResult("REACHED_MAX_NUM_RETRIES", _clad_to_game_cozmo.ActionResult.REACHED_MAX_NUM_RETRIES)
 
     #: Cozmo failed to drive off the charger.
     STILL_ON_CHARGER = _ActionResult("STILL_ON_CHARGER", _clad_to_game_cozmo.ActionResult.STILL_ON_CHARGER)
