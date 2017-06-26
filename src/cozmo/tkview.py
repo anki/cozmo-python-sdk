@@ -48,6 +48,8 @@ from . import world
 
 class TkThreadable:
     '''A mixin for adding threadsafe calls to tkinter methods.'''
+    #pylint: disable=no-member
+    # no-member errors are raised in pylint regarding members/methods called but not defined in our mixin.
     def __init__(self, *a, **kw):
         self._thread_queue = queue.Queue()
         self.after(50, self._thread_call_dispatch)
@@ -115,6 +117,8 @@ class TkImageViewer(tkinter.Frame, TkThreadable):
             self.handler.disable()
         self.call_threadsafe(self.quit)
 
+    # The base class configure doesn't take an event
+    #pylint: disable=arguments-differ
     def configure(self, event):
         # hack to interrupt feedback loop between image resizing
         # and frame resize detection; there has to be a better solution to this.

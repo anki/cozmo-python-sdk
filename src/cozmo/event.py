@@ -138,7 +138,7 @@ class _AutoRegister(type):
                 newattrs[k] = v
                 continue
             if k in props:
-                raise ValueError("Event class %s duplicates property %s defined in superclass" % (self, k))
+                raise ValueError("Event class %s duplicates property %s defined in superclass" % (mcs, k))
             props.add(k)
             newattrs[k] = docstr(v)
         newattrs['_props'] = props
@@ -157,7 +157,7 @@ class _AutoRegister(type):
             raise ValueError("Duplicate event name %s (%s duplicated by %s)"
                     % (name, _full_qual_name(cls), _full_qual_name(registered_events[name])))
         registered_events[name] = cls
-        return super().__init__(name, bases, attrs, **kw)
+        super().__init__(name, bases, attrs, **kw)
 
 
 def _full_qual_name(obj):
@@ -175,6 +175,9 @@ class Event(metaclass=_AutoRegister):
 
     #_first_raised_by = "The object that generated the event"
     #_last_raised_by = "The object that last relayed the event to the dispatched handler"
+
+    #pylint: disable=no-member
+    # Event Metaclass raises "no-member" pylint errors in pylint within this scope.
 
     def __init__(self, **kwargs):
         unset = self._props.copy()

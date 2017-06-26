@@ -87,14 +87,14 @@ class DeviceConnector:
         if enable_env_vars:
             self.parse_env_vars()
 
-    async def connect(self, loop, protocol_factory):
+    async def connect(self, loop, protocol_factory, conn_check):
         '''Connect attempts to open a connection transport to the Cozmo app on a device.
 
         On opening a transport it will create a protocol from the supplied
         factory and connect it to the transport, returning a (transport, protocol)
         tuple. See :meth:`asyncio.BaseEventLoop.create_connection`
         '''
-        raise NotImplemented()
+        raise NotImplementedError
 
     def parse_env_vars(self):
         try:
@@ -344,6 +344,7 @@ class FirstAvailableConnector(DeviceConnector):
     This is the default connector used by ``connect_`` functions.
     '''
     def __init__(self):
+        super().__init__(self, enable_env_vars=False)
         self.tcp = TCPConnector()
         self.ios = IOSConnector()
         self.android = AndroidConnector()

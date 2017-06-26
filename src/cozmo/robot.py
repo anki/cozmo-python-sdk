@@ -35,10 +35,10 @@ methods such as :meth:`~cozmo.event.Dispatcher.wait_for` and
 
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['MAX_HEAD_ANGLE', 'MIN_HEAD_ANGLE', 'MIN_LIFT_HEIGHT_MM', 'MAX_LIFT_HEIGHT_MM',
-           'EvtRobotReady',
-           'GoToPose', 'DisplayOledFaceImage', 'DriveOffChargerContacts',
-           'DriveStraight', 'PerformOffChargerContext', 'PickupObject', 'PlaceOnObject',
-           'PlaceObjectOnGroundHere', 'SayText', 'SetHeadAngle',
+           'EvtRobotReady',           
+           'DisplayOledFaceImage', 'DockWithCube', 'DriveOffChargerContacts', 'DriveStraight',
+           'GoToObject', 'GoToPose', 'PerformOffChargerContext', 'PickupObject', 
+           'PlaceObjectOnGroundHere', 'PlaceOnObject', 'RollCube', 'SayText', 'SetHeadAngle',
            'SetLiftHeight', 'TurnInPlace', 'TurnTowardsFace',
            'Robot']
 
@@ -58,9 +58,9 @@ from . import lights
 from . import objects
 from . import util
 from . import world
+from . import robot_alignment
 
 from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo, _clad_to_game_cozmo
-
 
 #### Events
 
@@ -92,9 +92,6 @@ class GoToPose(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.go_to_pose`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.DRIVE_TO_POSE
-
     def __init__(self, pose, **kw):
         super().__init__(**kw)
         self.pose = pose
@@ -113,9 +110,6 @@ class GoToObject(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.go_to_object`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.DRIVE_TO_OBJECT
-
     def __init__(self, object_id, distance_from_object, **kw):
         super().__init__(**kw)
         self.object_id = object_id
@@ -130,15 +124,74 @@ class GoToObject(action.Action):
                                                 useManualSpeed=False,
                                                 usePreDockPose=False)
 
+class DockWithCube(action.Action):
+    '''Represents the dock with cube action in progress.
+
+    Returned by :meth:`~cozmo.robot.Robot.dock_with_cube`
+    '''
+    def __init__(self, obj, approach_angle, alignment_type, distance_from_marker, **kw):
+        super().__init__(**kw)
+        #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that is being put down
+        self.obj = obj
+        self.alignment_type = alignment_type
+        if approach_angle is None:
+            self.use_approach_angle = False
+            self.approach_angle = util.degrees(0)
+        else:
+            self.use_approach_angle = True
+            self.approach_angle = approach_angle
+
+        if distance_from_marker is None:
+            self.distance_from_marker = util.distance_mm(0)
+        else:
+            self.distance_from_marker = distance_from_marker
+
+    def _repr_values(self):
+        return "object=%s" % (self.obj)
+
+    def _encode(self):
+        return _clad_to_engine_iface.AlignWithObject(objectID=self.obj.object_id,
+                                                     distanceFromMarker_mm=self.distance_from_marker.distance_mm,
+                                                     approachAngle_rad=self.approach_angle.radians,
+                                                     alignmentType=self.alignment_type.id,
+                                                     useApproachAngle=self.use_approach_angle,
+                                                     usePreDockPose=self.use_approach_angle,
+                                                     useManualSpeed=False)
+
+class RollCube(action.Action):
+    '''Represents the roll cube action in progress.
+
+    Returned by :meth:`~cozmo.robot.Robot.roll_cube`
+    '''
+    def __init__(self, obj, approach_angle, check_for_object_on_top, **kw):
+        super().__init__(**kw)
+        #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that is being put down
+        self.obj = obj
+        #: bool: whether to check if there is an object on top
+        self.check_for_object_on_top = check_for_object_on_top
+        if approach_angle is None:
+            self.use_approach_angle = False
+            self.approach_angle = util.degrees(0)
+        else:
+            self.use_approach_angle = True
+            self.approach_angle = approach_angle
+
+    def _repr_values(self):
+        return "object=%s, check_for_object_on_top=%s, approach_angle=%s" % (self.obj, self.check_for_object_on_top, self.approach_angle)
+
+    def _encode(self):
+        return _clad_to_engine_iface.RollObject(objectID=self.obj.object_id,
+                                                approachAngle_rad=self.approach_angle.radians,
+                                                useApproachAngle=self.use_approach_angle,
+                                                usePreDockPose=self.use_approach_angle,
+                                                useManualSpeed=False,
+                                                checkForObjectOnTop=self.check_for_object_on_top)
 
 class DriveOffChargerContacts(action.Action):
     '''Represents the drive off charger contacts action in progress.
 
     Returned by :meth:`~cozmo.robot.Robot.drive_off_charger_contacts`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.DRIVE_OFF_CHARGER_CONTACTS
-
     def __init__(self, **kw):
         super().__init__(**kw)
 
@@ -154,9 +207,6 @@ class DriveStraight(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.drive_straight`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.DRIVE_STRAIGHT
-
     def __init__(self, distance, speed, should_play_anim, **kw):
         super().__init__(**kw)
         #: :class:`cozmo.util.Distance`: The distance to drive
@@ -180,9 +230,6 @@ class DisplayOledFaceImage(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.display_oled_face_image`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.DISPLAY_FACE_IMAGE
-
     # Face images are sent so frequently, with the previous face image always
     # aborted, that logging each event would spam the log.
     _enable_abort_logging = False
@@ -229,7 +276,6 @@ class PlaceOnObject(action.Action):
 
     return by :meth:`~cozmo.robot.Robot.place_on_object`
     '''
-
     def __init__(self, obj, use_pre_dock_pose=True, **kw):
         super().__init__(**kw)
         #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that the held object will be placed on
@@ -250,9 +296,6 @@ class PlaceObjectOnGroundHere(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.place_object_on_ground_here`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.PLACE_OBJECT_LOW
-
     def __init__(self, obj, **kw):
         super().__init__(**kw)
         #: The object (e.g. an instance of :class:`cozmo.objects.LightCube`) that is being put down
@@ -270,9 +313,6 @@ class SayText(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.say_text`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.SAY_TEXT
-
     def __init__(self, text, play_excited_animation, use_cozmo_voice, duration_scalar, voice_pitch, **kw):
         super().__init__(**kw)
         self.text = text
@@ -311,9 +351,6 @@ class SetHeadAngle(action.Action):
     '''Represents the Set Head Angle action in progress.
        Returned by :meth:`~cozmo.robot.Robot.set_head_angle`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.MOVE_HEAD_TO_ANGLE
-
     def __init__(self, angle, max_speed, accel, duration, **kw):
         super().__init__(**kw)
 
@@ -350,9 +387,6 @@ class SetLiftHeight(action.Action):
     '''Represents the Set Lift Height action in progress.
        Returned by :meth:`~cozmo.robot.Robot.set_lift_height`
     '''
-
-    _action_type = _clad_to_engine_cozmo.RobotActionType.MOVE_LIFT_TO_HEIGHT
-
     def __init__(self, height, max_speed, accel, duration, **kw):
         super().__init__(**kw)
 
@@ -390,7 +424,6 @@ class TurnInPlace(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.turn_in_place`
     '''
-
     def __init__(self, angle, **kw):
         super().__init__(**kw)
         # :class:`cozmo.util.Angle`: The angle to turn
@@ -410,7 +443,6 @@ class TurnTowardsFace(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.turn_towards_face`
     '''
-
     def __init__(self, face, **kw):
         super().__init__(**kw)
         #: :class:`~cozmo.faces.Face`: The face to turn towards
@@ -490,6 +522,14 @@ class Robot(event.Dispatcher):
     #: callable: The factory function that returns a
     #: :class:`GoToObject` class or subclass instance.
     go_to_object_factory = GoToObject
+
+    #: callable: The factory function that returns a
+    #: :class:`DockWithCube` class or subclass instance.
+    dock_with_cube_factory = DockWithCube
+
+    #: callable: The factory function that returns a
+    #: :class:`RollCube` class or subclass instance.
+    roll_cube_factory = RollCube
 
     #: callable: The factory function that returns a
     #: :class:`PlaceObjectOnGroundHere` class or subclass instance.
@@ -1286,6 +1326,9 @@ class Robot(event.Dispatcher):
 
     def clear_idle_animation(self):
         '''Clears any Idle Animation currently playing on Cozmo'''
+
+        #NOTE: pylint doesn't identify the member "Count" on this namedTuple which is added at runtime
+        #pylint: disable=no-member
         self.set_idle_animation(anim.Triggers.Count)
 
     # Cozmo's Face animation commands
@@ -1591,6 +1634,65 @@ class Robot(event.Dispatcher):
         action = self.go_to_object_factory(object_id=target_object.object_id,
                                            distance_from_object=distance_from_object,
                                            conn=self.conn, robot=self, dispatch_parent=self)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
+        return action
+
+    def dock_with_cube(self, target_object, approach_angle=None,
+                       alignment_type=robot_alignment.RobotAlignmentTypes.LiftPlate,
+                       distance_from_marker=None,
+                       in_parallel=False, num_retries=0):
+        '''Tells Cozmo to dock with a specified cube object.
+
+        Args:
+            target_object (:class:`cozmo.objects.LightCube`): The cube to dock with.
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.  For example, 180 degrees will cause cozmo to drive past the cube and approach it from behind.
+            alignment_type (:class:`cozmo.robot_alignment.RobotAlignmentTypes`): which part of the robot to line up with the front of the object.
+            distance_from_marker (:class:`cozmo.util.Distance`): distance from the cube marker to stop when using Custom alignment
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
+        Returns:
+            A :class:`cozmo.robot.DockWithCube` action object which can be queried
+                to see when it is complete.
+        '''
+        if not isinstance(target_object, objects.LightCube):
+            raise TypeError("Target must be a light cube")
+
+        action = self.dock_with_cube_factory(obj=target_object, approach_angle=approach_angle,
+                                             alignment_type=alignment_type, distance_from_marker=distance_from_marker,
+                                             conn=self.conn, robot=self, dispatch_parent=self)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
+        return action
+
+    def roll_cube(self, target_object, approach_angle=None, check_for_object_on_top=False, 
+                  in_parallel=False, num_retries=0):
+        '''Tells Cozmo to roll a specified cube object.
+
+        Args:
+            target_object (:class:`cozmo.objects.LightCube`): The cube to roll.
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.   For example, 180 degrees will cause cozmo to drive past the cube and approach it from behind.
+            check_for_object_on_top (bool): If there is a cube on top of the specified cube, and check_for_object_on_top is True, then Cozmo will ignore the action.
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
+        Returns:
+            A :class:`cozmo.robot.RollCube` action object which can be queried
+                to see when it is complete.
+        '''
+        if not isinstance(target_object, objects.LightCube):
+            raise TypeError("Target must be a light cube")
+
+        action = self.roll_cube_factory(obj=target_object, approach_angle=approach_angle,
+                                        check_for_object_on_top=check_for_object_on_top,
+                                        conn=self.conn, robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action,
                                                     in_parallel=in_parallel,
                                                     num_retries=num_retries)

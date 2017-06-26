@@ -6,6 +6,8 @@ Programming Cozmo - Advanced Tutorials
 
 Cozmo is designed for more than just simple move-and-speak programming. Cozmo can be integrated into many other applications through his API.
 
+If you are new to Python, `After Hours Programming <http://www.afterhoursprogramming.com/tutorial/Python/Overview/>`_ and `Codecademy <http://www.codecademy.com/tracks/python>`_ offer beginner's courses in learning Python; `Python.org's website <https://wiki.python.org/moin/BeginnersGuide/NonProgrammers>`_ offers a more comprehensive list of video and web tutorials. This tutorial assumes you have a minimal understanding of programming in general.
+
 -------------------
 Twitter Integration
 -------------------
