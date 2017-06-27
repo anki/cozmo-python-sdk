@@ -144,6 +144,11 @@ def radians(radians):
     '''Returns an :class:`cozmo.util.Angle` instance set to the specified number of radians.'''
     return Angle(radians=radians)
 
+def abs_val(angle):
+    if angle < radians(0):
+        return radians(0) - angle
+    return angle
+
 
 class Distance:
     '''Represents a distance.
