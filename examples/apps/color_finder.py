@@ -19,6 +19,9 @@
 This example demonstrates how Cozmo can do simple color recognition to recognize and turn toward the most noticeable object of a specified color.
 The color will be determined by toggling the displayed color on a cube (goes between green, yellow, blue, and red).
 The other illumintaed cube toggles the display mode of the TkViewer - switching between the normal camera feed and the pixel-annotated version.
+
+IMPORTANT: It is very hard for Cozmo to distinguish between actual objects, and parts of the room like the walls and the floor.
+You can see a display of what colors Cozmo is perceiving by tapping the blinking white cube to enable the image annotator.
 '''
 
 import cozmo,sys,math,asyncio,time
@@ -29,62 +32,6 @@ try:
 	from PIL import Image, ImageDraw, ImageColor
 except ImportError:
 	sys.exit('Cannot import from PIL: Do `pip3 install --user Pillow` to install')
-
-##############################################################################################################################################################################################
-#this class is only used in the apply method of ColorFinder, 
-#since the add_polygon_to_image method requires a sequences of points 
-#whose values can be accessed by '.x' and '.y' (see cozmo.annotate.add_polygon_to_image)
-
-
-class Point:
-	def __init__(self,x,y):
-		self.x = x
-		self.y = y
-
-##############################################################################################################################################################################################
-
-red_light = cozmo.lights.red_light
-green_light = cozmo.lights.green_light
-blue_light = cozmo.lights.blue_light
-yellow_light = Light(Color(name='yellow', rgb=(255,255,0)))
-
-#these colors are represented by their approximate ranges. For example, red = (minRed=170, maxRed=255, minGreen=0, maxGreen=70,minBlue=70,maxBlue=255)
-color_dict = {
-'red' : (170,255,0,70,0,70),
-'green' : (0,70,170,255,0,70),
-'blue' : (0,70,0,70,170,255),
-'white' : (0,255,200,255,200,255),
-'black' : (0,30,0,30,0,30),
-'yellow' : (170,255,170,255,0,70),
-}
-
-#currently, this must be updated whenever you add new colors to self.possible_colors
-color_to_light_dict = {
-'green' : green_light,
-'yellow' : yellow_light,
-'blue' : blue_light,
-'red' : red_light
-}
-
-def color_distance(t1,t2):
-	r,g,b = t1
-	minR,maxR,minG,maxG,minB,maxB = t2
-	rdist_sq = 0
-	gdist_sq = 0
-	bdist_sq = 0
-	if r < minR:
-		rdist_sq = (minR-r)**2
-	if r > maxR:
-		rdist_sq = (maxR-r)**2
-	if g < minG:
-		gdist_sq = (minG-g)**2
-	if g > maxG:
-		gdist_sq = (maxG-g)**2
-	if b < minB:
-		bdist_sq = (minB-b)**2
-	if b > maxB:
-		bdist_sq = (maxB-b)**2
-	return rdist_sq+gdist_sq+bdist_sq
 
 ##############################################################################################################################################################################################
 
@@ -103,9 +50,9 @@ class ColorFinder(cozmo.annotate.Annotator):
 		robot.add_event_handler(cozmo.world.EvtNewCameraImage, self.on_new_camera_image)
 
 		self.color_selector_cube = None
-		self.color_to_find = 'green'
-		self.color_to_find_index = 0
-		self.possible_colors = ['green','yellow','blue','red']
+		self.color_to_find = 'blue'
+		self.possible_colors_to_find = ['green','yellow','blue','red']
+		self.color_to_find_index = self.possible_colors_to_find.index(self.color_to_find)
 
 		self.grid_cube = None 
 		robot.world.image_annotator.add_annotator('color_finder',self)
@@ -116,16 +63,22 @@ class ColorFinder(cozmo.annotate.Annotator):
 		#these dimensions can be reset - higher numbers means a more accurate approximation (smaller pixels), and a slower processing & reaction time
 		self.grid_width = 32
 		self.grid_height = 24
-
 		self.pixel_matrix = [['white' for x in range(self.grid_height)] for y in range(self.grid_width)]
-		self.fov_x = self.robot.camera.config.fov_x.radians
-		self.fov_y = self.robot.camera.config.fov_y.radians
-		# 'fov' stands for field of view. this is the width of how wide of an angle cozmo can see to the left or right
 
+		#every time Cozmo detects self.color_to_find in his camera view, we add the angle amount required to turn toward the object to self.amount_turned_recently
 		self.amount_turned_recently = radians(0)
-		self.moving_threshold = radians(4)
 
-		self.state = 'lookaround'
+		#if self.amount_turned_recently < self.moving_threshold after 1 second, the target is stable enough to drive toward
+		self.moving_threshold = radians(6)
+
+		#the program has three states: 'look_around', 'found_color', and 'driving'. look_around is the initial state.
+		self.state = 'look_around'
+
+		#references to the action and behavior objects that we call to have Cozmo move around
+		self.look_around_behavior = None
+		self.drive_action = None
+		self.tilt_head_action = None
+		self.rotate_action = None
 
 	def apply(self, image, scale):
 		d = ImageDraw.Draw(image)
@@ -155,27 +108,13 @@ class ColorFinder(cozmo.annotate.Annotator):
 		elif kwargs['obj'].object_id == self.grid_cube.object_id:
 			self.robot.world.image_annotator.annotation_enabled = not self.robot.world.image_annotator.annotation_enabled
 
-	#sets self.color_to_find to the next color in self.possible_colors, wrapping back around to the initial color if we have reached the end of the list
+	#sets self.color_to_find to the next color in self.possible_colors_to_find, wrapping back around to the initial color if we have reached the end of the list
 	def toggle_color_to_find(self):
 		self.color_to_find_index+=1
-		if self.color_to_find_index == len(self.possible_colors):
+		if self.color_to_find_index == len(self.possible_colors_to_find):
 			self.color_to_find_index = 0
-		self.color_to_find = self.possible_colors[self.color_to_find_index]
+		self.color_to_find = self.possible_colors_to_find[self.color_to_find_index]
 		self.color_selector_cube.set_lights(color_to_light_dict[self.color_to_find])
-
-	#continuously calls the look_at_it method if there is a blob of color that matches the color Cozmo is looking for
-	async def on_new_camera_image(self, evt, **kwargs):
-		downsized_image = self.get_low_res_view()
-		self.update_pixel_matrix(downsized_image)
-		blob_detector = BlobDetector(self.pixel_matrix,self.possible_colors)
-		blob_info = blob_detector.get_epicenter_and_range_of_blob_with_color(self.color_to_find)
-		if blob_info:
-			if self.state=='lookaround':
-				self.state='foundcolor'
-			self.on_finding_a_blob(blob_info)
-		else:
-			self.robot.set_backpack_lights_off()
-			self.state='lookaround'
 
 	#uses the resize method from the Pillow library to get a low-resolution version of Cozmo's camera view, using the LANCZOS algorithm for approximating the new pixel colors
 	def get_low_res_view(self):
@@ -187,10 +126,11 @@ class ColorFinder(cozmo.annotate.Annotator):
 		for i in range(self.grid_width):
 			for j in range(self.grid_height):
 				r,g,b = downsized_image.getpixel((i,j))
-				self.pixel_matrix[i][j] = self.determine_color(r,g,b)
+				self.pixel_matrix[i][j] = self.approximate_color_of_pixel(r,g,b)
+		self.fill_in_gaps_of_pixel_matrix()
 
-	#picks the best color to approximate this pixel to, using the method and color values from above
-	def determine_color(self,r,g,b):
+	#picks the best color to approximate this pixel to, using the method and color values from below
+	def approximate_color_of_pixel(self,r,g,b):
 		min_distance = sys.maxsize
 		closest_color = ''
 		for color_name, color_values in color_dict.items():
@@ -200,68 +140,157 @@ class ColorFinder(cozmo.annotate.Annotator):
 				closest_color = color_name
 		return closest_color
 
+	def fill_in_gaps_of_pixel_matrix(self):
+		for i in range(1,self.grid_width-1):
+			for j in range(1,self.grid_height-1):
+				color = self.pixel_is_surrounded_by_color(i,j)
+				if color:
+					self.pixel_matrix[i][j]=color
+
+	#returns a color if three of the four neighboring pixels of self.pixel_matrix[i][j] are the same color; otherwise returns None
+	def pixel_is_surrounded_by_color(self,i,j):
+		if self.pixel_matrix[i-1][j]==self.pixel_matrix[i][j-1] and self.pixel_matrix[i-1][j]==self.pixel_matrix[i+1][j]:
+			return self.pixel_matrix[i-1][j]
+		if self.pixel_matrix[i-1][j]==self.pixel_matrix[i][j-1] and self.pixel_matrix[i-1][j]==self.pixel_matrix[i][j+1]:
+			return self.pixel_matrix[i-1][j]
+		if self.pixel_matrix[i-1][j]==self.pixel_matrix[i+1][j] and self.pixel_matrix[i-1][j]==self.pixel_matrix[i][j+1]:
+			return self.pixel_matrix[i-1][j]
+		if self.pixel_matrix[i+1][j]==self.pixel_matrix[i][j-1] and self.pixel_matrix[i+1][j]==self.pixel_matrix[i][j+1]:
+			return self.pixel_matrix[i+1][j]
+		return None	
+
+	async def on_new_camera_image(self, evt, **kwargs):
+		downsized_image = self.get_low_res_view()
+		self.update_pixel_matrix(downsized_image)
+		blob_detector = BlobDetector(self.pixel_matrix,self.possible_colors_to_find)
+		blob_info = blob_detector.get_center_of_blob_with_color(self.color_to_find)
+		if blob_info:
+			if self.state=='look_around':
+				self.state='found_color'
+				self.look_around_behavior.stop()
+			self.on_finding_a_blob(blob_info)
+		else:
+			self.robot.set_backpack_lights_off()
+			self.state='look_around'
+
 	#called whenever Cozmo finds a blob of the color he is looking for
+	# 'fov' stands for field of view. this is the angle amount that Cozmo can see to the edges of his camera view
 	def on_finding_a_blob(self,blob_info):
-		x,y,min_x,max_x,min_y,max_y = blob_info
-		WM = 10*32/self.grid_width # Width Multiplier
-		HM = 10*24/self.grid_height # Height Multiplier (see explanation in the apply method)
+		x,y = blob_info
+		WM = 10.0*32/self.grid_width # Width Multiplier
+		HM = 10.0*24/self.grid_height # Height Multiplier (see explanation in the apply method)
 		self.robot.set_center_backpack_lights(color_to_light_dict[self.color_to_find])
-		amount_move_head = radians(self.fov_y*(120-y*HM)/240)
-		amount_rotate = radians(self.fov_x*(160-x*HM)/320)
-		if self.state=='lookaround' or self.state == 'foundcolor':
+		amount_move_head = radians(self.robot.camera.config.fov_y.radians*(120-y*HM)/240)
+		amount_rotate = radians(self.robot.camera.config.fov_x.radians*(160-x*WM)/320)
+		if self.moved_too_far_from_center(amount_move_head,amount_rotate):
+			self.state='found_color'
+		if self.state != 'driving':
 			self.look_at_it(amount_move_head,amount_rotate)
 		else:
-			print('still driving :D')
+			self.prepare_to_drive()
+
+	def moved_too_far_from_center(self,amount_move_head,amount_rotate):
+		return abs_val(amount_move_head)>self.robot.camera.config.fov_y/8 or abs_val(amount_rotate)>self.robot.camera.config.fov_x/8
 
 	#moves Cozmo's head and wheels so that the center of the blob he's detected will now be at the center of his camera view
 	#robot.abort_all_actions() tells Cozmo to stop any movements he was previously assigned. This makes sure he is only reacting to the current image
 	def look_at_it(self,amount_move_head,amount_rotate):
 		self.robot.abort_all_actions()
 		new_head_angle = self.robot.head_angle + amount_move_head
-		tilt = self.robot.set_head_angle(new_head_angle, in_parallel=True)
-		rotate = self.robot.turn_in_place(amount_rotate, in_parallel=True)
-		if self.state=='foundcolor':
-			self.amount_turned_recently += abs_val(amount_move_head) + abs_val(amount_rotate)			
+		self.tilt_head_action = self.robot.set_head_angle(new_head_angle, in_parallel=True)
+		self.rotate_action = self.robot.turn_in_place(amount_rotate, in_parallel=True)
+		if self.state=='found_color':
+			self.amount_turned_recently += abs_val(amount_move_head) + abs_val(amount_rotate)
 
-	#turns on the cube which will toggle the color Cozmo should look for
-	def turn_on_color_selector_cube(self):
-		paper_clip_cube_type = self.robot.world.light_cubes.get(cozmo.objects.LightCube1Id).object_id
-		self.color_selector_cube = self.robot.world._objects[paper_clip_cube_type]
+	def prepare_to_drive(self):
+		if self.tilt_head_action.is_running:
+			self.tilt_head_action.abort()
+		if self.rotate_action.is_running:
+			self.rotate_action.abort()
+		if self.drive_action == None or not self.drive_action.is_running:
+			self.drive_action = self.robot.drive_straight(distance_mm(500), speed_mmps(100), should_play_anim=False, in_parallel=True)
+
+	def turn_on_cubes(self):
+		self.color_selector_cube = self.robot.world.get_light_cube(cozmo.objects.LightCube1Id)
 		self.color_selector_cube.set_lights(color_to_light_dict[self.color_to_find])
+		self.grid_cube = self.robot.world.get_light_cube(cozmo.objects.LightCube2Id)
+		self.grid_cube.set_lights(cozmo.lights.white_light.flash())
 
-	#sets the grid_cube to blink in a circular fashion when the pixel grid is not activated, and halts the blinking when the pixel grid is activated
-	#blinker taken from 02_cube_blinker tutorial
-	#CURRENTLY NOT BEING USED
-	async def blink_grid_cube(self):
-		heart_cube_type = self.robot.world.light_cubes.get(cozmo.objects.LightCube2Id).object_id
-		self.grid_cube = self.robot.world._objects[heart_cube_type]
-		while True:
-			for i in range(4):
-				cols = [cozmo.lights.off_light] * 4
-				cols[i] = cozmo.lights.white_light
-				self.grid_cube.set_light_corners(*cols)
-				await asyncio.sleep(0.1)
+	def setup(self):
+		self.robot.set_head_angle(radians(0))
+		self.robot.drive_straight(distance_mm(100), speed_mmps(100), should_play_anim=False, in_parallel=True)
+		self.turn_on_cubes()
 
 	#runs indefinitely, the program ends when you hit CTRL+C in Terminal/Command Prompt, or if you close the TkViewer window
 	async def run(self):
-		self.robot.set_head_angle(radians(0))		
-		self.turn_on_color_selector_cube()
-		self.grid_cube = self.robot.world.get_light_cube(cozmo.objects.LightCube2Id)
-		self.grid_cube.set_lights(cozmo.lights.white_light)
+		self.setup()
 		while True:
-			await asyncio.sleep(4)
-			if self.state=='foundcolor' and self.amount_turned_recently<self.moving_threshold:
+			await asyncio.sleep(1)
+			if self.state=='look_around':
+				self.look_around_behavior = self.robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
+			if self.state=='found_color' and self.amount_turned_recently<self.moving_threshold:
 					self.state='driving'
-			print('turned recently {} radians'.format(self.amount_turned_recently))
 			self.amount_turned_recently = radians(0)
-			print("---------------------------------------------------------------------------------")
-			print('state: {}{}{}{}{}{}{}{}{}{}'.format(self.state,self.state,self.state,self.state,self.state,self.state,self.state,self.state,self.state,self.state))
-			print("---------------------------------------------------------------------------------")
+
+##############################################################################################################################################################################################
+
+#this class is only used in the apply method of ColorFinder, 
+#since the add_polygon_to_image method requires a sequences of points 
+#whose values can be accessed by '.x' and '.y' (see cozmo.annotate.add_polygon_to_image)
+
+class Point:
+	def __init__(self,x,y):
+		self.x = x
+		self.y = y
+
+##############################################################################################################################################################################################
+
+red_light = cozmo.lights.red_light
+green_light = cozmo.lights.green_light
+blue_light = cozmo.lights.blue_light
+yellow_light = Light(Color(name='yellow', rgb=(255,255,0)))
+
+#these colors are represented by their approximate ranges. For example, red = (minRed=200, maxRed=255, minGreen=0, maxGreen=70,minBlue=70,maxBlue=255)
+color_dict = {
+'red' : (200,255,0,70,0,70),
+'green' : (0,70,170,255,0,70),
+'blue' : (0,70,0,70,170,255),
+'white' : (230,255,230,255,230,255),
+'black' : (0,30,0,30,0,30),
+'yellow' : (170,255,170,255,0,70),
+}
+
+#currently, this must be updated whenever you add new colors to self.possible_colors_to_find
+color_to_light_dict = {
+'green' : green_light,
+'yellow' : yellow_light,
+'blue' : blue_light,
+'red' : red_light
+}
+
+def color_distance(t1,t2):
+	r,g,b = t1
+	minR,maxR,minG,maxG,minB,maxB = t2
+	rdist_sq = 0
+	gdist_sq = 0
+	bdist_sq = 0
+	if r < minR:
+		rdist_sq = (minR-r)**2
+	if r > maxR:
+		rdist_sq = (maxR-r)**2
+	if g < minG:
+		gdist_sq = (minG-g)**2
+	if g > maxG:
+		gdist_sq = (maxG-g)**2
+	if b < minB:
+		bdist_sq = (minB-b)**2
+	if b > maxB:
+		bdist_sq = (maxB-b)**2
+	return rdist_sq+gdist_sq+bdist_sq
 
 ##############################################################################################################################################################################################
 
 #this class is used to interpret the view through Cozmo's camera to decide where the most prominent blobs of color reside in the grid of pixels
-
 
 class BlobDetector():
 	def __init__(self,matrix,keylist):
@@ -269,11 +298,11 @@ class BlobDetector():
 		self.keylist = keylist
 		self.num_blobs = 1
 		self.blobs_dict = {}
-		self.pixel_keys = None
+		self.pixel_keys = [[None for x in range(len(self.matrix[0]))] for y in range(len(self.matrix))]
 		self.make_blobs_dict()
+		self.filter_blobs_dict_by_size(20)
 
 	def make_blobs_dict(self):
-		self.pixel_keys = [[None for x in range(len(self.matrix[0]))] for y in range(len(self.matrix))]
 		for i in range(len(self.matrix)):
 			for j in range(len(self.matrix[0])):
 				if i==0:
@@ -299,7 +328,6 @@ class BlobDetector():
 							self.join_blob_left(i,j)
 						else:
 							self.join_blob_above(i,j)
-		self.filter_blobs_dict_by_size(20)
 
 	def get_blobs_dict(self):
 		return self.blobs_dict
@@ -316,12 +344,12 @@ class BlobDetector():
 
 	def join_blob_above(self,i,j):
 		blob = self.pixel_keys[i][j-1]
-		self.blobs_dict[blob] = self.blobs_dict[blob] + [(i,j)]
+		self.blobs_dict[blob].append((i,j))
 		self.pixel_keys[i][j] = blob
 
 	def join_blob_left(self,i,j):
 		blob = self.pixel_keys[i-1][j]
-		self.blobs_dict[blob] = self.blobs_dict[blob] + [(i,j)]
+		self.blobs_dict[blob].append((i,j))
 		self.pixel_keys[i][j] = blob
 
 	def merge_up_and_left_blobs(self,i,j):
@@ -348,6 +376,8 @@ class BlobDetector():
 		else:
 			return None
 
+	#currently just gives the approximate center of each blob - self.blob_dict is a dictionary which maps each blob to its set of points
+	#so we take those points and give the average of all the x values and the average of all the y values
 	def get_blob_info(self):
 		info = {}
 		biggest_blobs = []
@@ -358,33 +388,19 @@ class BlobDetector():
 				num,color = blob
 				xs = []
 				ys = []
-				min_x = sys.maxsize
-				min_y = sys.maxsize
-				max_x = 0
-				max_y = 0
 				for (x,y) in self.blobs_dict[blob]:
 					xs.append(x)
 					ys.append(y)
-					if x > max_x:
-						max_x = x
-					if x < min_x:
-						min_x = x
-					if y > max_y:
-						max_y = y
-					if y < min_y:
-						min_y = y
 				average_x = reduce((lambda a,b : a+b),xs)/len(xs)
 				average_y = reduce((lambda a,b : a+b),ys)/len(ys)
-				info[color] = (int(average_x),int(average_y),min_x,max_x,min_y,max_y)
+				info[color] = (int(average_x),int(average_y))
 		return info
 
-	def get_epicenter_and_range_of_blob_with_color(self,color):
+	def get_center_of_blob_with_color(self,color):
 		d = self.get_blob_info()
 		if color in d:
 			return d[color]
 		return None
-
-
 
 ##############################################################################################################################################################################################
 
