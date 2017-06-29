@@ -1,6 +1,7 @@
 .PHONY: copy-clad dist examples license wheel vagrant installer
 
 version = $(shell perl -ne '/__version__ = "([^"]+)/ && print $$1;' src/cozmo/version.py)
+cladversion = $(shell perl -ne '/__version__ = "([^"]+)/ && print $$1;' ../cozmoclad/src/cozmoclad/__init__.py)
 
 copy-clad:
 	rm -rf src/cozmo/_internal/clad/*
@@ -65,16 +66,18 @@ vagrant: dist/vagrant_bundle.tar.gz dist/vagrant_bundle.zip
 
 dist: $(sdist_filename) $(wheel_filename) examples vagrant
 
-installer:
-	rm -f dist/*.whl
-	$(MAKE) $(wheel_filename)
-	rm -f ../cozmoclad/dist/cozmoclad-*.whl
+clad_wheel_filename = dist/cozmoclad-$(cladversion)-py3-none-any.whl
+$(clad_wheel_filename):
 	make -C ../cozmoclad dist
-	cp ../cozmoclad/dist/cozmoclad-*.whl dist
-	rm -rf dist/sdk_package_$(version)
-	mkdir dist/sdk_package_$(version)
-	$(shell echo "#!/bin/bash\n\nworking_dir=\"\`dirname \\\"\$$0\\\"\`\"\n\npip3 uninstall -y cozmoclad\npip3 uninstall -y cozmo\npip3 install \$$working_dir/dist/cozmoclad-*.whl\npip3 install \$$working_dir/$(wheel_filename)" > dist/install.sh)
-	tar -c dist/*.whl | tar -C dist/sdk_package_$(version)  -xv
-	mv dist/install.sh dist/sdk_package_$(version)/install
-	chmod +x dist/sdk_package_$(version)/install
-	cd dist && zip -r sdk_package_$(version).zip sdk_package_$(version)
+	cp ../cozmoclad/$(clad_wheel_filename) $(clad_wheel_filename)
+
+installer_filename = sdk_installer_$(version)_clad_$(cladversion)
+installer: $(wheel_filename) $(clad_wheel_filename)
+	mkdir -p dist/
+	mkdir -p dist/$(installer_filename)
+	$(shell echo "#!/bin/bash\n\nworking_dir=\"\`dirname \\\"\$$0\\\"\`\"\n\npip3 uninstall -y cozmoclad\npip3 uninstall -y cozmo\npip3 install \"\$$working_dir/$(clad_wheel_filename)\"\npip3 install \"\$$working_dir/$(wheel_filename)\"" > dist/install.sh)
+	tar -c $(wheel_filename) $(clad_wheel_filename) | tar -C dist/$(installer_filename) -xv
+	mv dist/install.sh dist/$(installer_filename)/install
+	chmod +x dist/$(installer_filename)/install
+	cd dist && zip -r $(installer_filename).zip $(installer_filename)
+	rm -rf dist/$(installer_filename)
