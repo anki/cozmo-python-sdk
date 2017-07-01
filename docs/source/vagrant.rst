@@ -42,9 +42,10 @@ Install
         cd (location you extracted the .zip file)
         cd vagrant_bundle
 
-    2. Enter the following command::
+    2. Enter the following commands::
 
         vagrant up
+        vagrant ssh
 
     .. important:: Wait for `vagrant up` to completely finish before continuing to the next step.
 
@@ -87,9 +88,10 @@ Install
         tar -xzf vagrant_bundle_***.tar.gz
         cd vagrant_bundle
 
-    2. Enter the following command::
+    2. Enter the following commands::
 
         vagrant up
+        vagrant ssh
 
     .. important:: Wait for `vagrant up` to completely finish before continuing to the next step.
 
