@@ -45,7 +45,6 @@ Install
     2. Enter the following commands::
 
         vagrant up
-        vagrant ssh
 
     .. important:: Wait for `vagrant up` to completely finish before continuing to the next step.
 
@@ -75,6 +74,8 @@ Install
 
       cd /vagrant/cozmo_sdk_examples_***
 
+    .. important:: You must either relaunch with "vagrant up" or save your virtual machine's state when shutting down.  Otherwise the /vagrant/ folder on the virtual machine will be empty on subsequent runs.
+
 ..
 
 6. For **macOS/Linux**:
@@ -91,7 +92,6 @@ Install
     2. Enter the following commands::
 
         vagrant up
-        vagrant ssh
 
     .. important:: Wait for `vagrant up` to completely finish before continuing to the next step.
 
@@ -121,6 +121,8 @@ Install
     .. code-block:: python
 
         cd /vagrant/cozmo_sdk_examples_***
+
+    .. important:: You must either relaunch with "vagrant up" or save your virtual machine's state when shutting down.  Otherwise the /vagrant/ folder on the virtual machine will be empty on subsequent runs.
 
 7. Make sure Cozmo is powered on and charged. Connect to the Cozmo robot's WiFi from the mobile device and then connect to the Cozmo robot within the app.
 8. Enter SDK mode on the app.
