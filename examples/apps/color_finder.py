@@ -19,6 +19,9 @@
 When the program starts, Cozmo will look around for the color blue.
 Tap the cube illuminated blue to switch the color Cozmo will look for.
 Tap the blinking white cube to have the Tkviewer display Cozmo's pixellated camera view.
+
+
+TODO: determine whether to keep pixel_matrix as is, or convert to numpy matrix
 '''
 
 import asyncio
@@ -88,7 +91,9 @@ def color_distance(color,color_range):
 
 
 class ColorFinder(cozmo.annotate.Annotator):
-    ''' one line summary of this class
+    ''' Cozmo's camera view is approximated into a matrix of colors.
+        Cozmo will look around for self.color_to_find, and once spotted,
+        he will drive in the direction of that color.
 
         Args:
             robot (cozmo.robot.Robot): instance of the robot connected from run_program.
@@ -121,7 +126,7 @@ class ColorFinder(cozmo.annotate.Annotator):
         self.state = 'look_around'
 
         self.look_around_behavior = None # type: LookAroundInPlace behavior
-        self.drive_action = None # type: TurnInPlace action
+        self.drive_action = None # type: DriveStraight action
         self.tilt_head_action = None # type: SetHeadAngle action
         self.rotate_action = None # type: TurnInPlace action
 
@@ -166,13 +171,6 @@ class ColorFinder(cozmo.annotate.Annotator):
         self.color_to_find = self.possible_colors_to_find[self.color_to_find_index]
         self.color_selector_cube.set_lights(map_color_to_light[self.color_to_find])
 
-    def get_low_res_view(self):
-        ''' Uses the resize method from the Pillow library to get a low-resolution
-            version of Cozmo's camera view.
-        '''
-        image = self.robot.world.latest_image.raw_image
-        return image.resize((self.grid_width,self.grid_height), resample = Image.LANCZOS)
-
     def update_pixel_matrix(self,downsized_image):
         ''' Uses the getpixel method from the Pillow library to get the RGB values
             of all the pixels in the low-res approximation of Cozmo's camera view.
@@ -184,7 +182,7 @@ class ColorFinder(cozmo.annotate.Annotator):
         self.fill_in_gaps_of_pixel_matrix()
 
     def approximate_color_of_pixel(self,r,g,b):
-        '''Returns the approximate color of this pixel from color_dict.'''
+        ''' Returns the approximate color of this pixel from color_dict.'''
         min_distance = sys.maxsize
         closest_color = ''
         for color_name, color_values in color_dict.items():
@@ -232,6 +230,13 @@ class ColorFinder(cozmo.annotate.Annotator):
         else:
             self.robot.set_backpack_lights_off()
             self.state='look_around'
+
+    def get_low_res_view(self):
+        ''' Uses the resize method from the Pillow library to get a low-resolution
+            version of Cozmo's camera view.
+        '''
+        image = self.robot.world.latest_image.raw_image
+        return image.resize((self.grid_width,self.grid_height), resample = Image.LANCZOS)
 
     def on_finding_a_blob(self,blob_info):
         ''' Determines whether Cozmo should continue to look at the blob, or drive towards it.'''    
@@ -284,7 +289,7 @@ class ColorFinder(cozmo.annotate.Annotator):
 
     def setup(self):
         self.robot.set_head_angle(radians(0))
-        self.robot.drive_straight(distance_mm(100), speed_mmps(100), should_play_anim=False, in_parallel=True)
+        self.robot.drive_straight(distance_mm(50), speed_mmps(100), should_play_anim=False, in_parallel=True)
         self.turn_on_cubes()
 
     async def run(self):
@@ -293,6 +298,7 @@ class ColorFinder(cozmo.annotate.Annotator):
             or by closing the Tkviewer window.
         '''    
         self.setup()
+
         while True:
             await asyncio.sleep(1)
             if self.state=='look_around':
@@ -302,7 +308,7 @@ class ColorFinder(cozmo.annotate.Annotator):
             self.amount_turned_recently = radians(0)
 
 class Point:
-    '''one line summary of this class
+    ''' Auxiliary class to create points for the ColorFinder annotator
 
     Args:
         x (int): x value of the point. x values increase from the left of the Tkviewer to the right
@@ -343,34 +349,34 @@ class BlobDetector():
                     if j==0:
                         self.make_new_blob_at(i,j)
                     else:
-                        if not self.match_blob_above(i,j):
+                        if not self.matches_blob_above(i,j):
                             self.make_new_blob_at(i,j)
                         else:
                             self.join_blob_above(i,j)
                 elif j==0:
-                    if not self.match_blob_left(i,j):
+                    if not self.matches_blob_left(i,j):
                         self.make_new_blob_at(i,j)
                     else:
                         self.join_blob_left(i,j)
                 else:
-                    if (not self.match_blob_left(i,j)) and (not self.match_blob_above(i,j)):
+                    if (not self.matches_blob_left(i,j)) and (not self.matches_blob_above(i,j)):
                         self.make_new_blob_at(i,j)
-                    elif self.match_blob_left(i,j) and self.match_blob_above(i,j) and self.above_and_left_blobs_are_different(i,j):
+                    elif self.matches_blob_left(i,j) and self.matches_blob_above(i,j) and self.above_and_left_blobs_are_different(i,j):
                         self.merge_up_and_left_blobs(i,j)
                     else:
-                        if self.match_blob_left(i,j):
+                        if self.matches_blob_left(i,j):
                             self.join_blob_left(i,j)
-                        elif self.match_blob_above(i,j):
+                        elif self.matches_blob_above(i,j):
                             self.join_blob_above(i,j)
 
     def get_blobs_dict(self):
         return self.blobs_dict
 
-    def match_blob_above(self,i,j):
+    def matches_blob_above(self,i,j):
         ''' Returns true if the current point matches the point above.'''
         return self.matrix[i][j]==self.matrix[i][j-1]
 
-    def match_blob_left(self,i,j):
+    def matches_blob_left(self,i,j):
         ''' Returns true if the current point matches the point to the left.'''
         return self.matrix[i][j]==self.matrix[i-1][j]
 
