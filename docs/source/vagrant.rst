@@ -42,7 +42,7 @@ Install
         cd (location you extracted the .zip file)
         cd vagrant_bundle
 
-    2. Enter the following commands::
+    2. Enter the following command::
 
         vagrant up
 
@@ -89,7 +89,7 @@ Install
         tar -xzf vagrant_bundle_***.tar.gz
         cd vagrant_bundle
 
-    2. Enter the following commands::
+    2. Enter the following command::
 
         vagrant up
 
