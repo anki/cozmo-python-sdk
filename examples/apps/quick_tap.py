@@ -70,7 +70,7 @@ class QuickTapGame:
         self.quick_tap_state='game'
         while max(self.player.score, self.cozmo_player.score)<self.score_to_win:
             await self.game_round()
-        self.report_winner()
+        await self.report_winner()
 
     async def game_round(self):
         ''' '''
@@ -83,6 +83,7 @@ class QuickTapGame:
         await self.cozmo_player.determine_move(self.buzzer_display_type)
         while not self.round_over:
             await asyncio.sleep(0)
+        await self.cozmo_anim_reaction()
 
     async def setup_round(self):
         ''' '''
@@ -131,17 +132,16 @@ class QuickTapGame:
     async def determine_result_of_round(self):
         ''' '''
         await self.determine_first_tapper()
-        if self.buzzer_display_type=='same_colors':
-            if self.first_tapper:
+        if self.first_tapper:
+            if self.buzzer_display_type=='same_colors':
                 self.first_tapper.wins_round()
-        elif self.buzzer_display_type=='different_colors' or self.buzzer_display_type=='red':
-            if self.first_tapper:
+            elif self.buzzer_display_type=='different_colors' or self.buzzer_display_type=='red':
                 self.not_first_tapper.wins_round()
 
     async def determine_first_tapper(self):
         await asyncio.sleep(1)
         if self.player.has_tapped or self.cozmo_player.has_tapped:
-            if self.cozmo_player.tap_time < self.player.tap_time:
+            if self.cozmo_player.elapsed_tap_time < self.player.elapsed_tap_time:
                 self.first_tapper = self.cozmo_player
                 self.not_first_tapper = self.player
             else:
@@ -149,6 +149,12 @@ class QuickTapGame:
                 self.not_first_tapper = self.cozmo_player
         else:
             self.first_tapper = None
+
+    async def cozmo_anim_reaction(self):
+        if self.cozmo_player.won_round:
+            await self.robot.play_anim_trigger(cozmo.anim.Triggers.OnSpeedtapHandCozmoWin).wait_for_completed()
+        else:
+            await self.robot.play_anim_trigger(cozmo.anim.Triggers.OnSpeedtapHandPlayerWin).wait_for_completed()
 
     async def setup_cubes(self):
         ''' Cozmo chooses his cube, then the player chooses,
@@ -215,14 +221,16 @@ class QuickTapGame:
         print("Player score: {}".format(self.player.score))
         print("Cozmo score: {}".format(self.cozmo_player.score))
 
-    def report_winner(self):
+    async def report_winner(self):
         print("---------------------------------------------------")
         print("You won {} rounds".format(self.player.score))
         print("Cozmo won {} rounds".format(self.cozmo_player.score))
         if self.cozmo_player.score > self.player.score:
             print("~COZMO WINS QUICK TAP~")
+            await self.robot.play_anim_trigger(cozmo.anim.Triggers.OnSpeedtapCozmoWinHighIntensity).wait_for_completed()
         else:
             print("~PLAYER WINS QUICK TAP~")
+            await self.robot.play_anim_trigger(cozmo.anim.Triggers.OnSpeedtapPlayerWinHighIntensity).wait_for_completed()
         print("---------------------------------------------------")
 
 
@@ -233,18 +241,21 @@ class QuickTapPlayer():
         self.score = 0
         self.has_tapped = False
         self.name = "Player"
-        self.tap_time = None
+        self.elapsed_tap_time = None
+        self.won_round = False
 
     def wins_round(self):
         print("{} wins the round".format(self.name))
         self.score+=1
+        self.won_round = True
 
     def reset(self):
-        self.tap_time = sys.maxsize
+        self.elapsed_tap_time = sys.maxsize
         self.has_tapped = False
+        self.won_round = False
 
     def register_tap(self,round_start_time):
-        self.tap_time = time.time()-round_start_time
+        self.elapsed_tap_time = time.time()-round_start_time
         self.has_tapped = True
 
 class CozmoQuickTapPlayer(QuickTapPlayer):
