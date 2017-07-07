@@ -134,6 +134,12 @@ class Angle:
         '''float: The angle in degrees.'''
         return self._radians / math.pi * 180
 
+    @property
+    def abs_val(self):
+        if self.__lt__(radians(0)):
+            return radians(0) - self
+        return self
+
 
 def degrees(degrees):
     '''Returns an :class:`cozmo.util.Angle` instance set to the specified number of degrees.'''
@@ -143,11 +149,6 @@ def degrees(degrees):
 def radians(radians):
     '''Returns an :class:`cozmo.util.Angle` instance set to the specified number of radians.'''
     return Angle(radians=radians)
-
-def abs_val(angle):
-    if angle < radians(0):
-        return radians(0) - angle
-    return angle
 
 
 class Distance:
