@@ -692,6 +692,9 @@ class Robot(event.Dispatcher):
             self._is_ready = True
             logger.info('Robot id=%s serial=%s initialized OK', self.robot_id, self.serial)
             self.dispatch_event(EvtRobotReady, robot=self)
+
+            self._idle_stack_depth = 0
+            self.set_idle_animation(anim.Triggers.Count)
         asyncio.ensure_future(_init(), loop=self._loop)
 
     def _set_none_behavior(self):
@@ -1307,29 +1310,31 @@ class Robot(event.Dispatcher):
     def set_idle_animation(self, anim_trigger):
         '''Set the Idle Animation on Cozmo
 
-        Idle animations behave the same as regular animations except that they
-        loop forever on Cozmo regardless of what actions and animations
-        are being played.
+        Idle animations keep Cozmo alive inbetween the times other animations play.
+        They behave the same as regular animations except that they
+        loop forever until another animation is started.
 
         Args:
             anim_trigger (:class:`cozmo.anim.Triggers`): The animation trigger to set
-                Note: :attr:`cozmo.anim.Triggers.Count` will clear all idle animations.
         Raises:
             :class:`ValueError` if supplied an invalid animation trigger.
         '''
         if not isinstance(anim_trigger, anim._AnimTrigger):
             raise TypeError("Invalid anim_trigger supplied")
 
-        msg = _clad_to_engine_iface.SetIdleAnimation(robotID=self.robot_id,
-                                                     animTrigger=anim_trigger.id)
+        msg = _clad_to_engine_iface.PushIdleAnimation(animTrigger=anim_trigger.id,
+                                                      lockName="sdk")
         self.conn.send_msg(msg)
+        self._idle_stack_depth += 1
+
 
     def clear_idle_animation(self):
         '''Clears any Idle Animation currently playing on Cozmo'''
-
-        #NOTE: pylint doesn't identify the member "Count" on this namedTuple which is added at runtime
-        #pylint: disable=no-member
-        self.set_idle_animation(anim.Triggers.Count)
+        msg = _clad_to_engine_iface.RemoveIdleAnimation(lockName="sdk")
+        
+        while(self._idle_stack_depth > 0):
+            self.conn.send_msg(msg)
+            self._idle_stack_depth -= 1
 
     # Cozmo's Face animation commands
 
