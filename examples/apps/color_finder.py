@@ -27,6 +27,7 @@ TODO: determine whether to keep pixel_matrix as is, or convert to numpy matrix
 import asyncio
 import functools
 import math
+import numpy
 import sys
 
 import cozmo
@@ -43,7 +44,7 @@ except ImportError:
             Instead of defining a color as a single (R, G, B) point, 
             colors are defined with a minimum and maximum value for R, G, and B.
             For example, a point with (R, G, B) = (40, 65, 195) falls in the 'blue' region, 
-            because 0 < 40 < 70, 0 < 65 < 70, and 170 < 195 < 255.
+            because 0 < 40 < 70, 0 < 65 < 70, and 200 < 195 < 255.
         
         map_color_to_light (dict): maps each color name with its cozmo.lights.Light value.
             Red, green, and blue lights are already defined as constants in lights.py, 
@@ -52,13 +53,14 @@ except ImportError:
         color_distance_sqr (fn (color, color_range) => int): returns the squared 
             euclidean distance of color to color_range. 
 '''
+
 color_dict = {
 'red' : (200, 255, 0, 70, 0, 70), 
-'green' : (0, 70, 170, 255, 0, 70), 
-'blue' : (0, 70, 0, 70, 170, 255), 
-'white' : (230, 255, 230, 255, 230, 255), 
-'black' : (0, 30, 0, 30, 0, 30), 
-'yellow' : (170, 255, 170, 255, 0, 70), 
+'green' : (0, 70, 200, 255, 0, 70), 
+'blue' : (0, 70, 0, 70, 200, 255), 
+'white' : (200, 255, 200, 255, 200, 255), 
+'black' : (0, 30, 0, 30, 0, 30),
+'yellow' : (200, 255, 200, 255, 0, 70), 
 }
 
 map_color_to_light = {
@@ -87,6 +89,30 @@ def color_distance_sqr(color, color_range):
     if b > maxB:
         bdist_sq = (maxB-b)**2
     return rdist_sq+gdist_sq+bdist_sq
+
+def gray_world(img):
+    ''' Simple color-balancing algorithm for more accurate color distinction.
+
+        Args:
+            nimg: image array containing the RGB data of a PIL image
+    '''
+    nimg = from_pil(img)
+    nimg = nimg.transpose(2, 0, 1).astype(numpy.uint32)
+    mu_g = numpy.average(nimg[1])
+    nimg[0] = numpy.minimum(nimg[0] * (mu_g / numpy.average(nimg[0])), 255)
+    nimg[2] = numpy.minimum(nimg[2] * (mu_g / numpy.average(nimg[2])), 255)
+    return to_pil(nimg.transpose(1, 2, 0).astype(numpy.uint8))
+
+def from_pil(pimg):
+    ''' Converts PIL image into image array for use by gray_world.'''
+    pimg = pimg.convert(mode='RGB')
+    nimg = numpy.asarray(pimg)
+    nimg.flags.writeable = True
+    return nimg
+
+def to_pil(nimg):
+    ''' Converts image array back into PIL image.'''
+    return Image.fromarray(numpy.uint8(nimg))
 
 LOOK_AROUND_STATE = 'look_around'
 FOUND_COLOR_STATE = 'found_color'
@@ -239,7 +265,7 @@ class ColorFinder(cozmo.annotate.Annotator):
 
     def get_low_res_view(self):
         ''' Returns a low-resolution version of Cozmo's camera view.'''
-        image = self.robot.world.latest_image.raw_image
+        image = gray_world(self.robot.world.latest_image.raw_image)
         return image.resize((self.downsize_width, self.downsize_height), resample = Image.LANCZOS)
 
     def on_finding_a_blob(self, blob_info):
@@ -272,10 +298,14 @@ class ColorFinder(cozmo.annotate.Annotator):
                     the perceived vertical distance of the blob from center-screen
                 amount_rotate (cozmo.util.Angle): 
                     the perceived horizontal distance of the blob from center-screen
+
+            Returns:
+                too_far (bool): whether the object is too far from center-screen
         '''
         too_far_vertical = (amount_move_head.abs_val > self.fov_y/8)
         too_far_horizontal = (amount_rotate.abs_val > self.fov_x/8)
-        return (too_far_vertical or too_far_horizontal)
+        too_far = too_far_vertical or too_far_horizontal
+        return too_far
 
     def look_at_it(self, amount_move_head, amount_rotate):
         ''' Calls actions that tilt Cozmo's head and rotate his body toward the color.
@@ -551,7 +581,10 @@ class MyMatrix():
 
             Args:
                 i (int): the x-coordinate in self
-                j (int): the y-coordinate in self             
+                j (int): the y-coordinate in self
+
+            Returns:
+                self._matrix[i][j] (MatrixValueContainer): the MatrixValueContainer at the specified coordinates             
         '''
         return self._matrix[i][j]
 
@@ -608,9 +641,9 @@ class MatrixValueContainer():
 class Point:
     ''' Auxiliary class to create points for the ColorFinder annotator.
 
-    Args:
-        x (int): x value of the point. x values increase from the left of the Tkviewer to the right
-        y (int): y value of the point. y values increase from the top of the Tkviewer to the bottom
+        Args:
+            x (int): x value of the point. x values increase from the left of the Tkviewer to the right
+            y (int): y value of the point. y values increase from the top of the Tkviewer to the bottom
 
     '''
     def __init__(self, x, y):
