@@ -15,11 +15,11 @@
 # limitations under the License.
 
 '''Cozmo looks around and drives after colors.
+Place a tennis ball near Cozmo and see if he can go play with it!
 
-When the program starts, Cozmo will look around for the color blue.
-Tap the cube illuminated blue to switch Cozmo's target color between blue, red, green, and yellow.
+When the program starts, Cozmo will look around for the color yellow.
+Tap the cube illuminated yellow to switch Cozmo's target color between yellow, blue, red, green.
 Tap the blinking white cube to have the viewer display Cozmo's pixelated camera view.
-
 '''
 
 import asyncio
@@ -30,7 +30,7 @@ import sys
 
 import cozmo
 
-from cozmo.util import degrees, distance_mm, radians, speed_mmps
+from cozmo.util import degrees, distance_mm, radians, speed_mmps, Vector2
 from cozmo.lights import Color, Light
 try:
     from PIL import Image, ImageColor, ImageDraw
@@ -40,7 +40,6 @@ except ImportError:
 # map_color_to_light (dict): maps each color name with its cozmo.lights.Light value.
 # Red, green, and blue lights are already defined as constants in lights.py, 
 # but we need to define our own custom Light for yellow.
-
 map_color_to_light = {
 'green' : cozmo.lights.green_light, 
 'yellow' : Light(Color(name='yellow', rgb = (255, 255, 0))), 
@@ -48,28 +47,35 @@ map_color_to_light = {
 'red' : cozmo.lights.red_light
 }
 
-# color_dict (dict): map of color names to regions in color space.
+# color_ranges (dict): map of color names to regions in color space.
 # Instead of defining a color as a single (R, G, B) point, 
 # colors are defined with a minimum and maximum value for R, G, and B.
 # For example, a point with (R, G, B) = (40, 15, 225) falls entirely in the 'blue' region, 
 # because 0 < 40 < 50, 0 < 15 < 50, and 210 < 225 < 255.
 # A point with (R, G, B) = (95, 240, 160) does not fall exactly in one color region.
-# But applying color_distance_sqr between this color and all the colors in color_dict
+# But applying color_distance_sqr between this color and all the colors in color_ranges
 # will show that (95, 240, 160) is closest to the 'green' region.
-
-color_dict = {
+color_ranges = {
 'red' : (210, 255, 0, 50, 0, 50), 
 'green' : (0, 50, 210, 255, 0, 50), 
 'blue' : (0, 50, 0, 50, 210, 255), 
-'white' : (200, 255, 200, 255, 200, 255), 
+'white' : (195, 255, 195, 255, 195, 255), 
 'black' : (0, 30, 0, 30, 0, 30),
-'yellow' : (210, 255, 210, 255, 0, 50), 
+'yellow' : (210, 255, 210, 255, 0, 70), 
 }
 
-# color_distance_sqr (fn (color, color_range) => int): returns the squared 
-# euclidean distance of color to color_range.
-
 def color_distance_sqr(color, color_range):
+    '''Determines the squared euclidean distance between color and color_range.
+
+    Args:
+        color (int, int, int): the R, G, B values of the color
+        color_range(int, int, int, int, int, int): the minimum and maximum for R, G, and B for the color range
+
+    Returns:
+        squared distance between color and color_range,
+        which is the sum of the squared distances from 
+        the R, G, B values to their respective ranges
+    '''
     r, g, b = color
     minR, maxR, minG, maxG, minB, maxB = color_range
     rdist_sq = 0
@@ -77,42 +83,49 @@ def color_distance_sqr(color, color_range):
     bdist_sq = 0
     if r < minR:
         rdist_sq = (minR-r)**2
-    if r > maxR:
+    elif r > maxR:
         rdist_sq = (maxR-r)**2
     if g < minG:
         gdist_sq = (minG-g)**2
-    if g > maxG:
+    elif g > maxG:
         gdist_sq = (maxG-g)**2
     if b < minB:
         bdist_sq = (minB-b)**2
-    if b > maxB:
+    elif b > maxB:
         bdist_sq = (maxB-b)**2
-    return rdist_sq+gdist_sq+bdist_sq
-
-# color_balance (fn PIL image => PIL image): balances the color in an image.
-# Adjusts the color data in the image_array representation of an image so that
-# the average R, G, B values across the entire image end up equal.
-# This is called a 'gray-world' algorithm, because the colors
-# with equal R, G, B values fall along the grayscale.
+    sum_dist_sq = rdist_sq+gdist_sq+bdist_sq
+    return sum_dist_sq
 
 def color_balance(image):
-    image_array = from_pil(image)
+    '''Adjusts the color data of an image so that the average R, G, B values
+    across the entire image end up equal.
+
+    This is called a 'gray-world' algorithm, because the colors
+    with equal R, G, B values fall along the grayscale.
+    https://web.stanford.edu/~sujason/ColorBalancing/grayworld.html
+
+    Args:
+        image (PIL image): the image being color-balanced
+
+    Returns
+        the PIL image with balanced color distribution
+    '''
+
+    image_array = from_pillow_image(image)
     image_array = image_array.transpose(2, 0, 1).astype(numpy.uint32)
     average_g = numpy.average(image_array[1])
     image_array[0] = numpy.minimum(image_array[0] * (average_g / numpy.average(image_array[0])), 255)
     image_array[2] = numpy.minimum(image_array[2] * (average_g / numpy.average(image_array[2])), 255)
-    return to_pil(image_array.transpose(1, 2, 0).astype(numpy.uint8))
+    return to_pillow_image(image_array.transpose(1, 2, 0).astype(numpy.uint8))
 
-# from_pil (fn PIL image => image array): converts PIL image to image array.
-
-def from_pil(image):
+def from_pillow_image(image):
+    '''Converts PIL image to image array.'''
     image_array = numpy.asarray(image)
     image_array.flags.writeable = True
     return image_array
 
-# to_pil (fn image array => PIL image): converts image array to PIL image.
-
-def to_pil(image_array):
+def to_pillow_image(image_array):
+    '''Coverts image array to PIL image.'''
     return Image.fromarray(numpy.uint8(image_array))
 
 
@@ -120,8 +133,8 @@ LOOK_AROUND_STATE = 'look_around'
 FOUND_COLOR_STATE = 'found_color'
 DRIVING_STATE = 'driving'
 
-CAMERA_WIDTH = 320
-CAMERA_HEIGHT = 240
+ANNOTATOR_WIDTH = 640.0
+ANNOTATOR_HEIGHT = 480.0
 
 
 class ColorFinder(cozmo.annotate.Annotator):
@@ -133,7 +146,6 @@ class ColorFinder(cozmo.annotate.Annotator):
 
     Args:
         robot (cozmo.robot.Robot): instance of the robot connected from run_program.
-
     '''
     def __init__(self, robot: cozmo.robot.Robot):
 
@@ -146,7 +158,7 @@ class ColorFinder(cozmo.annotate.Annotator):
         self.robot.add_event_handler(cozmo.world.EvtNewCameraImage, self.on_new_camera_image)
 
         self.color_selector_cube = None # type: LightCube
-        self.color_to_find = 'blue'
+        self.color_to_find = 'yellow'
         self.possible_colors_to_find = ['green', 'yellow', 'blue', 'red']
         self.color_to_find_index = self.possible_colors_to_find.index(self.color_to_find)
 
@@ -173,20 +185,19 @@ class ColorFinder(cozmo.annotate.Annotator):
         '''Draws a pixelated grid of Cozmo's approximate camera view
         onto the viewer window.
             
-        WM and HM are multipliers that scale the dimensions of the grid squares 
+        WM and HM are multipliers that scale the dimensions of the annotated squares 
         based on self.downsize_width and self.downsize_height
-
         '''
         d = ImageDraw.Draw(image)
-        WM = 20*32/self.downsize_width
-        HM = 20*24/self.downsize_height
+        WM = ANNOTATOR_WIDTH/self.downsize_width
+        HM = ANNOTATOR_HEIGHT/self.downsize_height
 
         for i in range(self.downsize_width):
             for j in range(self.downsize_height):
-                pt1 = Point(i*WM, j*HM)
-                pt2 = Point(i*WM, (j+1)*HM)
-                pt3 = Point((i+1)*WM, (j+1)*HM)
-                pt4 = Point((i+1)*WM, j*HM)
+                pt1 = Vector2(i*WM, j*HM)
+                pt2 = Vector2(i*WM, (j+1)*HM)
+                pt3 = Vector2((i+1)*WM, (j+1)*HM)
+                pt4 = Vector2((i+1)*WM, j*HM)
                 points_seq = (pt1, pt2, pt3, pt4)
                 cozmo.annotate.add_polygon_to_image(image, points_seq, 1.0, 'green', self.pixel_matrix.at(i, j).value)
 
@@ -195,8 +206,7 @@ class ColorFinder(cozmo.annotate.Annotator):
 
     def on_cube_tap(self, evt, obj, **kwargs):
         '''The blinking white cube switches the viewer between normal mode and pixel mode.
-        The other illuminated cube toggles self.color_to_find.
-        
+        The other illuminated cube toggles self.color_to_find.       
         '''    
         if obj.object_id == self.color_selector_cube.object_id:
             self.toggle_color_to_find()
@@ -232,7 +242,6 @@ class ColorFinder(cozmo.annotate.Annotator):
 
         Args:
             downsized_image (PIL image): the low-resolution version of self.robot.world.latest_image
-
         '''
         for i in range(self.pixel_matrix.num_cols):
             for j in range(self.pixel_matrix.num_rows):
@@ -249,12 +258,11 @@ class ColorFinder(cozmo.annotate.Annotator):
             b (int): the amount of blue in the pixel
 
         Returns:
-            closest_color (string): the name of the color closest to the input RGB color
-
+            string specifying the name of the color range closest to the input color
         '''
         min_distance = sys.maxsize
         closest_color = ''
-        for color_name, color_values in color_dict.items():
+        for color_name, color_values in color_ranges.items():
             d = color_distance_sqr((r, g, b), color_values)
             if d < min_distance:
                 min_distance = d
@@ -265,8 +273,7 @@ class ColorFinder(cozmo.annotate.Annotator):
         '''Downsizes Cozmo's camera view to the specified dimensions.
 
         Returns:
-            downsized_image (PIL image): low-resolution version of Cozmo's camera view.
-
+            PIL image downsized to low-resolution version of Cozmo's camera view.
         '''
         image = color_balance(self.robot.world.latest_image.raw_image)
         downsized_image = image.resize((self.downsize_width, self.downsize_height), resample = Image.LANCZOS)
@@ -277,17 +284,13 @@ class ColorFinder(cozmo.annotate.Annotator):
             
         Args:
             blob_info (int, int): coordinates of the blob's center in self.pixel_matrix
-
         '''
         self.robot.set_center_backpack_lights(map_color_to_light[self.color_to_find])
-
         x, y = blob_info
-        WM = 10.0*32/self.downsize_width  # WM and HM are multipliers that adjust the amount to turn
-        HM = 10.0*24/self.downsize_height # based on the current dimensions of self.pixel_matrix.
         # 'fov' stands for 'field of view'. This is the angle amount
         # that Cozmo can see to the edges of his camera view.
-        amount_move_head = radians(self.fov_y.radians*((CAMERA_HEIGHT/2)-y*HM)/CAMERA_HEIGHT)
-        amount_rotate = radians(self.fov_x.radians*((CAMERA_WIDTH/2)-x*WM)/CAMERA_WIDTH)
+        amount_move_head = radians(self.fov_y.radians*(.5-y/self.downsize_height))
+        amount_rotate = radians(self.fov_x.radians*(.5-x/self.downsize_width))
         if self.moved_too_far_from_center(amount_move_head, amount_rotate):
             self.state = FOUND_COLOR_STATE
         if self.state != DRIVING_STATE:
@@ -305,8 +308,7 @@ class ColorFinder(cozmo.annotate.Annotator):
                 the perceived horizontal distance of the blob from center-screen
 
         Returns:
-            too_far (bool): whether the object is too far from center-screen
-
+            bool specifying whether the object is too far from center-screen
         '''
         too_far_vertical = (amount_move_head.abs_val > self.fov_y/6)
         too_far_horizontal = (amount_rotate.abs_val > self.fov_x/6)
@@ -321,7 +323,6 @@ class ColorFinder(cozmo.annotate.Annotator):
                the perceived vertical distance of the blob from center-screen
            amount_rotate (cozmo.util.Angle): 
                the perceived horizontal distance of the blob from center-screen
-
         '''
         self.abort_these_actions(self.tilt_head_action, self.rotate_action, self.drive_action)
         new_head_angle = self.robot.head_angle + amount_move_head
@@ -334,13 +335,12 @@ class ColorFinder(cozmo.annotate.Annotator):
         '''Drives straight once prior actions have been cancelled.'''
         self.abort_these_actions(self.tilt_head_action, self.rotate_action)
         if self.should_start_action(self.drive_action):
-            self.drive_action = self.robot.drive_straight(distance_mm(100), speed_mmps(300), should_play_anim = False, in_parallel = True)
+            self.drive_action = self.robot.drive_straight(distance_mm(500), speed_mmps(300), should_play_anim = False, in_parallel = True)
         if self.should_start_action(self.lift_action):
             self.lift_action = self.robot.set_lift_height(1.0, in_parallel = True)
 
     def abort_these_actions(self, *actions):
-        '''Aborts the input actions if they are currently running. We use the
-        asterisk (*) in our input so that the input can be any number of actions.
+        '''Aborts the input actions if they are currently running.
 
         Args:
             *actions (list): the list of actions
@@ -356,8 +356,7 @@ class ColorFinder(cozmo.annotate.Annotator):
             action (action): the action that should or should not be started
 
         Returns:
-            should_start (bool): whether the action is not running or is currently None
-
+            bool specifying whether the action is not running or is currently None
         '''
         should_start = ((action == None) or (not action.is_running))
         return should_start
@@ -376,7 +375,6 @@ class ColorFinder(cozmo.annotate.Annotator):
     async def run(self):
         '''Program runs until typing CRTL+C into Terminal/Command Prompt, 
         or by closing the viewer window.
-
         '''    
         if not self.connect_cubes_success():
             print("Error message about cubes")
@@ -402,7 +400,6 @@ class BlobDetector():
     Args:
         matrix (int[][]) : the pixel_matrix from ColorFinder
         keylist (list of strings): the list of possible_colors_to_find from ColorFinder
-
     '''
     def __init__(self, matrix, keylist):
         self.matrix = matrix
@@ -412,7 +409,7 @@ class BlobDetector():
         self.blobs_dict = {}
         self.keys = MyMatrix(None, self.matrix.num_cols, self.matrix.num_rows)
         self.make_blobs_dict()
-        self.filter_blobs_dict_by_size(20) # prevents a lot of irrelevant blobs from being processed
+        self.filter_blobs_dict_by_size(10) # prevents a lot of irrelevant blobs from being processed
 
     def make_blobs_dict(self):
         '''Using a connected components algorithm, constructs a dictionary 
@@ -423,7 +420,6 @@ class BlobDetector():
             and color is the color of that blob. This way, two different blobs of the same color
             have two distinct keys.
             Value : the list of points in the blob.
-
         '''
         for i in range(self.matrix.num_cols):
             for j in range(self.matrix.num_rows):
@@ -447,8 +443,7 @@ class BlobDetector():
             j (int): the y-coordinate in self.matrix
 
         Returns:
-            matches_above (bool): whether the current point matches the point above.
-
+            bool specifying whether the current point matches the point above.
         '''
         if j == 0:
             return False
@@ -463,8 +458,7 @@ class BlobDetector():
             j (int): the y-coordinate in self.matrix
 
         Returns:
-            matches_left (bool): whether the current point matches the point to the left.
-
+            bool specifying whether the current point matches the point to the left.
         '''
         if i == 0:
             return False
@@ -480,9 +474,7 @@ class BlobDetector():
             j (int): the y-coordinate in self.matrix
 
         Returns:
-            above_and_left_different (bool): whether the above blob and the left blob
-            have different keys in self.keys
-
+            bool specifying whether the above blob and the left blob have different keys in self.keys
         '''
         if i == 0 or j == 0:
             return False
@@ -496,7 +488,6 @@ class BlobDetector():
         Args:
             i (int): the x-coordinate in self.matrix
             j (int): the y-coordinate in self.matrix
-
         '''
         self.blobs_dict[(self.num_blobs, self.matrix.at(i, j).value)] = [(i, j)]
         self.keys.at(i, j).set((self.num_blobs, self.matrix.at(i, j).value))
@@ -508,7 +499,6 @@ class BlobDetector():
         Args:
             i (int): the x-coordinate in self.matrix
             j (int): the y-coordinate in self.matrix
-
         '''
         above_blob_key = self.keys.at(i, j-1).value
         self.blobs_dict[above_blob_key].append((i, j))
@@ -520,7 +510,6 @@ class BlobDetector():
         Args:
             i (int): the x-coordinate in self.matrix
             j (int): the y-coordinate in self.matrix
-
         '''
         left_blob_key = self.keys.at(i-1, j).value
         self.blobs_dict[left_blob_key].append((i, j))
@@ -533,7 +522,6 @@ class BlobDetector():
         Args:
             i (int): the x-coordinate in self.matrix
             j (int): the y-coordinate in self.matrix
-
         '''
         above_blob_key = self.keys.at(i, j-1).value
         left_blob_key = self.keys.at(i-1, j).value
@@ -552,7 +540,6 @@ class BlobDetector():
 
         Args:
             n (int): the number of points required of a blob to stay in self.blobs_dict
-
         '''
         self.blobs_dict = dict((blob, list_of_points) for blob, list_of_points in self.blobs_dict.items() if len(list_of_points) >= n)
 
@@ -564,7 +551,6 @@ class BlobDetector():
 
         Returns:
             the key of the largest blob with that color, or None if no such blob exists
-
         '''
         filtered_dict = dict(((n, k), v) for (n, k), v in self.blobs_dict.items() if k == color)
         values = filtered_dict.values()
@@ -579,10 +565,9 @@ class BlobDetector():
         '''Constructs a dictionary to keep track of the center of each blob.
 
         Returns:
-            info (dict) : the dictionary of blob centers
+            dict of blob centers
                 Key: color (string): the color of the blob
                 Value: x, y (int, int): the approximate center of the blob as coordinates of self.matrix
-
         '''
         info = {}
         biggest_blobs = []
@@ -602,16 +587,15 @@ class BlobDetector():
         return info
 
     def get_center_of_blob_with_color(self, color):
-        '''Returns the center of a blob if there is a blob with the specified color.
+        '''Gets the center of a blob if there is a blob with the specified color.
         Otherwise, returns None.
 
         Args:
             color (string): the desired color of a blob
 
         Returns:
-            d[color] (int, int): the location of the center of the desired blob, 
+            (int, int) specifying the coordinates of the center of the desired blob, 
             or None if there is no blob of that color
-
         '''
         d = self.make_blob_centers()
         if color in d:
@@ -626,7 +610,6 @@ class MyMatrix():
         initial_value : the value assigned to every MatrixValueContainer when building the matrix
         num_cols (int): the number of columns in the matrix, specified in ColorFinder as downsize_width
         num_rows (int): the number of rows in the matrix, specified in ColorFinder as downsize_height
-
     '''
     def __init__(self, initial_value, num_cols, num_rows):
         self.num_cols = num_cols
@@ -641,15 +624,13 @@ class MyMatrix():
             j (int): the y-coordinate in self
 
         Returns:
-            self._matrix[i][j] (MatrixValueContainer): the MatrixValueContainer at the specified coordinates
-
+            the MatrixValueContainer at the specified coordinates
         '''
         return self._matrix[i][j]
 
     def fill_gaps(self):
         '''Fills in squares in self._matrix that meet the condition
         in the surrounded method.
-
         '''
         for i in range(self.num_cols):
             for j in range(self.num_rows):
@@ -667,7 +648,6 @@ class MyMatrix():
 
         Returns:
             the surrounding value if the condition is True, otherwise returns None
-
         '''
         if i != 0 and i != self.num_cols-1 and j != 0 and j != self.num_rows-1:
             left_value, up_value, right_value, down_value = self.get_neighboring_values(i, j)
@@ -690,7 +670,6 @@ class MyMatrix():
 
         Returns:
             A four-tuple containing (left_value, up_value, right_value, and down_value)
-
         '''
         return (self.at(i-1, j), self.at(i, j-1), self.at(i+1, j), self.at(i, j+1))
 
@@ -710,26 +689,12 @@ class MatrixValueContainer():
 
     Args:
         value : the value of the MatrixValue
-
     '''
     def __init__(self, value):
         self.value = value
 
     def set(self, new_value):
         self.value = new_value
-
-
-class Point:
-    '''Auxiliary class to create points for the ColorFinder annotator.
-
-    Args:
-        x (int): x value of the point. x values increase from the left of the viewer to the right
-        y (int): y value of the point. y values increase from the top of the viewer to the bottom
-
-    '''
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
 
 
 async def cozmo_program(robot: cozmo.robot.Robot):
