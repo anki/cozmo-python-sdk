@@ -234,6 +234,7 @@ class ColorFinder(cozmo.annotate.Annotator):
             self.on_finding_a_blob(blob_info)
         else:
             self.robot.set_backpack_lights_off()
+            self.abort_these_actions(self.drive_action)
             self.state = LOOK_AROUND_STATE
 
     def update_pixel_matrix(self, downsized_image):
