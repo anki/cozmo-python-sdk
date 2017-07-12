@@ -15,6 +15,7 @@
 # limitations under the License.
 
 '''Cozmo looks around and drives after colors.
+
 Place a tennis ball near Cozmo and see if he can go play with it!
 
 When the program starts, Cozmo will look around for the color yellow.
@@ -97,8 +98,7 @@ def color_distance_sqr(color, color_range):
     return sum_dist_sq
 
 def color_balance(image):
-    '''Adjusts the color data of an image so that the average R, G, B values
-    across the entire image end up equal.
+    '''Adjusts the color data of an image so that the average R, G, B values across the entire image end up equal.
 
     This is called a 'gray-world' algorithm, because the colors
     with equal R, G, B values fall along the grayscale.
@@ -182,8 +182,7 @@ class ColorFinder(cozmo.annotate.Annotator):
         self.lift_action = None # type: SetLiftHeight action
 
     def apply(self, image, scale):
-        '''Draws a pixelated grid of Cozmo's approximate camera view
-        onto the viewer window.
+        '''Draws a pixelated grid of Cozmo's approximate camera view onto the viewer window.
             
         WM and HM are multipliers that scale the dimensions of the annotated squares 
         based on self.downsize_width and self.downsize_height
@@ -366,7 +365,7 @@ class ColorFinder(cozmo.annotate.Annotator):
         self.color_selector_cube.set_lights(map_color_to_light[self.color_to_find])
         self.grid_cube.set_lights(cozmo.lights.white_light.flash())
 
-    def connect_cubes_success(self):
+    def cubes_connected(self):
         '''Returns true if Cozmo connects to both cubes successfully.'''   
         self.color_selector_cube = self.robot.world.get_light_cube(cozmo.objects.LightCube1Id)
         self.grid_cube = self.robot.world.get_light_cube(cozmo.objects.LightCube2Id)
@@ -376,8 +375,8 @@ class ColorFinder(cozmo.annotate.Annotator):
         '''Program runs until typing CRTL+C into Terminal/Command Prompt, 
         or by closing the viewer window.
         '''    
-        if not self.connect_cubes_success():
-            print("Error message about cubes")
+        if not self.cubes_connected():
+            print("Cubes did not connect successfully - check that they are nearby. You may need to replace the batteries.")
             return
         self.turn_on_cubes()
         await self.robot.drive_straight(distance_mm(100), speed_mmps(50)).wait_for_completed()
@@ -466,8 +465,7 @@ class BlobDetector():
         return matches_left
 
     def above_and_left_blobs_are_different(self, i, j):
-        '''Returns true if the point above and the point to the left
-        belong to different blobs.
+        '''Returns true if the point above and the point to the left belong to different blobs.
 
         Args:
             i (int): the x-coordinate in self.matrix
@@ -517,7 +515,7 @@ class BlobDetector():
 
     def merge_up_and_left_blobs(self, i, j):
         '''Adds current point and points from the above blob into left blob, 
-            then removes the above blob from self.blob_dict
+        then removes the above blob from self.blob_dict
 
         Args:
             i (int): the x-coordinate in self.matrix
@@ -550,7 +548,7 @@ class BlobDetector():
             color (string): the desired color of the blob
 
         Returns:
-            the key of the largest blob with that color, or None if no such blob exists
+            (int, string) specifying the key of the largest blob with that color, or None if no such blob exists
         '''
         filtered_dict = dict(((n, k), v) for (n, k), v in self.blobs_dict.items() if k == color)
         values = filtered_dict.values()
@@ -587,8 +585,7 @@ class BlobDetector():
         return info
 
     def get_center_of_blob_with_color(self, color):
-        '''Gets the center of a blob if there is a blob with the specified color.
-        Otherwise, returns None.
+        '''Gets the center of a blob if there is a blob with the specified color. Otherwise, returns None.
 
         Args:
             color (string): the desired color of a blob
@@ -629,8 +626,7 @@ class MyMatrix():
         return self._matrix[i][j]
 
     def fill_gaps(self):
-        '''Fills in squares in self._matrix that meet the condition
-        in the surrounded method.
+        '''Fills in squares in self._matrix that meet the condition in the surrounded method.
         '''
         for i in range(self.num_cols):
             for j in range(self.num_rows):
@@ -639,8 +635,7 @@ class MyMatrix():
                     self.at(i, j).set(val)
 
     def surrounded(self, i, j):
-        '''Checks if a point is surrounded 
-        by at least 3 point of the same value.
+        '''Checks if a point is surrounded by at least 3 points of the same value.
 
         Args:
             i (int): the x-coordinate in self._matrix
@@ -648,6 +643,8 @@ class MyMatrix():
 
         Returns:
             the surrounding value if the condition is True, otherwise returns None
+            When used in the context of ColorFinder, the surrounding value would be the string
+            specifying the name of the color surrounding this square.
         '''
         if i != 0 and i != self.num_cols-1 and j != 0 and j != self.num_rows-1:
             left_value, up_value, right_value, down_value = self.get_neighboring_values(i, j)
