@@ -222,14 +222,14 @@ class Camera(event.Dispatcher):
             self.color_image_enabled = False
         self._reset_partial_state()
 
-    def enable_auto_exposure(self):
+    def enable_auto_exposure(self, enable_exposure = True):
         '''Enable auto exposure on Cozmo's Camera.
 
         Enable auto exposure on Cozmo's camera to constantly update the exposure
         time and gain values based on the recent images. This is the default mode
         when any SDK program starts.
         '''
-        msg = _clad_to_engine_iface.SetCameraSettings(enableAutoExposure=True)
+        msg = _clad_to_engine_iface.SetCameraSettings(enableAutoExposure = enable_exposure)
         self.robot.conn.send_msg(msg)
 
     def set_manual_exposure(self, exposure_ms, gain):

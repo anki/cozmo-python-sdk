@@ -168,10 +168,10 @@ class ColorFinder(cozmo.annotate.Annotator):
         self.enabled = True
         self.downsize_width = 32
         self.downsize_height = 24
-        self.pixel_matrix = MyMatrix('white', self.downsize_width, self.downsize_height)
+        self.pixel_matrix = MyMatrix(self.downsize_width, self.downsize_height)
 
         self.amount_turned_recently = radians(0)
-        self.moving_threshold = radians(9)
+        self.moving_threshold = radians(12)
 
         self.state = LOOK_AROUND_STATE
 
@@ -225,16 +225,18 @@ class ColorFinder(cozmo.annotate.Annotator):
         downsized_image = self.get_low_res_view()
         self.update_pixel_matrix(downsized_image)
         blob_detector = BlobDetector(self.pixel_matrix, self.possible_colors_to_find)
-        blob_info = blob_detector.get_center_of_blob_with_color(self.color_to_find)
-        if blob_info:
+        blob_center = blob_detector.get_center_of_blob_with_color(self.color_to_find)
+        if blob_center:
             if self.state == LOOK_AROUND_STATE:
                 self.state = FOUND_COLOR_STATE
                 if self.look_around_behavior:
                     self.look_around_behavior.stop()
-            self.on_finding_a_blob(blob_info)
+                    self.look_around_behavior = None
+                    self.robot.camera.enable_auto_exposure(enable_exposure = True)
+            self.on_finding_a_blob(blob_center)
         else:
             self.robot.set_backpack_lights_off()
-            self.abort_these_actions(self.drive_action)
+            self.abort_actions(self.drive_action)
             self.state = LOOK_AROUND_STATE
 
     def update_pixel_matrix(self, downsized_image):
@@ -279,67 +281,68 @@ class ColorFinder(cozmo.annotate.Annotator):
         downsized_image = image.resize((self.downsize_width, self.downsize_height), resample = Image.LANCZOS)
         return downsized_image
 
-    def on_finding_a_blob(self, blob_info):
+    def on_finding_a_blob(self, blob_center):
         '''Determines whether Cozmo should continue to look at the blob, or drive towards it.
             
         Args:
-            blob_info (int, int): coordinates of the blob's center in self.pixel_matrix
+            blob_center (int, int): coordinates of the blob's center in self.pixel_matrix
         '''
         self.robot.set_center_backpack_lights(map_color_to_light[self.color_to_find])
-        x, y = blob_info
+        x, y = blob_center
         # 'fov' stands for 'field of view'. This is the angle amount
         # that Cozmo can see to the edges of his camera view.
-        amount_move_head = radians(self.fov_y.radians*(.5-y/self.downsize_height))
-        amount_rotate = radians(self.fov_x.radians*(.5-x/self.downsize_width))
-        if self.moved_too_far_from_center(amount_move_head, amount_rotate):
+        amount_to_move_head = radians(self.fov_y.radians*(.5-y/self.downsize_height))
+        amount_to_rotate = radians(self.fov_x.radians*(.5-x/self.downsize_width))
+        if self.moved_too_far_from_center(amount_to_move_head, amount_to_rotate):
             self.state = FOUND_COLOR_STATE
         if self.state != DRIVING_STATE:
-            self.turn_toward_color_blob(amount_move_head, amount_rotate)
+            self.robot.camera.enable_auto_exposure(enable_exposure = False)
+            self.turn_toward_color_blob(amount_to_move_head, amount_to_rotate)
         else:
             self.drive_toward_color_blob()
 
-    def moved_too_far_from_center(self, amount_move_head, amount_rotate):
+    def moved_too_far_from_center(self, amount_to_move_head, amount_to_rotate):
         '''Decides whether the center of the blob is too far from the center of Cozmo's view.
 
         Args:
-            amount_move_head (cozmo.util.Angle): 
+            amount_to_move_head (cozmo.util.Angle): 
                 the perceived vertical distance of the blob from center-screen
-            amount_rotate (cozmo.util.Angle): 
+            amount_to_rotate (cozmo.util.Angle): 
                 the perceived horizontal distance of the blob from center-screen
 
         Returns:
             bool specifying whether the object is too far from center-screen
         '''
-        too_far_vertical = (amount_move_head.abs_val > self.fov_y/6)
-        too_far_horizontal = (amount_rotate.abs_val > self.fov_x/6)
+        too_far_vertical = (amount_to_move_head.abs_value > self.fov_y/4)
+        too_far_horizontal = (amount_to_rotate.abs_value > self.fov_x/4)
         too_far = too_far_vertical or too_far_horizontal
         return too_far
 
-    def turn_toward_color_blob(self, amount_move_head, amount_rotate):
+    def turn_toward_color_blob(self, amount_to_move_head, amount_to_rotate):
         '''Calls actions that tilt Cozmo's head and rotate his body toward the color.
 
         Args:
-           amount_move_head (cozmo.util.Angle): 
+           amount_to_move_head (cozmo.util.Angle): 
                the perceived vertical distance of the blob from center-screen
-           amount_rotate (cozmo.util.Angle): 
+           amount_to_rotate (cozmo.util.Angle): 
                the perceived horizontal distance of the blob from center-screen
         '''
-        self.abort_these_actions(self.tilt_head_action, self.rotate_action, self.drive_action)
-        new_head_angle = self.robot.head_angle + amount_move_head
+        self.abort_actions(self.tilt_head_action, self.rotate_action, self.drive_action)
+        new_head_angle = self.robot.head_angle + amount_to_move_head
         self.tilt_head_action = self.robot.set_head_angle(new_head_angle, in_parallel = True)
-        self.rotate_action = self.robot.turn_in_place(amount_rotate, in_parallel = True)
+        self.rotate_action = self.robot.turn_in_place(amount_to_rotate, in_parallel = True)
         if self.state == FOUND_COLOR_STATE:
-            self.amount_turned_recently += amount_move_head.abs_val + amount_rotate.abs_val
+            self.amount_turned_recently += amount_to_move_head.abs_value + amount_to_rotate.abs_value
 
     def drive_toward_color_blob(self):
         '''Drives straight once prior actions have been cancelled.'''
-        self.abort_these_actions(self.tilt_head_action, self.rotate_action)
-        if self.should_start_action(self.drive_action):
+        self.abort_actions(self.tilt_head_action, self.rotate_action)
+        if self.should_start_new_action(self.drive_action):
             self.drive_action = self.robot.drive_straight(distance_mm(500), speed_mmps(300), should_play_anim = False, in_parallel = True)
-        if self.should_start_action(self.lift_action):
+        if self.should_start_new_action(self.lift_action):
             self.lift_action = self.robot.set_lift_height(1.0, in_parallel = True)
 
-    def abort_these_actions(self, *actions):
+    def abort_actions(self, *actions):
         '''Aborts the input actions if they are currently running.
 
         Args:
@@ -349,7 +352,7 @@ class ColorFinder(cozmo.annotate.Annotator):
             if action != None and action.is_running:
                 action.abort()
 
-    def should_start_action(self, action):
+    def should_start_new_action(self, action):
         ''' Whether the action should be started.
 
         Args:
@@ -407,7 +410,7 @@ class BlobDetector():
 
         self.num_blobs = 1
         self.blobs_dict = {}
-        self.keys = MyMatrix(None, self.matrix.num_cols, self.matrix.num_rows)
+        self.keys = MyMatrix(self.matrix.num_cols, self.matrix.num_rows)
         self.make_blobs_dict()
         self.filter_blobs_dict_by_size(10) # prevents a lot of irrelevant blobs from being processed
 
@@ -568,7 +571,7 @@ class BlobDetector():
                 Key: color (string): the color of the blob
                 Value: x, y (int, int): the approximate center of the blob as coordinates of self.matrix
         '''
-        info = {}
+        blob_centers = {}
         biggest_blobs = []
         for color in self.keylist:
             biggest_blobs.append(self.get_largest_blob_with_color(color))
@@ -582,8 +585,8 @@ class BlobDetector():
                     ys.append(y)
                 average_x = functools.reduce((lambda a, b : a+b), xs)/len(xs)
                 average_y = functools.reduce((lambda a, b : a+b), ys)/len(ys)
-                info[color] = (int(average_x), int(average_y))
-        return info
+                blob_centers[color] = (int(average_x), int(average_y))
+        return blob_centers
 
     def get_center_of_blob_with_color(self, color):
         '''Gets the center of a blob if there is a blob with the specified color. Otherwise, returns None.
@@ -605,14 +608,13 @@ class MyMatrix():
     '''A custom class to get dimensions, values, and neighboring values of the pixel_matrix.
 
     Args:
-        initial_value : the value assigned to every MatrixValueContainer when building the matrix
         num_cols (int): the number of columns in the matrix, specified in ColorFinder as downsize_width
         num_rows (int): the number of rows in the matrix, specified in ColorFinder as downsize_height
     '''
-    def __init__(self, initial_value, num_cols, num_rows):
+    def __init__(self, num_cols, num_rows):
         self.num_cols = num_cols
         self.num_rows = num_rows
-        self._matrix = [[MatrixValueContainer(initial_value) for _ in range(self.num_rows)] for _ in range(self.num_cols)]
+        self._matrix = [[MatrixValueContainer() for _ in range(self.num_rows)] for _ in range(self.num_cols)]
 
     def at(self, i, j):
         '''Gets the desired MatrixValueContainer object.
@@ -628,11 +630,13 @@ class MyMatrix():
 
     def fill_gaps(self):
         '''Fills in squares in self._matrix that meet the condition in the surrounded method.
+
+        Ignores the surrounding value if it is 'white', to give preference to the presence of other colors.
         '''
         for i in range(self.num_cols):
             for j in range(self.num_rows):
                 val = self.surrounded(i,j)
-                if val:
+                if val != None and val != 'white':
                     self.at(i, j).set(val)
 
     def surrounded(self, i, j):
@@ -685,11 +689,9 @@ class MatrixValueContainer():
         matrix.at(i, j).value
         matrix.at(i, j).set(new_value)
 
-    Args:
-        value : the value of the MatrixValue
     '''
-    def __init__(self, value):
-        self.value = value
+    def __init__(self):
+        self.value = None
 
     def set(self, new_value):
         self.value = new_value

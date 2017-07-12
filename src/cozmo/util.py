@@ -135,7 +135,12 @@ class Angle:
         return self._radians / math.pi * 180
 
     @property
-    def abs_val(self):
+    def abs_value(self):
+        """:class:`cozmo.util.Angle`: The absolute value of the angle.
+        
+        If the Angle is positive then it just returns the Angle, otherwise it
+        returns -Angle.
+        """
         if self.__lt__(radians(0)):
             return radians(0) - self
         return self
