@@ -181,6 +181,8 @@ class ColorFinder(cozmo.annotate.Annotator):
         self.rotate_action = None # type: TurnInPlace action
         self.lift_action = None # type: SetLiftHeight action
 
+        self.last_known_blob_center = (self.downsize_width/2, self.downsize_height/2) # initially set to center screen
+
     def apply(self, image, scale):
         '''Draws a pixelated grid of Cozmo's approximate camera view onto the viewer window.
             
@@ -220,24 +222,25 @@ class ColorFinder(cozmo.annotate.Annotator):
         self.color_to_find = self.possible_colors_to_find[self.color_to_find_index]
         self.color_selector_cube.set_lights(map_color_to_light[self.color_to_find])
 
-    async def on_new_camera_image(self, evt, **kwargs):
+    def on_new_camera_image(self, evt, **kwargs):
         '''Processes the blobs in Cozmo's view, and determines the correct reaction.'''
         downsized_image = self.get_low_res_view()
         self.update_pixel_matrix(downsized_image)
-        blob_detector = BlobDetector(self.pixel_matrix, self.possible_colors_to_find)
-        blob_center = blob_detector.get_center_of_blob_with_color(self.color_to_find)
+        blob_detector = BlobDetector(self.pixel_matrix, self.color_to_find)
+        blob_center = blob_detector.get_blob_center()
         if blob_center:
+            self.last_known_blob_center = blob_center
             if self.state == LOOK_AROUND_STATE:
                 self.state = FOUND_COLOR_STATE
                 if self.look_around_behavior:
                     self.look_around_behavior.stop()
                     self.look_around_behavior = None
-                    self.robot.camera.enable_auto_exposure(enable_exposure = True)
             self.on_finding_a_blob(blob_center)
         else:
             self.robot.set_backpack_lights_off()
             self.abort_actions(self.drive_action)
             self.state = LOOK_AROUND_STATE
+            self.robot.camera.enable_auto_exposure(enable_exposure = True)
 
     def update_pixel_matrix(self, downsized_image):
         '''Updates self.pixel_matrix with the colors from the current camera view.
@@ -296,8 +299,7 @@ class ColorFinder(cozmo.annotate.Annotator):
         if self.moved_too_far_from_center(amount_to_move_head, amount_to_rotate):
             self.state = FOUND_COLOR_STATE
         if self.state != DRIVING_STATE:
-            self.robot.camera.enable_auto_exposure(enable_exposure = False)
-            self.turn_toward_color_blob(amount_to_move_head, amount_to_rotate)
+            self.turn_toward_blob(amount_to_move_head, amount_to_rotate)
         else:
             self.drive_toward_color_blob()
 
@@ -318,7 +320,7 @@ class ColorFinder(cozmo.annotate.Annotator):
         too_far = too_far_vertical or too_far_horizontal
         return too_far
 
-    def turn_toward_color_blob(self, amount_to_move_head, amount_to_rotate):
+    def turn_toward_blob(self, amount_to_move_head, amount_to_rotate):
         '''Calls actions that tilt Cozmo's head and rotate his body toward the color.
 
         Args:
@@ -327,6 +329,7 @@ class ColorFinder(cozmo.annotate.Annotator):
            amount_to_rotate (cozmo.util.Angle): 
                the perceived horizontal distance of the blob from center-screen
         '''
+        self.robot.camera.enable_auto_exposure(enable_exposure = False)
         self.abort_actions(self.tilt_head_action, self.rotate_action, self.drive_action)
         new_head_angle = self.robot.head_angle + amount_to_move_head
         self.tilt_head_action = self.robot.set_head_angle(new_head_angle, in_parallel = True)
@@ -341,6 +344,17 @@ class ColorFinder(cozmo.annotate.Annotator):
             self.drive_action = self.robot.drive_straight(distance_mm(500), speed_mmps(300), should_play_anim = False, in_parallel = True)
         if self.should_start_new_action(self.lift_action):
             self.lift_action = self.robot.set_lift_height(1.0, in_parallel = True)
+
+    def turn_toward_last_known_blob(self):
+        '''Turns toward the coordinates of the last recorded blob in memory.'''
+        x, y = self.last_known_blob_center
+        amount_to_move_head = radians(self.fov_y.radians*(.5-y/self.downsize_height))
+        amount_to_rotate = radians(self.fov_x.radians*(.5-x/self.downsize_width)) * 4
+        print("----------------------------------------------------------------")
+        print("move head {}".format(amount_to_move_head))
+        print("rotate {}".format(amount_to_rotate))
+        print("----------------------------------------------------------------")
+        self.turn_toward_blob(amount_to_move_head, amount_to_rotate)
 
     def abort_actions(self, *actions):
         '''Aborts the input actions if they are currently running.
@@ -364,6 +378,15 @@ class ColorFinder(cozmo.annotate.Annotator):
         should_start = ((action == None) or (not action.is_running))
         return should_start
 
+    async def start_lookaround(self):
+        '''Turns to a likely spot for a blob to be, then starts self.look_around_behavior.'''
+        if self.look_around_behavior == None or not self.look_around_behavior.is_active:
+            self.turn_toward_last_known_blob()
+            await asyncio.sleep(.5)
+            if self.state == LOOK_AROUND_STATE: # state may have changed due to turn_toward_last_known_blob
+                self.abort_actions(self.tilt_head_action, self.rotate_action, self.drive_action)
+                self.look_around_behavior = self.robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
+
     def turn_on_cubes(self):
         '''Illuminates the two cubes that control self.color_to_find and set the viewer display.'''
         self.color_selector_cube.set_lights(map_color_to_light[self.color_to_find])
@@ -380,7 +403,7 @@ class ColorFinder(cozmo.annotate.Annotator):
         or by closing the viewer window.
         '''    
         if not self.cubes_connected():
-            print("Cubes did not connect successfully - check that they are nearby. You may need to replace the batteries.")
+            print('Cubes did not connect successfully - check that they are nearby. You may need to replace the batteries.')
             return
         self.turn_on_cubes()
         await self.robot.drive_straight(distance_mm(100), speed_mmps(50)).wait_for_completed()
@@ -389,24 +412,25 @@ class ColorFinder(cozmo.annotate.Annotator):
         while True:
             await asyncio.sleep(1)
             if self.state == LOOK_AROUND_STATE:
-                self.look_around_behavior = self.robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
+                await self.start_lookaround()
             if self.state == FOUND_COLOR_STATE and self.amount_turned_recently < self.moving_threshold:
                 self.state = DRIVING_STATE
             self.amount_turned_recently = radians(0)
 
 
 class BlobDetector():
-    '''Determine where the regions of the same value reside in a matrix.
+    '''Determine where the regions of the specified color reside in a matrix.
 
-    We use this class to find the areas of equal color in pixel_matrix in the ColorFinder class.
+    We use this class to find the areas of color_to_find in the pixel_matrix of the ColorFinder class.
     
     Args:
         matrix (int[][]) : the pixel_matrix from ColorFinder
         keylist (list of strings): the list of possible_colors_to_find from ColorFinder
+        color_to_find (string): the color of the blobs Cozmo is looking for
     '''
-    def __init__(self, matrix, keylist):
+    def __init__(self, matrix, color_to_find):
         self.matrix = matrix
-        self.keylist = keylist
+        self.color_to_find = color_to_find
 
         self.num_blobs = 1
         self.blobs_dict = {}
@@ -418,25 +442,26 @@ class BlobDetector():
         '''Using a connected components algorithm, constructs a dictionary 
         that maps a blob to the points of the matrix that make up that blob.
 
+        Only creates a blob if the point's color matches self.color_to_find.
+
         Key and Value types of the dictionary:
-            Key : (number, color), where number is self.num_blobs at the time the blob was first created, 
-            and color is the color of that blob. This way, two different blobs of the same color
-            have two distinct keys.
+            Key : int specifying self.num_blobs at the time the blob was first created.
             Value : the list of points in the blob.
         '''
         for i in range(self.matrix.num_cols):
             for j in range(self.matrix.num_rows):
-                matches_left = self.matches_blob_left(i, j)
-                matches_above = self.matches_blob_above(i, j)
-                should_merge = matches_left and matches_above and self.above_and_left_blobs_are_different(i, j)
-                if should_merge:
-                    self.merge_up_and_left_blobs(i, j)
-                elif matches_left:
-                    self.join_blob_left(i, j)
-                elif matches_above:
-                    self.join_blob_above(i, j)
-                else:
-                    self.make_new_blob_at(i, j)
+                if self.matrix.at(i, j).value == self.color_to_find:
+                    matches_left = self.matches_blob_left(i, j)
+                    matches_above = self.matches_blob_above(i, j)
+                    should_merge = matches_left and matches_above and self.above_and_left_blobs_are_different(i, j)
+                    if should_merge:
+                        self.merge_up_and_left_blobs(i, j)
+                    elif matches_left:
+                        self.join_blob_left(i, j)
+                    elif matches_above:
+                        self.join_blob_above(i, j)
+                    else:
+                        self.make_new_blob_at(i, j)
 
     def matches_blob_above(self, i, j):
         '''Returns true if the current point matches the point above.
@@ -450,7 +475,7 @@ class BlobDetector():
         '''
         if j == 0:
             return False
-        matches_above = (self.matrix.at(i, j).value == self.matrix.at(i, j-1).value)
+        matches_above = (self.matrix.at(i, j-1).value == self.color_to_find)
         return matches_above
 
     def matches_blob_left(self, i, j):
@@ -465,7 +490,7 @@ class BlobDetector():
         '''
         if i == 0:
             return False
-        matches_left  = (self.matrix.at(i, j).value == self.matrix.at(i-1, j).value)
+        matches_left  = (self.matrix.at(i-1, j).value == self.color_to_find)
         return matches_left
 
     def above_and_left_blobs_are_different(self, i, j):
@@ -491,8 +516,8 @@ class BlobDetector():
             i (int): the x-coordinate in self.matrix
             j (int): the y-coordinate in self.matrix
         '''
-        self.blobs_dict[(self.num_blobs, self.matrix.at(i, j).value)] = [(i, j)]
-        self.keys.at(i, j).set((self.num_blobs, self.matrix.at(i, j).value))
+        self.blobs_dict[self.num_blobs] = [(i, j)]
+        self.keys.at(i, j).set(self.num_blobs)
         self.num_blobs += 1
 
     def join_blob_above(self, i, j):
@@ -545,63 +570,39 @@ class BlobDetector():
         '''
         self.blobs_dict = dict((blob, list_of_points) for blob, list_of_points in self.blobs_dict.items() if len(list_of_points) >= n)
 
-    def get_largest_blob_with_color(self, color):
-        '''Finds the largest blob of a particular color
-
-        Args:
-            color (string): the desired color of the blob
+    def get_largest_blob_key(self):
+        '''Finds the key of the largest blob.
 
         Returns:
-            (int, string) specifying the key of the largest blob with that color, or None if no such blob exists
+            int specifying the key of the largest blob with that color, or None if no such blob exists
         '''
-        filtered_dict = dict(((n, k), v) for (n, k), v in self.blobs_dict.items() if k == color)
-        values = filtered_dict.values()
+        largest_blob_key = None
+        values = self.blobs_dict.values()
         if len(values) > 0:
-            longest_blob_list = functools.reduce(lambda largest, current: largest if (largest > current) else current, values)
-            sample_x, sample_y = longest_blob_list[0]
-            return self.keys.at(sample_x, sample_y).value
-        else:
-            return None
+            longest_points_list = functools.reduce(lambda largest, current: largest if (largest > current) else current, values)
+            sample_x, sample_y = longest_points_list[0]
+            largest_blob_key = self.keys.at(sample_x, sample_y).value
+        return largest_blob_key
 
-    def make_blob_centers(self):
-        '''Constructs a dictionary to keep track of the center of each blob.
-
-        Returns:
-            dict of blob centers
-                Key: color (string): the color of the blob
-                Value: x, y (int, int): the approximate center of the blob as coordinates of self.matrix
-        '''
-        blob_centers = {}
-        biggest_blobs = []
-        for color in self.keylist:
-            biggest_blobs.append(self.get_largest_blob_with_color(color))
-        for blob in biggest_blobs:
-            if blob:
-                num, color = blob
-                xs = []
-                ys = []
-                for (x, y) in self.blobs_dict[blob]:
-                    xs.append(x)
-                    ys.append(y)
-                average_x = functools.reduce((lambda a, b : a+b), xs)/len(xs)
-                average_y = functools.reduce((lambda a, b : a+b), ys)/len(ys)
-                blob_centers[color] = (int(average_x), int(average_y))
-        return blob_centers
-
-    def get_center_of_blob_with_color(self, color):
-        '''Gets the center of a blob if there is a blob with the specified color. Otherwise, returns None.
-
-        Args:
-            color (string): the desired color of a blob
+    def get_blob_center(self):
+        '''Approximates the coordinates of the center of the largest blob.
 
         Returns:
-            (int, int) specifying the coordinates of the center of the desired blob, 
-            or None if there is no blob of that color
+            (int, int) specifying the center of the largest blob, 
+            or None if self.get_largest_blob_key() returns None
         '''
-        d = self.make_blob_centers()
-        if color in d:
-            return d[color]
-        return None
+        blob_center = None
+        largest_blob_key = self.get_largest_blob_key()
+        if largest_blob_key:
+            xs = []
+            ys = []
+            for (x, y) in self.blobs_dict[largest_blob_key]:
+                xs.append(x)
+                ys.append(y)
+            average_x = functools.reduce((lambda a, b : a+b), xs)/len(xs)
+            average_y = functools.reduce((lambda a, b : a+b), ys)/len(ys)
+            blob_center = (int(average_x), int(average_y))
+        return blob_center
 
 
 class MyMatrix():
@@ -631,12 +632,12 @@ class MyMatrix():
     def fill_gaps(self):
         '''Fills in squares in self._matrix that meet the condition in the surrounded method.
 
-        Ignores the surrounding value if it is 'white', to give preference to the presence of other colors.
+        Ignores the surrounding value if it is 'white' or 'black' to give preference to red, blue, green, and yellow.
         '''
         for i in range(self.num_cols):
             for j in range(self.num_rows):
                 val = self.surrounded(i,j)
-                if val != None and val != 'white':
+                if val != None and val != 'white' and val != 'black':
                     self.at(i, j).set(val)
 
     def surrounded(self, i, j):
@@ -688,7 +689,6 @@ class MatrixValueContainer():
     with this:
         matrix.at(i, j).value
         matrix.at(i, j).set(new_value)
-
     '''
     def __init__(self):
         self.value = None
