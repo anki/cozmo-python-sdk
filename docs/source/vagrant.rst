@@ -74,8 +74,6 @@ Install
 
       cd /vagrant/cozmo_sdk_examples_***
 
-    .. important:: You must either relaunch with "vagrant up" or save your virtual machine's state when shutting down.  Otherwise the /vagrant/ folder on the virtual machine will be empty on subsequent runs.
-
 ..
 
 6. For **macOS/Linux**:
@@ -122,8 +120,6 @@ Install
 
         cd /vagrant/cozmo_sdk_examples_***
 
-    .. important:: You must either relaunch with "vagrant up" or save your virtual machine's state when shutting down.  Otherwise the /vagrant/ folder on the virtual machine will be empty on subsequent runs.
-
 7. Make sure Cozmo is powered on and charged. Connect to the Cozmo robot's WiFi from the mobile device and then connect to the Cozmo robot within the app.
 8. Enter SDK mode on the app.
 
@@ -135,6 +131,8 @@ Install
         ./program_name.py
 
 For example, to run the Hello World example program, you would type ``./hello_world.py``.
+
+.. important:: You must either relaunch with "vagrant up" or save your virtual machine's state when shutting down.  Otherwise the /vagrant/ folder on the virtual machine will be empty on subsequent runs.
 
 ----
 
