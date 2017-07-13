@@ -132,6 +132,8 @@ Install
 
 For example, to run the Hello World example program, you would type ``./hello_world.py``.
 
+.. important:: You must either relaunch with "vagrant up" or save your virtual machine's state when shutting down.  Otherwise the /vagrant/ folder on the virtual machine will be empty on subsequent runs.
+
 ----
 
 `Click here to return to the Cozmo Developer website. <http://developer.anki.com>`_
