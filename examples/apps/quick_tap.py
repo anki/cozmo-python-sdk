@@ -19,10 +19,7 @@
 After you and Cozmo select your cubes, the third cube acts as the countdown for each round.
 
 TODO: 
-add Cozmo's happy and angry reactions to each round
 more color combinations
-difficulty settings
-
 
 '''
 import asyncio, random, time, sys
