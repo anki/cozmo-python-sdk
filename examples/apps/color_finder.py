@@ -346,14 +346,13 @@ class ColorFinder(cozmo.annotate.Annotator):
             self.lift_action = self.robot.set_lift_height(1.0, in_parallel = True)
 
     def turn_toward_last_known_blob(self):
-        '''Turns toward the coordinates of the last recorded blob in memory.'''
+        '''Turns toward the coordinates of the last recorded blob in memory.
+
+        amount_to_rotate is multiplied to overshoot the object rather than undershoot it.
+        '''
         x, y = self.last_known_blob_center
         amount_to_move_head = radians(self.fov_y.radians*(.5-y/self.downsize_height))
         amount_to_rotate = radians(self.fov_x.radians*(.5-x/self.downsize_width)) * 4
-        print("----------------------------------------------------------------")
-        print("move head {}".format(amount_to_move_head))
-        print("rotate {}".format(amount_to_rotate))
-        print("----------------------------------------------------------------")
         self.turn_toward_blob(amount_to_move_head, amount_to_rotate)
 
     def abort_actions(self, *actions):
