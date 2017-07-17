@@ -294,8 +294,8 @@ class ColorFinder(cozmo.annotate.Annotator):
         x, y = blob_center
         # 'fov' stands for 'field of view'. This is the angle amount
         # that Cozmo can see to the edges of his camera view.
-        amount_to_move_head = radians(self.fov_y.radians*(.5-y/self.downsize_height))
-        amount_to_rotate = radians(self.fov_x.radians*(.5-x/self.downsize_width))
+        amount_to_move_head = radians(self.fov_y.radians*(.5-float(y)/self.downsize_height))
+        amount_to_rotate = radians(self.fov_x.radians*(.5-float(x)/self.downsize_width))
         if self.moved_too_far_from_center(amount_to_move_head, amount_to_rotate):
             self.state = FOUND_COLOR_STATE
         if self.state != DRIVING_STATE:
