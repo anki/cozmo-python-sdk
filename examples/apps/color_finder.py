@@ -240,7 +240,6 @@ class ColorFinder(cozmo.annotate.Annotator):
             self.robot.set_backpack_lights_off()
             self.abort_actions(self.drive_action)
             self.state = LOOK_AROUND_STATE
-            self.robot.camera.enable_auto_exposure(enable_exposure = True)
 
     def update_pixel_matrix(self, downsized_image):
         '''Updates self.pixel_matrix with the colors from the current camera view.
@@ -329,7 +328,6 @@ class ColorFinder(cozmo.annotate.Annotator):
            amount_to_rotate (cozmo.util.Angle): 
                the perceived horizontal distance of the blob from center-screen
         '''
-        self.robot.camera.enable_auto_exposure(enable_exposure = False)
         self.abort_actions(self.tilt_head_action, self.rotate_action, self.drive_action)
         new_head_angle = self.robot.head_angle + amount_to_move_head
         self.tilt_head_action = self.robot.set_head_angle(new_head_angle, in_parallel = True)
