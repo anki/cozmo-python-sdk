@@ -129,12 +129,17 @@ def to_pillow_image(image_array):
     return Image.fromarray(numpy.uint8(image_array))
 
 
+POSSIBLE_COLORS_TO_FIND = ['green', 'yellow', 'blue', 'red']
+
 LOOK_AROUND_STATE = 'look_around'
 FOUND_COLOR_STATE = 'found_color'
 DRIVING_STATE = 'driving'
 
 ANNOTATOR_WIDTH = 640.0
 ANNOTATOR_HEIGHT = 480.0
+
+DOWNSIZE_WIDTH = 32
+DOWNSIZE_HEIGHT = 24
 
 
 class ColorFinder(cozmo.annotate.Annotator):
@@ -148,7 +153,6 @@ class ColorFinder(cozmo.annotate.Annotator):
         robot (cozmo.robot.Robot): instance of the robot connected from run_program.
     '''
     def __init__(self, robot: cozmo.robot.Robot):
-
         self.robot = robot
         self.robot.camera.image_stream_enabled = True
         self.robot.camera.color_image_enabled = True
@@ -159,16 +163,13 @@ class ColorFinder(cozmo.annotate.Annotator):
 
         self.color_selector_cube = None # type: LightCube
         self.color_to_find = 'yellow'
-        self.possible_colors_to_find = ['green', 'yellow', 'blue', 'red']
-        self.color_to_find_index = self.possible_colors_to_find.index(self.color_to_find)
+        self.color_to_find_index = POSSIBLE_COLORS_TO_FIND.index(self.color_to_find)
 
         self.grid_cube = None # type: LightCube
         self.robot.world.image_annotator.add_annotator('color_finder', self)
         self.robot.world.image_annotator.annotation_enabled = False
         self.enabled = True
-        self.downsize_width = 32
-        self.downsize_height = 24
-        self.pixel_matrix = MyMatrix(self.downsize_width, self.downsize_height)
+        self.pixel_matrix = MyMatrix(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT)
 
         self.amount_turned_recently = radians(0)
         self.moving_threshold = radians(12)
@@ -181,29 +182,38 @@ class ColorFinder(cozmo.annotate.Annotator):
         self.rotate_action = None # type: TurnInPlace action
         self.lift_action = None # type: SetLiftHeight action
 
-        self.last_known_blob_center = (self.downsize_width/2, self.downsize_height/2) # initially set to center screen
+        self.last_known_blob_center = (DOWNSIZE_WIDTH/2, DOWNSIZE_HEIGHT/2) # initially set to center screen
 
     def apply(self, image, scale):
         '''Draws a pixelated grid of Cozmo's approximate camera view onto the viewer window.
             
         WM and HM are multipliers that scale the dimensions of the annotated squares 
-        based on self.downsize_width and self.downsize_height
+        based on DOWNSIZE_WIDTH and DOWNSIZE_HEIGHT
         '''
         d = ImageDraw.Draw(image)
-        WM = ANNOTATOR_WIDTH/self.downsize_width
-        HM = ANNOTATOR_HEIGHT/self.downsize_height
+        WM = ANNOTATOR_WIDTH/DOWNSIZE_WIDTH
+        HM = ANNOTATOR_HEIGHT/DOWNSIZE_HEIGHT
 
-        for i in range(self.downsize_width):
-            for j in range(self.downsize_height):
-                pt1 = Vector2(i*WM, j*HM)
-                pt2 = Vector2(i*WM, (j+1)*HM)
-                pt3 = Vector2((i+1)*WM, (j+1)*HM)
-                pt4 = Vector2((i+1)*WM, j*HM)
+        for i in range(DOWNSIZE_WIDTH):
+            for j in range(DOWNSIZE_HEIGHT):
+                pt1 = Vector2(i * WM, j * HM)
+                pt2 = Vector2(i * WM, (j + 1) * HM)
+                pt3 = Vector2((i + 1) * WM, (j + 1) * HM)
+                pt4 = Vector2((i + 1) * WM, j * HM)
                 points_seq = (pt1, pt2, pt3, pt4)
                 cozmo.annotate.add_polygon_to_image(image, points_seq, 1.0, 'green', self.pixel_matrix.at(i, j).value)
 
         text = cozmo.annotate.ImageText('Looking for {}'.format(self.color_to_find), color = 'white')
         text.render(d, (0, 0, image.width, image.height))
+
+        if self.state != LOOK_AROUND_STATE:
+            x, y = self.last_known_blob_center
+            pt1 = Vector2((x - 0.5) * WM, (y - 0.5) * HM)
+            pt2 = Vector2((x + 0.5) * WM, (y - 0.5) * HM)
+            pt3 = Vector2((x + 0.5) * WM, (y + 0.5) * HM)
+            pt4 = Vector2((x - 0.5) * WM, (y + 0.5) * HM)
+            points_seq = (pt1, pt2, pt3, pt4)
+            cozmo.annotate.add_polygon_to_image(image, points_seq, 1.0, 'black', 'gold')
 
     def on_cube_tap(self, evt, obj, **kwargs):
         '''The blinking white cube switches the viewer between normal mode and pixel mode.
@@ -215,11 +225,11 @@ class ColorFinder(cozmo.annotate.Annotator):
             self.robot.world.image_annotator.annotation_enabled = not self.robot.world.image_annotator.annotation_enabled
 
     def toggle_color_to_find(self):
-        '''Sets self.color_to_find to the next color in self.possible_colors_to_find.'''    
+        '''Sets self.color_to_find to the next color in POSSIBLE_COLORS_TO_FIND.'''    
         self.color_to_find_index += 1
-        if self.color_to_find_index == len(self.possible_colors_to_find):
+        if self.color_to_find_index == len(POSSIBLE_COLORS_TO_FIND):
             self.color_to_find_index = 0
-        self.color_to_find = self.possible_colors_to_find[self.color_to_find_index]
+        self.color_to_find = POSSIBLE_COLORS_TO_FIND[self.color_to_find_index]
         self.color_selector_cube.set_lights(map_color_to_light[self.color_to_find])
 
     def on_new_camera_image(self, evt, **kwargs):
@@ -280,7 +290,7 @@ class ColorFinder(cozmo.annotate.Annotator):
             PIL image downsized to low-resolution version of Cozmo's camera view.
         '''
         image = color_balance(self.robot.world.latest_image.raw_image)
-        downsized_image = image.resize((self.downsize_width, self.downsize_height), resample = Image.LANCZOS)
+        downsized_image = image.resize((DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), resample = Image.LANCZOS)
         return downsized_image
 
     def on_finding_a_blob(self, blob_center):
@@ -293,8 +303,8 @@ class ColorFinder(cozmo.annotate.Annotator):
         x, y = blob_center
         # 'fov' stands for 'field of view'. This is the angle amount
         # that Cozmo can see to the edges of his camera view.
-        amount_to_move_head = radians(self.fov_y.radians*(.5-float(y)/self.downsize_height))
-        amount_to_rotate = radians(self.fov_x.radians*(.5-float(x)/self.downsize_width))
+        amount_to_move_head = radians(self.fov_y.radians*(.5-float(y)/DOWNSIZE_HEIGHT))
+        amount_to_rotate = radians(self.fov_x.radians*(.5-float(x)/DOWNSIZE_WIDTH))
         if self.moved_too_far_from_center(amount_to_move_head, amount_to_rotate):
             self.state = FOUND_COLOR_STATE
         if self.state != DRIVING_STATE:
@@ -349,8 +359,8 @@ class ColorFinder(cozmo.annotate.Annotator):
         amount_to_rotate is multiplied to overshoot the object rather than undershoot it.
         '''
         x, y = self.last_known_blob_center
-        amount_to_move_head = radians(self.fov_y.radians*(.5-y/self.downsize_height))
-        amount_to_rotate = radians(self.fov_x.radians*(.5-x/self.downsize_width)) * 4
+        amount_to_move_head = radians(self.fov_y.radians*(.5-y/DOWNSIZE_HEIGHT))
+        amount_to_rotate = radians(self.fov_x.radians*(.5-x/DOWNSIZE_WIDTH)) * 4
         self.turn_toward_blob(amount_to_move_head, amount_to_rotate)
 
     def abort_actions(self, *actions):

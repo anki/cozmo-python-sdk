@@ -141,9 +141,7 @@ class Angle:
         If the Angle is positive then it just returns the Angle, otherwise it
         returns -Angle.
         """
-        if self.__lt__(radians(0)):
-            return radians(0) - self
-        return self
+        return Angle(radians = abs(self._radians))
 
 
 def degrees(degrees):
