@@ -34,7 +34,7 @@ import cozmo
 from cozmo.util import degrees, distance_mm, radians, speed_mmps, Vector2
 from cozmo.lights import Color, Light
 try:
-    from PIL import Image, ImageColor, ImageDraw
+    from PIL import Image, ImageColor, ImageDraw, ImageStat
 except ImportError:
     sys.exit('Cannot import from PIL: Do `pip3 install --user Pillow` to install')
     
@@ -48,24 +48,33 @@ map_color_to_light = {
 'red' : cozmo.lights.red_light
 }
 
-# color_ranges (dict): map of color names to regions in color space.
+# rgb_color_ranges (dict): map of color names to regions in RGB space.
 # Instead of defining a color as a single (R, G, B) point, 
 # colors are defined with a minimum and maximum value for R, G, and B.
 # For example, a point with (R, G, B) = (40, 15, 225) falls entirely in the 'blue' region, 
 # because 0 < 40 < 50, 0 < 15 < 50, and 210 < 225 < 255.
 # A point with (R, G, B) = (95, 240, 160) does not fall exactly in one color region.
-# But applying color_distance_sqr between this color and all the colors in color_ranges
+# But applying rgb_color_distance_sqr between this color and all the colors in rgb_color_ranges
 # will show that (95, 240, 160) is closest to the 'green' region.
-color_ranges = {
+rgb_color_ranges = {
 'red' : (210, 255, 0, 50, 0, 50), 
 'green' : (0, 50, 210, 255, 0, 50), 
 'blue' : (0, 50, 0, 50, 210, 255), 
-'white' : (195, 255, 195, 255, 195, 255), 
-'black' : (0, 30, 0, 30, 0, 30),
 'yellow' : (210, 255, 210, 255, 0, 70), 
+'white' : (195, 255, 195, 255, 195, 255), 
+'black' : (0, 30, 0, 30, 0, 30)
 }
 
-def color_distance_sqr(color, color_range):
+hsv_color_ranges = {
+'red' : (-20.0, 20.0, 0.5, 1.0, 0.5, 1.0), 
+'green' : (90.0, 155.0, 0.5, 1.0, 0.5, 1.0), 
+'blue' : (180.0, 245.0, 0.5, 1.0, 0.5, 1.0), 
+'yellow' : (40.0, 80.0, 0.5, 1.0, 0.5, 1.0), 
+'white' : (0.0, 360.0, 0.0, 0.2, 0.9, 1.0), 
+'black' : (0.0, 360.0, 0.0, 0.1, 0.0, 0.2)
+}
+
+def rgb_color_distance_sqr(color, color_range):
     '''Determines the squared euclidean distance between color and color_range.
 
     Args:
@@ -73,29 +82,65 @@ def color_distance_sqr(color, color_range):
         color_range(int, int, int, int, int, int): the minimum and maximum for R, G, and B for the color range
 
     Returns:
-        squared distance between color and color_range,
+        squared distance between color and color_range, 
         which is the sum of the squared distances from 
         the R, G, B values to their respective ranges
     '''
     r, g, b = color
     minR, maxR, minG, maxG, minB, maxB = color_range
-    rdist_sq = 0
-    gdist_sq = 0
-    bdist_sq = 0
+    r_dist_sqr = 0
+    g_dist_sqr = 0
+    b_dist_sqr = 0
     if r < minR:
-        rdist_sq = (minR-r)**2
+        r_dist_sqr = (minR - r) ** 2
     elif r > maxR:
-        rdist_sq = (maxR-r)**2
+        r_dist_sqr = (maxR - r) ** 2
     if g < minG:
-        gdist_sq = (minG-g)**2
+        g_dist_sqr = (minG - g) ** 2
     elif g > maxG:
-        gdist_sq = (maxG-g)**2
+        g_dist_sqr = (maxG - g) ** 2
     if b < minB:
-        bdist_sq = (minB-b)**2
+        b_dist_sqr = (minB - b) ** 2
     elif b > maxB:
-        bdist_sq = (maxB-b)**2
-    sum_dist_sq = rdist_sq+gdist_sq+bdist_sq
-    return sum_dist_sq
+        b_dist_sqr = (maxB - b) ** 2
+    sum_dist_sqr = r_dist_sqr + g_dist_sqr + b_dist_sqr
+    return sum_dist_sqr
+
+def hsv_color_distance_sqr(color, color_range):
+    '''Determines the squared euclidean distance between color and color_range.
+
+    Note that we normalize h, minH, and maxH so that they also fall between 0 and 1, instead of 0 and 360.
+
+    Args:
+        color (float, float, float): the H, S, V values of the color
+        color_range(float, float, float, float, float, float): the minimum and maximum for H, S, and V for the color range
+
+    Returns:
+        squared distance between color and color_range, 
+        which is the sum of the squared distances from 
+        the H, S, V values to their respective ranges
+    '''
+    h, s, v = color
+    minH, maxH, minS, maxS, minV, maxV = color_range
+    # for item in [s, v, minS, maxS, minV, maxV]:
+    #     item *= 100.0
+    h_dist_sqr = 0
+    s_dist_sqr = 0
+    v_dist_sqr = 0
+    if h < minH:
+        h_dist_sqr = (minH - h) ** 2
+    elif h > maxH:
+        h_dist_sqr = (maxH - h) ** 2
+    if s < minS:
+        s_dist_sqr = (minS - s) ** 2
+    elif s > maxS:
+        s_dist_sqr = (maxS - s) ** 2
+    if v < minV:
+        v_dist_sqr = (minV - v) ** 2
+    elif v > maxV:
+        v_dist_sqr = (maxV - v) ** 2
+    sum_dist_sqr = h_dist_sqr + s_dist_sqr + v_dist_sqr
+    return sum_dist_sqr
 
 def color_balance(image):
     '''Adjusts the color data of an image so that the average R, G, B values across the entire image end up equal.
@@ -127,6 +172,48 @@ def from_pillow_image(image):
 def to_pillow_image(image_array):
     '''Coverts image array to PIL image.'''
     return Image.fromarray(numpy.uint8(image_array))
+
+def rgb_to_hsv(r, g, b):
+    '''Converts an RGB value to its corresponding HSV value.
+
+    Args:
+        r (int): the amount of red in the color, between 0 and 255
+        g (int): the amount of green in the color, between 0 and 255
+        b (int): the amount of blue in the color, between 0 and 255
+
+    Returns:
+        tuple of floats (h, s, v) representing the HSV value of the color
+        h represents an angle, between 0 and 360 degrees
+        s represents the saturation, between 0 and 1
+        v represents the brightness, between 0 and 1
+    '''
+    r_normalized = r / 255.0
+    g_normalized = g / 255.0
+    b_normalized = b / 255.0
+    max_normalized_val = max(r_normalized, g_normalized, b_normalized)
+    min_normalized_val = min(r_normalized, g_normalized, b_normalized)
+    delta = max_normalized_val - min_normalized_val
+
+    h = 0
+    s = 0
+    v = max_normalized_val
+
+    if delta != 0:
+        if max_normalized_val == r_normalized:
+            h = 60.0 * ((g_normalized - b_normalized) / delta)
+        elif max_normalized_val == g_normalized:
+            h = 60.0 * (((b_normalized - r_normalized) / delta) + 2)
+        else:
+            h = 60.0 * (((r_normalized - g_normalized) / delta) + 4)
+        if h < 0:
+            h += 360
+
+        if max_normalized_val == 0:
+            s = 0
+        else:
+            s = delta / max_normalized_val
+    return (h, s, v)
+
 
 
 POSSIBLE_COLORS_TO_FIND = ['green', 'yellow', 'blue', 'red']
@@ -184,8 +271,12 @@ class ColorFinder(cozmo.annotate.Annotator):
 
         self.last_known_blob_center = (DOWNSIZE_WIDTH/2, DOWNSIZE_HEIGHT/2) # initially set to center screen
 
+        self.white_balance_cube = None # type: LightCube
+        self.adjustment = None
+
     def apply(self, image, scale):
         '''Draws a pixelated grid of Cozmo's approximate camera view onto the viewer window.
+        Also draws a marker showing the center of the largest blob that matches the color_to_find
             
         WM and HM are multipliers that scale the dimensions of the annotated squares 
         based on DOWNSIZE_WIDTH and DOWNSIZE_HEIGHT
@@ -208,10 +299,10 @@ class ColorFinder(cozmo.annotate.Annotator):
 
         if self.state != LOOK_AROUND_STATE:
             x, y = self.last_known_blob_center
-            pt1 = Vector2((x - 0.5) * WM, (y - 0.5) * HM)
-            pt2 = Vector2((x + 0.5) * WM, (y - 0.5) * HM)
-            pt3 = Vector2((x + 0.5) * WM, (y + 0.5) * HM)
-            pt4 = Vector2((x - 0.5) * WM, (y + 0.5) * HM)
+            pt1 = Vector2((x + 0.5) * WM, (y + 0.5) * HM)
+            pt2 = Vector2((x + 1.5) * WM, (y + 0.5) * HM)
+            pt3 = Vector2((x + 1.5) * WM, (y + 1.5) * HM)
+            pt4 = Vector2((x + 0.5) * WM, (y + 1.5) * HM)
             points_seq = (pt1, pt2, pt3, pt4)
             cozmo.annotate.add_polygon_to_image(image, points_seq, 1.0, 'black', 'gold')
 
@@ -223,6 +314,8 @@ class ColorFinder(cozmo.annotate.Annotator):
             self.toggle_color_to_find()
         elif obj.object_id == self.grid_cube.object_id:
             self.robot.world.image_annotator.annotation_enabled = not self.robot.world.image_annotator.annotation_enabled
+        elif obj.object_id == self.white_balance_cube.object_id:
+            self.white_balance()
 
     def toggle_color_to_find(self):
         '''Sets self.color_to_find to the next color in POSSIBLE_COLORS_TO_FIND.'''    
@@ -251,6 +344,10 @@ class ColorFinder(cozmo.annotate.Annotator):
             self.abort_actions(self.drive_action)
             self.state = LOOK_AROUND_STATE
 
+    def white_balance(self):
+        image = self.robot.world.latest_image.raw_image
+        self.adjustment = ImageStat.Stat(image).mean
+
     def update_pixel_matrix(self, downsized_image):
         '''Updates self.pixel_matrix with the colors from the current camera view.
 
@@ -276,12 +373,27 @@ class ColorFinder(cozmo.annotate.Annotator):
         '''
         min_distance = sys.maxsize
         closest_color = ''
-        for color_name, color_values in color_ranges.items():
-            d = color_distance_sqr((r, g, b), color_values)
+        # for color_name, color_range in rgb_color_ranges.items():
+        #     d = rgb_color_distance_sqr((r, g, b), color_range)
+        #     if d < min_distance:
+        #         min_distance = d
+        #         closest_color = color_name
+        # return closest_color
+        r -= self.adjustment[0]
+        g -= self.adjustment[1]
+        b -= self.adjustment[2]
+        h, s, v = rgb_to_hsv(r, g, b)
+        if h > 340.0:
+            h -= 360.0
+
+        for color_name, color_range in hsv_color_ranges.items():
+            d = hsv_color_distance_sqr((h, s, v), color_range)
             if d < min_distance:
                 min_distance = d
                 closest_color = color_name
         return closest_color
+
+
 
     def get_low_res_view(self):
         '''Downsizes Cozmo's camera view to the specified dimensions.
@@ -289,7 +401,7 @@ class ColorFinder(cozmo.annotate.Annotator):
         Returns:
             PIL image downsized to low-resolution version of Cozmo's camera view.
         '''
-        image = color_balance(self.robot.world.latest_image.raw_image)
+        image = self.robot.world.latest_image.raw_image
         downsized_image = image.resize((DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), resample = Image.LANCZOS)
         return downsized_image
 
@@ -307,10 +419,10 @@ class ColorFinder(cozmo.annotate.Annotator):
         amount_to_rotate = radians(self.fov_x.radians*(.5-float(x)/DOWNSIZE_WIDTH))
         if self.moved_too_far_from_center(amount_to_move_head, amount_to_rotate):
             self.state = FOUND_COLOR_STATE
-        if self.state != DRIVING_STATE:
-            self.turn_toward_blob(amount_to_move_head, amount_to_rotate)
-        else:
-            self.drive_toward_color_blob()
+        # if self.state != DRIVING_STATE:
+        #     self.turn_toward_blob(amount_to_move_head, amount_to_rotate)
+        # else:
+        #     self.drive_toward_color_blob()
 
     def moved_too_far_from_center(self, amount_to_move_head, amount_to_rotate):
         '''Decides whether the center of the blob is too far from the center of Cozmo's view.
@@ -403,7 +515,8 @@ class ColorFinder(cozmo.annotate.Annotator):
         '''Returns true if Cozmo connects to both cubes successfully.'''   
         self.color_selector_cube = self.robot.world.get_light_cube(cozmo.objects.LightCube1Id)
         self.grid_cube = self.robot.world.get_light_cube(cozmo.objects.LightCube2Id)
-        return not (self.color_selector_cube == None or self.grid_cube == None)
+        self.white_balance_cube = self.robot.world.get_light_cube(cozmo.objects.LightCube3Id)
+        return not (self.color_selector_cube == None or self.grid_cube == None or self.white_balance_cube == None)
 
     async def run(self):
         '''Program runs until typing CRTL+C into Terminal/Command Prompt, 
@@ -413,13 +526,13 @@ class ColorFinder(cozmo.annotate.Annotator):
             print('Cubes did not connect successfully - check that they are nearby. You may need to replace the batteries.')
             return
         self.turn_on_cubes()
-        await self.robot.drive_straight(distance_mm(100), speed_mmps(50)).wait_for_completed()
+        await self.robot.drive_straight(distance_mm(100), speed_mmps(50), should_play_anim = False).wait_for_completed()
 
         # Updates self.state and resets self.amount_turned_recently every 1 second.
         while True:
             await asyncio.sleep(1)
-            if self.state == LOOK_AROUND_STATE:
-                await self.start_lookaround()
+            # if self.state == LOOK_AROUND_STATE:
+            #     await self.start_lookaround()
             if self.state == FOUND_COLOR_STATE and self.amount_turned_recently < self.moving_threshold:
                 self.state = DRIVING_STATE
             self.amount_turned_recently = radians(0)
@@ -606,8 +719,8 @@ class BlobDetector():
             for (x, y) in self.blobs_dict[largest_blob_key]:
                 xs.append(x)
                 ys.append(y)
-            average_x = functools.reduce((lambda a, b : a+b), xs)/len(xs)
-            average_y = functools.reduce((lambda a, b : a+b), ys)/len(ys)
+            average_x = float(sum(xs))/len(xs)
+            average_y = float(sum(ys))/len(ys)
             blob_center = (int(average_x), int(average_y))
         return blob_center
 
@@ -643,7 +756,7 @@ class MyMatrix():
         '''
         for i in range(self.num_cols):
             for j in range(self.num_rows):
-                val = self.surrounded(i,j)
+                val = self.surrounded(i, j)
                 if val != None and val != 'white' and val != 'black':
                     self.at(i, j).set(val)
 
@@ -681,7 +794,7 @@ class MyMatrix():
         Returns:
             A four-tuple containing (left_value, up_value, right_value, and down_value)
         '''
-        return (self.at(i-1, j), self.at(i, j-1), self.at(i+1, j), self.at(i, j+1))
+        return (self.at(i-1, j), self.at(i, j-1), self.at(i + 1, j), self.at(i, j + 1))
 
 
 class MatrixValueContainer():
