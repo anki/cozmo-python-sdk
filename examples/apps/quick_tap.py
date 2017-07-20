@@ -56,14 +56,14 @@ class QuickTapGame:
         robot.add_event_handler(cozmo.anim.EvtAnimationCompleted, self.on_anim_completed)
         robot.add_event_handler(cozmo.objects.EvtObjectTapped, self.on_cube_tap)
 
-        self.cubes = None # type: list of cozmo.objects.LightCube objects
-        self.countdown_cube = None # type: LightCube
+        self.cubes = None
+        self.countdown_cube = None
 
-        self.buzzer_display_type = None # type: string
+        self.buzzer_display_type = None
 
         self.round_start_time = time.time()
-        self.first_tapper = None # type: QuickTapPlayer
-        self.not_first_tapper = None # type: QuickTapPlayer
+        self.quick_tap_player_1 = None
+        self.quick_tap_player_2 = None
         self.round_over = False
 
         self.quick_tap_state = CHOOSE_CUBES_STATE
@@ -162,26 +162,26 @@ class QuickTapGame:
     async def determine_result_of_round(self):
         '''Determines the first tapper, then whether that tapper wins or loses based on the buzzer display.'''
         self.determine_first_tapper()
-        if self.first_tapper:
+        if self.quick_tap_player_1:
             if self.buzzer_display_type == MAKE_BUZZERS_SAME_COLORS:
-                self.first_tapper.wins_round()
-                await self.first_tapper.cube.flair_correct_tap()
+                self.quick_tap_player_1.wins_round()
+                await self.quick_tap_player_1.cube.flair_correct_tap()
             elif self.buzzer_display_type == MAKE_BUZZERS_DIFFERENT_COLORS or self.buzzer_display_type == MAKE_BUZZERS_RED:
-                self.not_first_tapper.wins_round()
-                await self.first_tapper.cube.flair_incorrect_tap()
+                self.quick_tap_player_2.wins_round()
+                await self.quick_tap_player_1.cube.flair_incorrect_tap()
             self.report_scores()
 
     def determine_first_tapper(self):
         '''Finds the first tapper from the players' registered tap times.'''
         if self.player.has_tapped or self.cozmo_player.has_tapped:
             if self.cozmo_player.elapsed_tap_time < self.player.elapsed_tap_time:
-                self.first_tapper = self.cozmo_player
-                self.not_first_tapper = self.player
+                self.quick_tap_player_1 = self.cozmo_player
+                self.quick_tap_player_2 = self.player
             else:
-                self.first_tapper = self.player
-                self.not_first_tapper = self.cozmo_player
+                self.quick_tap_player_1 = self.player
+                self.quick_tap_player_2 = self.cozmo_player
         else:
-            self.first_tapper = None
+            self.quick_tap_player_1 = None
 
     async def cozmo_anim_reaction(self):
         '''Cozmo plays an animation based on whether he won or lost the round.'''        
@@ -461,3 +461,4 @@ async def cozmo_program(robot: cozmo.robot.Robot):
     await game.run()
 
 cozmo.run_program(cozmo_program)
+
