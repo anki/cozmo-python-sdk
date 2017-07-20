@@ -23,7 +23,7 @@ import asyncio, random, sys, time
 
 import cozmo
 
-from cozmo.lights import blue_light, Color, green_light, Light, red_light, white_light
+from cozmo.lights import blue_light, Color, green_light, Light, red_light, white_light, off_light
 from cozmo.util import degrees, distance_mm, radians, speed_mmps
 
 purple_light = Light(Color(name = 'purple', rgb = (255, 0, 255)))
@@ -61,7 +61,7 @@ class QuickTapGame:
 
         self.buzzer_display_type = None # type: string
 
-        self.round_start_time = None # type: Time
+        self.round_start_time = time.time()
         self.first_tapper = None # type: QuickTapPlayer
         self.not_first_tapper = None # type: QuickTapPlayer
         self.round_over = False
@@ -75,6 +75,7 @@ class QuickTapGame:
     async def run(self):
         '''Assigns the cubes, then starts a new round until a player has won.'''
         await self.cozmo_ready_position()
+        self.print_starting_instructions()
         if not self.cubes_connected():
             print('Cubes did not connect successfully - check that they are nearby. You may need to replace the batteries.')
             return
@@ -87,7 +88,7 @@ class QuickTapGame:
     async def game_round(self):
         '''Sets up and runs a round of the game. 
 
-        A new round starts unless a player's score reaches SCORE_TO_WIN.
+        In run(), a new round starts unless a player's score reaches SCORE_TO_WIN.
 
         First we ready the players and cubes, and then start the countdown.
         After the countdown, the cubes light up.  Then Cozmo makes his move.
@@ -95,7 +96,7 @@ class QuickTapGame:
         and Cozmo reacts accordingly.
         '''
         self.round_over = False
-        await self.reset_players_and_buzzer_cubes()
+        await self.reset_players()
         await self.countdown_cube.countdown()
         await self.set_round_lights()
         self.round_start_time = time.time()
@@ -110,7 +111,7 @@ class QuickTapGame:
         self.determine_buzzer_display()
         self.set_buzzer_lights()
 
-    async def reset_players_and_buzzer_cubes(self):
+    async def reset_players(self):
         '''Gets the players and cubes ready for a new round.'''
         self.player.reset()
         self.cozmo_player.reset()
@@ -140,36 +141,38 @@ class QuickTapGame:
         If in CHOOSE_CUBES_STATE, on_cube_tap assigns the player's cube.
         If in GAME_STATE, on_cube_tap registers the tap time of the players.
         '''
-        if self.quick_tap_state == CHOOSE_CUBES_STATE:
-            if obj.object_id != self.cozmo_player.cube.object_id:
-                self.player.cube = obj
-                self.player.cube.set_lights_off()
-        elif self.quick_tap_state == GAME_STATE:
-            if obj.object_id == self.player.cube.object_id:
-                self.player.register_tap(self.round_start_time)
-            elif obj.object_id == self.cozmo_player.cube.object_id:
-                self.cozmo_player.register_tap(self.round_start_time)
+        if obj.object_id:
+            if self.quick_tap_state == CHOOSE_CUBES_STATE:
+                if obj.object_id != self.cozmo_player.cube.object_id:
+                    self.player.cube = obj
+                    self.player.cube.set_lights_off()
+            elif self.quick_tap_state == GAME_STATE:
+                self.turn_off_buzzer_cubes()
+                if obj.object_id == self.player.cube.object_id:
+                    self.player.register_tap(self.round_start_time)
+                elif obj.object_id == self.cozmo_player.cube.object_id:
+                    self.cozmo_player.register_tap(self.round_start_time)
 
     async def on_anim_completed(self, evt, animation_name, **kwargs):
         '''Signals the end of the round if the animation completed was Cozmo's tap animation.'''
         if self.quick_tap_state == GAME_STATE and animation_name in ['OnSpeedtapTap', 'OnSpeedtapFakeout', 'OnSpeedtapIdle']:
             await self.determine_result_of_round()
-            if self.first_tapper:
-                self.report_scores()
             self.round_over = True
 
     async def determine_result_of_round(self):
         '''Determines the first tapper, then whether that tapper wins or loses based on the buzzer display.'''
-        await self.determine_first_tapper()
+        self.determine_first_tapper()
         if self.first_tapper:
             if self.buzzer_display_type == MAKE_BUZZERS_SAME_COLORS:
                 self.first_tapper.wins_round()
+                await self.first_tapper.cube.flair_correct_tap()
             elif self.buzzer_display_type == MAKE_BUZZERS_DIFFERENT_COLORS or self.buzzer_display_type == MAKE_BUZZERS_RED:
                 self.not_first_tapper.wins_round()
+                await self.first_tapper.cube.flair_incorrect_tap()
+            self.report_scores()
 
-    async def determine_first_tapper(self):
-        '''Waits 1 second to ensure accuracy, then finds the first tapper from the players' registered tap times.'''
-        await asyncio.sleep(1)
+    def determine_first_tapper(self):
+        '''Finds the first tapper from the players' registered tap times.'''
         if self.player.has_tapped or self.cozmo_player.has_tapped:
             if self.cozmo_player.elapsed_tap_time < self.player.elapsed_tap_time:
                 self.first_tapper = self.cozmo_player
@@ -201,7 +204,7 @@ class QuickTapGame:
         '''Blinks the cubes which Cozmo did not select for himself.'''
         for cube in self.cubes:
             if cube.object_id != self.cozmo_player.cube.object_id:
-                cube.start_light_chaser()
+                cube.start_light_chaser(0.5)
 
     def assign_countdown_cube(self):
         '''Assigns the countdown cube to be whichever cube has not been selected by the player or Cozmo.'''
@@ -266,6 +269,17 @@ class QuickTapGame:
         cube3 = self.robot.world.get_light_cube(cozmo.objects.LightCube3Id)
         self.cubes = [cube1, cube2, cube3]
         return not (cube1 == None or cube2 == None or cube3 == None)
+
+    def print_starting_instructions(self):
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        print('Welcome to Quick Tap!')
+        print('Put 1 cube in front of Cozmo. It will turn white when he can see it.')
+        print('Cozmo will tap the cube to select it as his buzzer.')
+        print('After Cozmo, tap a cube to select your buzzer.')
+        print('The last cube will display a countdown with its lights start each round.')
+        print('When the buzzers light up, tap if the colors match, but never tap on red!')
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+
 
     def report_scores(self):
         '''Prints the current scores of the game.'''
@@ -332,11 +346,12 @@ class CozmoQuickTapPlayer(QuickTapPlayer):
         self.cube = await self.robot.world.wait_for_observed_light_cube()
         self.cube.set_lights(cozmo.lights.white_light)
         await asyncio.sleep(2)
-        self.cube.start_light_chaser()
+        self.cube.start_light_chaser(0.5)
         await self.robot.set_lift_height(1.0).wait_for_completed()
         await self.robot.go_to_object(self.cube, distance_mm(40)).wait_for_completed()
         await self.robot.play_anim_trigger(cozmo.anim.Triggers.OnSpeedtapTap).wait_for_completed()
         self.cube.stop_light_chaser()
+        self.cube.set_lights(green_light)
 
     async def determine_move(self, buzzer_display_type):
         '''Cozmo chooses a move based on the probabilities above.
@@ -375,8 +390,10 @@ class CozmoQuickTapPlayer(QuickTapPlayer):
             await self.robot.play_anim_trigger(cozmo.anim.Triggers.OnSpeedtapIdle).wait_for_completed()
 
 
+rainbow_colors = [blue_light, red_light, green_light, yellow_light]
+
 class BlinkyCube(cozmo.objects.LightCube):
-    '''Same as a normal cube, plus method to display moving rotating rainbow lights.
+    '''Same as a normal cube, plus extra methods specific to QuickTap.
 
     Args:
         same arguments as cozmo.objects.LightCube
@@ -385,16 +402,18 @@ class BlinkyCube(cozmo.objects.LightCube):
         super().__init__(*a, **kw)
         self._chaser = None
 
-    def start_light_chaser(self):
-        '''Rotates four colors around the cube light corners in a continuous loop.'''
+    def start_light_chaser(self, pause_time):
+        '''Rotates four colors around the cube light corners in a continuous loop.
+
+        Args:
+            pause_time (float): the time awaited before moving the rotating lights'''
         if self._chaser:
             raise ValueError('Light chaser already running')
         async def _chaser():
-            rainbow_colors = [cozmo.lights.blue_light, cozmo.lights.red_light, cozmo.lights.green_light, cozmo.lights.white_light]
             while True:
                 for i in range(4):
                     self.set_light_corners(*rainbow_colors)
-                    await asyncio.sleep(0.1, loop = self._loop)
+                    await asyncio.sleep(pause_time, loop = self._loop)
                     light = rainbow_colors.pop(0)
                     rainbow_colors.append(light)
         self._chaser = asyncio.ensure_future(_chaser(), loop = self._loop)
@@ -408,16 +427,31 @@ class BlinkyCube(cozmo.objects.LightCube):
 
     async def countdown(self):
         '''Sets all lights to white, then 3 lights, then 2 lights, then 1 light, then none.'''
-        self.set_light_corners(cozmo.lights.white_light, cozmo.lights.white_light, cozmo.lights.white_light, cozmo.lights.white_light)
+        self.set_light_corners(white_light, white_light, white_light, white_light)
         await asyncio.sleep(.5)
-        self.set_light_corners(cozmo.lights.white_light, cozmo.lights.white_light, cozmo.lights.white_light, cozmo.lights.off_light)
+        self.set_light_corners(white_light, white_light, white_light, off_light)
         await asyncio.sleep(.5)
-        self.set_light_corners(cozmo.lights.white_light, cozmo.lights.white_light, cozmo.lights.off_light, cozmo.lights.off_light)
+        self.set_light_corners(white_light, white_light, off_light, off_light)
         await asyncio.sleep(.5)
-        self.set_light_corners(cozmo.lights.white_light, cozmo.lights.off_light, cozmo.lights.off_light, cozmo.lights.off_light)
+        self.set_light_corners(white_light, off_light, off_light, off_light)
         await asyncio.sleep(.5)
-        self.set_light_corners(cozmo.lights.off_light, cozmo.lights.off_light, cozmo.lights.off_light, cozmo.lights.off_light)
+        self.set_light_corners(off_light, off_light, off_light, off_light)
         await asyncio.sleep(.5)
+
+    async def flair_correct_tap(self):
+        '''Runs a fast _chaser when the player taps correctly.'''
+        self.start_light_chaser(0.1)
+        await asyncio.sleep(2)
+        self.stop_light_chaser()
+
+    async def flair_incorrect_tap(self):
+        '''Blinks red when the player taps incorrectly.'''
+        for _ in range(4):
+            self.set_lights(red_light)
+            await asyncio.sleep(.2)
+            self.set_lights(off_light)
+            await asyncio.sleep(.2)
+
 
 # Make sure World knows how to instantiate the BlinkyCube subclass
 cozmo.world.World.light_cube_factory = BlinkyCube
