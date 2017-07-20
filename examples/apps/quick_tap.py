@@ -17,7 +17,6 @@
 '''Quick Tap - tap your cube as fast as possible when the colors match, but never tap on red!
 
 The game ends when a player scores 5 points.
-
 '''
 import asyncio, random, sys, time
 
@@ -48,7 +47,7 @@ RATE_COZMO_ACCURACY = 0.9 # Cozmo has a 90% chance of reacting correctly to the 
 SCORE_TO_WIN = 5 # the game ends once either player's score has reached SCORE_TO_WIN
 
 class QuickTapGame:
-    '''The game logic of QuickTap.'''
+    '''The game logic of Quick Tap.'''
     def __init__(self, robot: cozmo.robot.Robot):
         self.robot = robot
         self.player = QuickTapPlayer()
@@ -246,7 +245,8 @@ class QuickTapGame:
         '''Creates a list of different alternating colors, chosen randomly from LIGHT_COLORS_LIST.
 
         Returns:
-            a list of Lights from LIGHT_COLORS_LIST'''
+            a list of Lights from LIGHT_COLORS_LIST
+        '''
         num_colors = len(LIGHT_COLORS_LIST)
         x = random.randrange(num_colors)
         y = random.randrange(num_colors)
@@ -280,7 +280,6 @@ class QuickTapGame:
         print('When the buzzers light up, tap if the colors match, but never tap on red!')
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
 
-
     def report_scores(self):
         '''Prints the current scores of the game.'''
         print('---------------------------------------------------')
@@ -301,7 +300,7 @@ class QuickTapGame:
 
 
 class QuickTapPlayer():
-    '''Player-specifc QuickTap logic.'''
+    '''Player-specifc Quick Tap logic.'''
     def __init__(self):
         self.cube = None
         self.score = 0
@@ -326,12 +325,14 @@ class QuickTapPlayer():
         '''Calculates elapsed time of tap, and sets has_tapped flag to True.
 
         Args:
-            round_start_time (Time): time stamp set in QuickTapGame to calculate players' tap_times'''
+            round_start_time (Time): time stamp set in QuickTapGame to calculate players' tap_times
+        '''
         self.elapsed_tap_time = time.time() - round_start_time
         self.has_tapped = True
 
+
 class CozmoQuickTapPlayer(QuickTapPlayer):
-    '''Cozmo-specific QuickTap player logic, with a reference to the actual Cozmo robot.
+    '''Cozmo-specific Quick Tap player logic, with a reference to the actual Cozmo robot.
         
     Args:
         robot (cozmo.robot.Robot): passed in from the QuickTapGame class
@@ -393,7 +394,7 @@ class CozmoQuickTapPlayer(QuickTapPlayer):
 rainbow_colors = [blue_light, red_light, green_light, yellow_light]
 
 class BlinkyCube(cozmo.objects.LightCube):
-    '''Same as a normal cube, plus extra methods specific to QuickTap.
+    '''Same as a normal cube, plus extra methods specific to Quick Tap.
 
     Args:
         same arguments as cozmo.objects.LightCube
@@ -406,7 +407,8 @@ class BlinkyCube(cozmo.objects.LightCube):
         '''Rotates four colors around the cube light corners in a continuous loop.
 
         Args:
-            pause_time (float): the time awaited before moving the rotating lights'''
+            pause_time (float): the time awaited before moving the rotating lights
+        '''
         if self._chaser:
             raise ValueError('Light chaser already running')
         async def _chaser():
