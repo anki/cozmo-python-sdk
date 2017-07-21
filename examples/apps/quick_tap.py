@@ -325,7 +325,7 @@ class QuickTapPlayer():
         '''Calculates elapsed time of tap, and sets has_tapped flag to True.
 
         Args:
-            round_start_time (Time): time stamp set in QuickTapGame to calculate players' tap_times
+            round_start_time (Time): time stamp set in QuickTapGame to calculate players' elapsed_tap_time
         '''
         self.elapsed_tap_time = time.time() - round_start_time
         self.has_tapped = True
@@ -358,7 +358,8 @@ class CozmoQuickTapPlayer(QuickTapPlayer):
         '''Cozmo chooses a move based on the probabilities above.
 
         Args:
-            buzzer_display_time (string): the display of the buzzers, either RED, SAME, or DIFFERENT
+            buzzer_display_type (string): the display of the buzzers
+            Either MAKE_BUZZERS_DIFFERENT_COLORS, MAKE_BUZZERS_RED, or MAKE_BUZZERS_SAME_COLORS
         '''
         await self.hesitate()
         probability_correct = random.random()
@@ -394,11 +395,7 @@ class CozmoQuickTapPlayer(QuickTapPlayer):
 rainbow_colors = [blue_light, red_light, green_light, yellow_light]
 
 class BlinkyCube(cozmo.objects.LightCube):
-    '''Same as a normal cube, plus extra methods specific to Quick Tap.
-
-    Args:
-        same arguments as cozmo.objects.LightCube
-    '''
+    '''Same as a normal cube, plus extra methods specific to Quick Tap.'''
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         self._chaser = None
