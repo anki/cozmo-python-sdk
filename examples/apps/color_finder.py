@@ -19,7 +19,7 @@
 Place a tennis ball near Cozmo and see if he can go play with it!
 
 When the program starts, Cozmo will look around for the color yellow.
-Tap the cube illuminated yellow to switch Cozmo's target color between yellow, blue, red, green.
+Tap the cube illuminated yellow to switch Cozmo's target color between yellow, blue, red, and green.
 Tap the blinking white cube to have the viewer display Cozmo's pixelated camera view.
 '''
 
@@ -48,22 +48,14 @@ map_color_to_light = {
 'red' : cozmo.lights.red_light
 }
 
-# rgb_color_ranges (dict): map of color names to regions in RGB space.
-# Instead of defining a color as a single (R, G, B) point, 
-# colors are defined with a minimum and maximum value for R, G, and B.
-# For example, a point with (R, G, B) = (40, 15, 225) falls entirely in the 'blue' region, 
-# because 0 < 40 < 50, 0 < 15 < 50, and 210 < 225 < 255.
-# A point with (R, G, B) = (95, 240, 160) does not fall exactly in one color region.
-# But applying rgb_color_distance_sqr between this color and all the colors in rgb_color_ranges
-# will show that (95, 240, 160) is closest to the 'green' region.
-rgb_color_ranges = {
-'red' : (210, 255, 0, 50, 0, 50), 
-'green' : (0, 50, 210, 255, 0, 50), 
-'blue' : (0, 50, 0, 50, 210, 255), 
-'yellow' : (210, 255, 210, 255, 0, 70), 
-'white' : (195, 255, 195, 255, 195, 255), 
-'black' : (0, 30, 0, 30, 0, 30)
-}
+# hsv_color_ranges (dict): map of color names to regions in HSV space.
+# Instead of defining a color as a single (H, S, V) point, 
+# colors are defined with a minimum and maximum value for H, S, and V.
+# For example, a point with (H, S, V) = (200.0, 0.8, 0.95) falls entirely in the 'blue' region, 
+# because 180.0 < 200.0 < 245.0, 0 < 0.8 < 1.0, and 0 < 0.95 < 1.0.
+# A point with (H, S, V) = (88.0, 0.4, 0.9) does not fall exactly in one color region.
+# But applying hsv_color_distance_sqr between this color and all the colors in hsv_color_ranges
+# will show that (88.0, 0.4, 0.9) is closest to the 'green' region.
 
 hsv_color_ranges = {
 'red' : (-20.0, 20.0, 0.5, 1.0, 0.5, 1.0), 
@@ -73,38 +65,6 @@ hsv_color_ranges = {
 'white' : (0.0, 360.0, 0.0, 0.2, 0.9, 1.0), 
 'black' : (0.0, 360.0, 0.0, 0.1, 0.0, 0.2)
 }
-
-def rgb_color_distance_sqr(color, color_range):
-    '''Determines the squared euclidean distance between color and color_range.
-
-    Args:
-        color (int, int, int): the R, G, B values of the color
-        color_range(int, int, int, int, int, int): the minimum and maximum for R, G, and B for the color range
-
-    Returns:
-        squared distance between color and color_range, 
-        which is the sum of the squared distances from 
-        the R, G, B values to their respective ranges
-    '''
-    r, g, b = color
-    minR, maxR, minG, maxG, minB, maxB = color_range
-    r_dist_sqr = 0
-    g_dist_sqr = 0
-    b_dist_sqr = 0
-    if r < minR:
-        r_dist_sqr = (minR - r) ** 2
-    elif r > maxR:
-        r_dist_sqr = (maxR - r) ** 2
-    if g < minG:
-        g_dist_sqr = (minG - g) ** 2
-    elif g > maxG:
-        g_dist_sqr = (maxG - g) ** 2
-    if b < minB:
-        b_dist_sqr = (minB - b) ** 2
-    elif b > maxB:
-        b_dist_sqr = (maxB - b) ** 2
-    sum_dist_sqr = r_dist_sqr + g_dist_sqr + b_dist_sqr
-    return sum_dist_sqr
 
 def hsv_color_distance_sqr(color, color_range):
     '''Determines the squared euclidean distance between color and color_range.
@@ -122,8 +82,6 @@ def hsv_color_distance_sqr(color, color_range):
     '''
     h, s, v = color
     minH, maxH, minS, maxS, minV, maxV = color_range
-    # for item in [s, v, minS, maxS, minV, maxV]:
-    #     item *= 100.0
     h_dist_sqr = 0
     s_dist_sqr = 0
     v_dist_sqr = 0
@@ -155,21 +113,20 @@ def color_balance(image):
     Returns
         the PIL image with balanced color distribution
     '''
-
-    image_array = from_pillow_image(image)
+    image_array = image_to_array(image)
     image_array = image_array.transpose(2, 0, 1).astype(numpy.uint32)
     average_g = numpy.average(image_array[1])
     image_array[0] = numpy.minimum(image_array[0] * (average_g / numpy.average(image_array[0])), 255)
     image_array[2] = numpy.minimum(image_array[2] * (average_g / numpy.average(image_array[2])), 255)
-    return to_pillow_image(image_array.transpose(1, 2, 0).astype(numpy.uint8))
+    return array_to_image(image_array.transpose(1, 2, 0).astype(numpy.uint8))
 
-def from_pillow_image(image):
+def image_to_array(image):
     '''Converts PIL image to image array.'''
     image_array = numpy.asarray(image)
     image_array.flags.writeable = True
     return image_array
 
-def to_pillow_image(image_array):
+def array_to_image(image_array):
     '''Coverts image array to PIL image.'''
     return Image.fromarray(numpy.uint8(image_array))
 
@@ -213,8 +170,6 @@ def rgb_to_hsv(r, g, b):
         else:
             s = delta / max_normalized_val
     return (h, s, v)
-
-
 
 POSSIBLE_COLORS_TO_FIND = ['green', 'yellow', 'blue', 'red']
 
@@ -373,27 +328,15 @@ class ColorFinder(cozmo.annotate.Annotator):
         '''
         min_distance = sys.maxsize
         closest_color = ''
-        # for color_name, color_range in rgb_color_ranges.items():
-        #     d = rgb_color_distance_sqr((r, g, b), color_range)
-        #     if d < min_distance:
-        #         min_distance = d
-        #         closest_color = color_name
-        # return closest_color
-        r -= self.adjustment[0]
-        g -= self.adjustment[1]
-        b -= self.adjustment[2]
         h, s, v = rgb_to_hsv(r, g, b)
         if h > 340.0:
             h -= 360.0
-
         for color_name, color_range in hsv_color_ranges.items():
             d = hsv_color_distance_sqr((h, s, v), color_range)
             if d < min_distance:
                 min_distance = d
                 closest_color = color_name
         return closest_color
-
-
 
     def get_low_res_view(self):
         '''Downsizes Cozmo's camera view to the specified dimensions.
@@ -419,10 +362,10 @@ class ColorFinder(cozmo.annotate.Annotator):
         amount_to_rotate = radians(self.fov_x.radians*(.5-float(x)/DOWNSIZE_WIDTH))
         if self.moved_too_far_from_center(amount_to_move_head, amount_to_rotate):
             self.state = FOUND_COLOR_STATE
-        # if self.state != DRIVING_STATE:
-        #     self.turn_toward_blob(amount_to_move_head, amount_to_rotate)
-        # else:
-        #     self.drive_toward_color_blob()
+        if self.state != DRIVING_STATE:
+            self.turn_toward_blob(amount_to_move_head, amount_to_rotate)
+        else:
+            self.drive_toward_color_blob()
 
     def moved_too_far_from_center(self, amount_to_move_head, amount_to_rotate):
         '''Decides whether the center of the blob is too far from the center of Cozmo's view.

@@ -138,8 +138,7 @@ class Angle:
     def abs_value(self):
         """:class:`cozmo.util.Angle`: The absolute value of the angle.
         
-        If the Angle is positive then it just returns the Angle, otherwise it
-        returns -Angle.
+        If the Angle is positive then it returns a copy of this Angle, otherwise it returns -Angle.
         """
         return Angle(radians = abs(self._radians))
 
