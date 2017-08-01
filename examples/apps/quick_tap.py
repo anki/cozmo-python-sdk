@@ -429,7 +429,7 @@ class BlinkyCube(cozmo.objects.LightCube):
         '''Sets all lights to white, then 3 lights, then 2 lights, then 1 light, then none.'''
         for i in range(5):
             cols = [white_light] * (4 - i) + [off_light] * i
-            self.set_light_corners(cols)
+            self.set_light_corners(*cols)
             await asyncio.sleep(.5)
 
     async def flair_correct_tap(self):
