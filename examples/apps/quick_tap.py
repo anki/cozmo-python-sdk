@@ -68,8 +68,9 @@ class QuickTapGame:
         self.quick_tap_state = CHOOSE_CUBES_STATE
 
     async def move_cozmo_to_ready_pose(self):
-        await self.robot.set_lift_height(0, in_parallel = True)
-        await self.robot.set_head_angle(degrees(0), in_parallel = True).wait_for_completed()
+        self.robot.set_lift_height(0, in_parallel = True)
+        self.robot.set_head_angle(degrees(0), in_parallel = True)
+        await self.robot.wait_for_all_actions_completed()
 
     async def run(self):
         '''Assigns the cubes, then starts a new round until a player has won.'''
