@@ -67,13 +67,13 @@ class QuickTapGame:
 
         self.quick_tap_state = CHOOSE_CUBES_STATE
 
-    async def cozmo_ready_position(self):
-        self.robot.set_lift_height(0, in_parallel = True)
-        self.robot.set_head_angle(degrees(0), in_parallel = True)
+    async def move_cozmo_to_ready_pose(self):
+        await self.robot.set_lift_height(0, in_parallel = True)
+        await self.robot.set_head_angle(degrees(0), in_parallel = True).wait_for_completed()
 
     async def run(self):
         '''Assigns the cubes, then starts a new round until a player has won.'''
-        await self.cozmo_ready_position()
+        await self.move_cozmo_to_ready_pose()
         self.print_starting_instructions()
         if not self.cubes_connected():
             print('Cubes did not connect successfully - check that they are nearby. You may need to replace the batteries.')
@@ -140,7 +140,7 @@ class QuickTapGame:
         If in CHOOSE_CUBES_STATE, on_cube_tap assigns the player's cube.
         If in GAME_STATE, on_cube_tap registers the tap time of the players.
         '''
-        if obj.object_id:
+        if obj.object_id is not None:
             if self.quick_tap_state == CHOOSE_CUBES_STATE:
                 if obj.object_id != self.cozmo_player.cube.object_id:
                     self.player.cube = obj
@@ -426,16 +426,10 @@ class BlinkyCube(cozmo.objects.LightCube):
 
     async def countdown(self):
         '''Sets all lights to white, then 3 lights, then 2 lights, then 1 light, then none.'''
-        self.set_light_corners(white_light, white_light, white_light, white_light)
-        await asyncio.sleep(.5)
-        self.set_light_corners(white_light, white_light, white_light, off_light)
-        await asyncio.sleep(.5)
-        self.set_light_corners(white_light, white_light, off_light, off_light)
-        await asyncio.sleep(.5)
-        self.set_light_corners(white_light, off_light, off_light, off_light)
-        await asyncio.sleep(.5)
-        self.set_light_corners(off_light, off_light, off_light, off_light)
-        await asyncio.sleep(.5)
+        for i in range(5):
+            cols = [white_light] * (4 - i) + [off_light] * i
+            self.set_light_corners(cols)
+            await asyncio.sleep(.5)
 
     async def flair_correct_tap(self):
         '''Runs a fast _chaser when the player taps correctly.'''
