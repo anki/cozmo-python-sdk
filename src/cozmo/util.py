@@ -134,6 +134,14 @@ class Angle:
         '''float: The angle in degrees.'''
         return self._radians / math.pi * 180
 
+    @property
+    def abs_value(self):
+        """:class:`cozmo.util.Angle`: The absolute value of the angle.
+        
+        If the Angle is positive then it returns a copy of this Angle, otherwise it returns -Angle.
+        """
+        return Angle(radians = abs(self._radians))
+
 
 def degrees(degrees):
     '''Returns an :class:`cozmo.util.Angle` instance set to the specified number of degrees.'''
