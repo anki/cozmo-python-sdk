@@ -29,6 +29,11 @@ def cozmo_program(robot: cozmo.robot.Robot):
     # A trigger can pick from several appropriate animations for variety.
     robot.play_anim_trigger(cozmo.anim.Triggers.CubePounceLoseSession).wait_for_completed()
 
+    # Play the same trigger, but this time ignore the track that plays on the
+    # body (i.e. don't move the wheels). See the play_anim_trigger documentation
+    # for other available settings.
+    robot.play_anim_trigger(cozmo.anim.Triggers.CubePounceLoseSession, ignore_body_track=True).wait_for_completed()
+
     # Play an animation via its Name.
     # Warning: Future versions of the app might change these, so for future-proofing
     # we recommend using play_anim_trigger above instead.

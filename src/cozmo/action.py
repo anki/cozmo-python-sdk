@@ -358,11 +358,11 @@ class Action(event.Dispatcher):
                                               failure_reason=reason)
         self.dispatch_event(self._completed_event)
 
-    def _set_aborting(self):
+    def _set_aborting(self, log_abort_messages):
         if not self.is_running:
             raise ValueError("Action isn't currently running")
 
-        if self._enable_abort_logging:
+        if self._enable_abort_logging and log_abort_messages:
             logger.info('Aborting action=%s', self)
         self._state = ACTION_ABORTING
 
@@ -479,13 +479,17 @@ class Action(event.Dispatcher):
 
     #### Commands ####
 
-    def abort(self):
+    def abort(self, log_abort_messages=False):
         '''Trigger the robot to abort the running action.
+
+        Args:
+            log_abort_messages (bool): True to log info on the action that
+                is aborted.
 
         Raises:
             ValueError if the action is not currently being executed.
         '''
-        self.robot._action_dispatcher._abort_action(self)
+        self.robot._action_dispatcher._abort_action(self, log_abort_messages)
 
     async def wait_for_completed(self, timeout=None):
         '''Waits for the action to complete.
@@ -666,11 +670,11 @@ class _ActionDispatcher(event.Dispatcher):
         # Should also dispatch to self so the parent can be notified.
         action.dispatch_event(evt)
 
-    def _abort_action(self, action):
+    def _abort_action(self, action, log_abort_messages):
         # Mark this in-progress action as aborting - it should get a "Cancelled"
         # message back in the next engine tick, and can basically be considered
         # cancelled from now.
-        action._set_aborting()
+        action._set_aborting(log_abort_messages)
 
         if action._completed_event_pending:
             # The action was marked as still running but the ActionDispatcher
@@ -688,14 +692,14 @@ class _ActionDispatcher(event.Dispatcher):
                                                             robotID=self.robot.robot_id)
             self.robot.conn.send_msg(msg)
 
-    def _abort_all_actions(self):
+    def _abort_all_actions(self, log_abort_messages):
         # Mark any in-progress actions as aborting - they should get a "Cancelled"
         # message back in the next engine tick, and can basically be considered
         # cancelled from now.
         actions_to_abort = self._in_progress
         self._in_progress = {}
         for action_id, action in actions_to_abort.items():
-            action._set_aborting()
+            action._set_aborting(log_abort_messages)
             self._aborting[action_id] = action
 
         logger.info('Sending abort request for all actions')

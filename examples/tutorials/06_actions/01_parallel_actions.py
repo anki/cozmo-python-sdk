@@ -83,13 +83,13 @@ def example3_abort_one_action(robot: cozmo.robot.Robot):
     action3 = robot.drive_straight(distance_mm(75), speed_mmps(25), should_play_anim=False, in_parallel=True)
     action4 = robot.display_oled_face_image(face_image, 30000.0)  # Note: face image is in_parallel by default
     # Lift-lowering is aborted immediately
-    action1.abort()
+    action1.abort(log_abort_messages=True)
     # Head-lowering is aborted shortly afterwards
     time.sleep(0.1)
-    action2.abort()
+    action2.abort(log_abort_messages=True)
     # Image on Cozmo's face is aborted another 2 seconds later
     time.sleep(2)
-    action4.abort()
+    action4.abort(log_abort_messages=True)
     # We wait for the one remaining action to complete
     action3.wait_for_completed()
     # Only action3 should succeed (as long as Cozmo had enough space to drive)
@@ -109,7 +109,7 @@ def example4_abort_all_actions(robot: cozmo.robot.Robot):
     action4 = robot.display_oled_face_image(face_image, 30000.0)  # Note: face image is in_parallel by default
     # wait two seconds and abort everything
     time.sleep(2)
-    robot.abort_all_actions()
+    robot.abort_all_actions(log_abort_messages=True)
     # wait for results to come back for all actions
     robot.wait_for_all_actions_completed()
     # All actions should have aborted

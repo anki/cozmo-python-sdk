@@ -62,6 +62,7 @@ from . import logger
 from . import annotate
 from . import event
 from . import faces
+from . import nav_memory_map
 from . import objects
 from . import pets
 from . import util
@@ -103,6 +104,10 @@ class World(event.Dispatcher):
     annotator_factory = annotate.ImageAnnotator
 
     def __init__(self, conn, robot, **kw):
+        """
+        @type conn: cozmo.conn.CozmoConnection
+        @type robot: cozmo.robot.Robot
+        """
         super().__init__(**kw)
         #: :class:`cozmo.conn.CozmoConnection`: The underlying connection to a device.
         self.conn = conn
@@ -112,7 +117,7 @@ class World(event.Dispatcher):
         self.image_annotator = self.annotator_factory(self)
 
         #: :class:`cozmo.robot.Robot`: The primary robot
-        self.robot = robot
+        self.robot = robot  # type: cozmo.robot.Robot
 
         self.custom_objects = {}
 
@@ -123,7 +128,7 @@ class World(event.Dispatcher):
 
         #: :class:`cozmo.objects.Charger`: Cozmo's charger.
         #: ``None`` if no charger connected or known about yet.
-        self.charger = None
+        self.charger = None  # type: cozmo.objects.Charger
 
         self._last_image_number = -1
         self._objects = {}
@@ -134,19 +139,21 @@ class World(event.Dispatcher):
         self._pets = {}
         self._active_behavior = None
         self._active_action = None
+        self._nav_memory_map = None  # type: nav_memory_map.NavMemoryMapGrid
+        self._pending_nav_memory_map = None  # type: nav_memory_map.NavMemoryMapGrid
         self._init_light_cubes()
 
 
     #### Private Methods ####
 
     def _init_light_cubes(self):
-        # XXX assume that the three cubes exist; haven't yet found an example
-        # where this isn't hard-coded.  Smells bad.  Don't allocate an object id
-        # i've seen them have an ID of 0 when observed.
+        # Initialize 3 cubes, but don't assign object IDs yet - they aren't
+        # fixed and will be sent over from the Engine on connection for any
+        # connected / known cubes.
         self.light_cubes = {
-            objects.LightCube1Id: self.light_cube_factory(self.conn, self, dispatch_parent=self),
-            objects.LightCube2Id: self.light_cube_factory(self.conn, self, dispatch_parent=self),
-            objects.LightCube3Id: self.light_cube_factory(self.conn, self, dispatch_parent=self),
+            objects.LightCube1Id: self.light_cube_factory(objects.LightCube1Id, self.conn, self, dispatch_parent=self),
+            objects.LightCube2Id: self.light_cube_factory(objects.LightCube2Id, self.conn, self, dispatch_parent=self),
+            objects.LightCube3Id: self.light_cube_factory(objects.LightCube3Id, self.conn, self, dispatch_parent=self),
         }
 
     def _allocate_object_from_msg(self, msg):
@@ -323,6 +330,18 @@ class World(event.Dispatcher):
             if cube and cube.is_connected:
                 yield cube
 
+    @property
+    def nav_memory_map(self):
+        """Returns the latest navigation memory map for Cozmo.
+        
+        Returns:
+             :class:`~cozmo.nav_memory_map.NavMemoryMapGrid`: Current navigation
+                memory map. This will be none unless you've previously called
+                :meth:`~cozmo.world.request_nav_memory_map` with a positive
+                frequency to request the data be sent over from the engine.
+        """
+        return self._nav_memory_map
+
     #### Private Event Handlers ####
 
     def _recv_msg_robot_observed_object(self, evt, *, msg):
@@ -419,7 +438,7 @@ class World(event.Dispatcher):
         if obj is None:
             logger.warning("Ignoring deleted_located_object for unknown object ID %s", msg.objectID)
         else:
-            logger.info("Invalidating pose for deleted located object %s" % obj)
+            logger.debug("Invalidating pose for deleted located object %s" % obj)
             obj.pose.invalidate()
 
     def _recv_msg_robot_delocalized(self, evt, *, msg):
@@ -427,6 +446,31 @@ class World(event.Dispatcher):
         logger.info("Robot delocalized - invalidating poses for all objects")
         for obj in self._objects.values():
             obj.pose.invalidate()
+
+    def _recv_msg_memory_map_message_begin(self, evt, *, msg):
+        if self._pending_nav_memory_map is not None:
+            logger.error("NavMemoryMap unexpected begin - restarting map")
+        self._pending_nav_memory_map = nav_memory_map.NavMemoryMapGrid(
+                                            msg.originId, msg.rootDepth,
+                                            msg.rootSize_mm, msg.rootCenterX,
+                                            msg.rootCenterY)
+
+    def _recv_msg_memory_map_message(self, evt, *, msg):
+        if self._pending_nav_memory_map is not None:
+            for quad in msg.quadInfos:
+                self._pending_nav_memory_map._add_quad(quad.content, quad.depth)
+        else:
+            logger.error("NavMemoryMap message without begin - ignoring")
+
+    def _recv_msg_memory_map_message_end(self, evt, *, msg):
+        if self._pending_nav_memory_map is not None:
+            # The pending map is now the latest complete map
+            self._nav_memory_map = self._pending_nav_memory_map
+            self._pending_nav_memory_map = None
+            self.dispatch_event(nav_memory_map.EvtNewNavMemoryMap,
+                                nav_memory_map=self._nav_memory_map)
+        else:
+            logger.error("NavMemoryMap end without begin - ignoring")
 
     #### Public Event Handlers ####
 
@@ -1035,6 +1079,23 @@ class World(event.Dispatcher):
         """
         msg = _clad_to_engine_iface.SetShouldAutoDisconnectFromCubesAtEnd(doAutoDisconnect=enable)
         self.conn.send_msg(msg)
+
+    def request_nav_memory_map(self, frequency_s):
+        """Request navigation memory map data from Cozmo.
+                
+        The memory map can be accessed via :attr:`~cozmo.world.World.nav_memory_map`,
+        it will be None until :meth:`request_nav_memory_map` has been called and
+        a map has been received. The memory map provides a quad-tree map of
+        where Cozmo thinks there are objects, and where Cozmo thinks it is safe
+        to drive.
+        
+        Args:
+            frequency_s (float): number of seconds between each update being sent.
+                Negative values, e.g. -1.0, will disable any updates being sent.
+        """
+        msg = _clad_to_engine_iface.SetMemoryMapBroadcastFrequency_sec(frequency_s)
+        self.conn.send_msg(msg)
+
 
 class CameraImage:
     '''A single image from Cozmo's camera.

@@ -212,6 +212,7 @@ class Face(objects.ObservableElement):
         self._updated_face_id = None
         self._name = ''
         self._expression = None
+        self._expression_score = None
         self._left_eye = None
         self._right_eye = None
         self._nose = None
@@ -286,6 +287,16 @@ class Face(objects.ObservableElement):
         return self._expression
 
     @property
+    def expression_score(self):
+        '''int: The score/confidence that :attr:`expression` was correct.
+
+        Will be 0 if expression is :attr:`FACIAL_EXPRESSION_UNKNOWN` (e.g. if
+        :meth:`cozmo.robot.Robot.enable_facial_expression_estimation` wasn't
+        called yet). The maximum possible score is 100.
+        '''
+        return self._expression_score
+
+    @property
     def known_expression(self):
         '''string: The known facial expression Cozmo has recognized on the face.
 
@@ -325,9 +336,23 @@ class Face(objects.ObservableElement):
         self._name = msg.name
 
         expression = _clad_facial_expression_to_facial_expression(msg.expression)
+        expression_score = 0
+
+        if expression != FACIAL_EXPRESSION_UNKNOWN:
+            expression_score = msg.expressionValues[msg.expression]
+            if expression_score == 0:
+                # The expression should have been marked unknown - this is a
+                # bug in the engine because even a zero score overwrites the
+                # default negative score for Unknown.
+                expression = FACIAL_EXPRESSION_UNKNOWN
+
         if expression != self._expression:
             self._expression = expression
             changed_fields.add('expression')
+
+        if expression_score != self._expression_score:
+            self._expression_score = expression_score
+            changed_fields.add('expression_score')
 
         self._left_eye = msg.leftEye
         self._right_eye = msg.rightEye

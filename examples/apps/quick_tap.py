@@ -143,7 +143,10 @@ class QuickTapGame:
         '''
         if obj.object_id is not None:
             if self.quick_tap_state == CHOOSE_CUBES_STATE:
-                if obj.object_id != self.cozmo_player.cube.object_id:
+                if self.cozmo_player.cube is None:
+                    # Cozmo hasn't picked a cube yet - ignore
+                    pass
+                elif obj.object_id != self.cozmo_player.cube.object_id:
                     self.player.cube = obj
                     self.player.cube.set_lights_off()
             elif self.quick_tap_state == GAME_STATE:
