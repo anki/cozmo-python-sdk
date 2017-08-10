@@ -499,12 +499,12 @@ def _connect_async(f, conn_factory=conn.CozmoConnection, connector=None):
         loop.run_forever()
 
 
+_sync_loop = asyncio.new_event_loop()
 def _connect_sync(f, conn_factory=conn.CozmoConnection, connector=None):
-    loop = asyncio.new_event_loop()
     abort_future = concurrent.futures.Future()
     conn_factory = functools.partial(conn_factory, _sync_abort_future=abort_future)
-    lt = _LoopThread(loop, conn_factory=conn_factory, connector=connector, abort_future=abort_future)
-    loop.set_exception_handler(functools.partial(_sync_exception_handler, abort_future))
+    lt = _LoopThread(_sync_loop, conn_factory=conn_factory, connector=connector, abort_future=abort_future)
+    _sync_loop.set_exception_handler(functools.partial(_sync_exception_handler, abort_future))
 
     coz_conn = lt.start()
 
