@@ -126,7 +126,7 @@ class NavMemoryMapGridNode:
         #: nodes.
         self.content = None  # type: _NodeContentType
 
-        self._next_child = 0  # Used when building to track which branch to follow (
+        self._next_child = 0  # Used when building to track which branch to follow
 
     def __repr__(self):
         return '<%s center: %s size: %s content: %s>' % (
@@ -147,18 +147,8 @@ class NavMemoryMapGridNode:
         dist_y = abs(self.center.y - y)
         return (dist_x <= half_size) and (dist_y <= half_size)
 
-    def get_node(self, x, y, _assumed_in_bounds=False):
-        """Get the node at the given x,y coordinates.
-
-        Args:
-            x (float): x coordinate for the point
-            y (float): y coordinate for the point
-
-        Returns:
-            :class:`NavMemoryMapGridNode`: The smallest node that includes the
-            point. Will be ``None`` if the point is outside of the map.
-        """
-        if not _assumed_in_bounds and not self.contains_point(x, y):
+    def _get_node(self, x, y, assumed_in_bounds):
+        if not assumed_in_bounds and not self.contains_point(x, y):
             # point is out of bounds
             return None
 
@@ -169,7 +159,20 @@ class NavMemoryMapGridNode:
             y_offset = 1 if y < self.center.y else 0
             child_node = self.children[x_offset+y_offset]
             # child node is by definition in bounds / on boundary
-            return child_node.get_node(x, y, True)
+            return child_node._get_node(x, y, True)
+
+    def get_node(self, x, y):
+        """Get the node at the given x,y coordinates.
+
+        Args:
+            x (float): x coordinate for the point
+            y (float): y coordinate for the point
+
+        Returns:
+            :class:`NavMemoryMapGridNode`: The smallest node that includes the
+            point. Will be ``None`` if the point is outside of the map.
+        """
+        return self._get_node(x, y, assumed_in_bounds=False)
 
     def get_content(self, x, y):
         """Get the node's content at the given x,y coordinates.
@@ -197,8 +200,8 @@ class NavMemoryMapGridNode:
         indicating where it is placed.
 
         Args:
-            content (:class:`_NodeContentType`):
-            depth (int):
+            content (:class:`_NodeContentType`): The content to store in the leaf node
+            depth (int): The depth that this leaf node is located at.
 
         Returns:
             bool: True if parent should use the next child for future _add_child

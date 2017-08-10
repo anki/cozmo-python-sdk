@@ -307,6 +307,8 @@ class FaceAnnotator(Annotator):
         '''
         expression = obj.known_expression
         if len(expression) > 0:
+            # if there is a specific known expression, then also show the score
+            # (display a % to make it clear the value is out of 100)
             expression += "=%s%% " % obj.expression_score
         if obj.name:
             return ImageText('%s%s (%d)' % (expression, obj.name, obj.face_id))
