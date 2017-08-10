@@ -42,6 +42,25 @@ for _name in vars(_clad_to_game_iface.MessageEngineToGame.Tag):
     globals()[_name] = cls
 
 
+def _all_caps_to_pascal_case(name):
+    # Convert a string from CAPS_CASE_WORDS to PascalCase (e.g. CapsCaseWords)
+    ret_str = ""
+    first_char = True
+    # Build the return string
+    for char in name:
+        if char == "_":
+            # skip underscores, but reset that next char will be start of a new word
+            first_char = True
+        else:
+            # First letter of a word is uppercase, rest are lowercase
+            if first_char:
+                ret_str += char.upper()
+                first_char = False
+            else:
+                ret_str += char.lower()
+    return ret_str
+
+
 class CladEnumWrapper:
     """Subclass this for an easy way to wrap a clad-enum in a documentable class.
     
@@ -56,7 +75,7 @@ class CladEnumWrapper:
     # e.g. collections.namedtuple('_ClassName', 'name id')
     _entry_type = None
 
-    _id_to_entry_type = dict()
+    _id_to_entry_type = None  # type: dict
 
     @classmethod
     def find_by_id(cls, id):
@@ -85,10 +104,21 @@ class CladEnumWrapper:
             if not _name.startswith('_') and (_name != 'Count') and _id >= 0:
                 attr = getattr(cls, _name, None)
                 if attr is None:
-                    # Try the private equivalent with a leading underscore - this
-                    # is used when that enum entry is only intended for internal
-                    # use and not part of the public API.
-                    attr = getattr(cls, "_" + _name, None)
+                    # Try valid, but less common, alternatives of the name -
+                    # leading underscores for private vars, and/or PascalCase
+                    # when the Clad type is in CAPS_CASE
+
+                    alternative_names = ["_" + _name]
+                    is_upper_case = _name == _name.upper()
+                    if is_upper_case:
+                        pascal_case_name = _all_caps_to_pascal_case(_name)
+                        alternative_names.extend([pascal_case_name,
+                                                  "_" + pascal_case_name])
+                    for alt_name in alternative_names:
+                        attr = getattr(cls, alt_name, None)
+                        if attr is not None:
+                            break
+
                 if attr is not None:
                     if attr.id != _id:
                         sys.exit(
@@ -98,8 +128,10 @@ class CladEnumWrapper:
                 else:
                     if warn_on_missing_definitions:
                         if missing_definitions_message is None:
-                            missing_definitions_message = ('\nMissing definition(s) in %s - to document them add:\n' % str(cls))
-                        missing_definitions_message += ('    %s = _entry_type("%s", _clad_enum.%s)\n' % (_name, _name, _name))
+                            missing_definitions_message = ('Missing definition(s) in %s - to document them add:' % str(cls))
+                        missing_definitions_message += ('\n    %s = _entry_type("%s", _clad_enum.%s)' % (_name, _name, _name))
+                        if is_upper_case:
+                            missing_definitions_message += ('\n or %s = _entry_type("%s", _clad_enum.%s)' % (pascal_case_name, pascal_case_name, _name))
                     if add_missing_definitions:
                         setattr(cls, _name, cls._entry_type(_name, _id))
 
@@ -109,6 +141,7 @@ class CladEnumWrapper:
     @classmethod
     def _build_id_to_entry_type(cls):
         # populate _id_to_entry_type mapping
+        cls._id_to_entry_type = dict()
         for (_name, _entry) in cls.__dict__.items():
             if isinstance(_entry, cls._entry_type):
                 cls._id_to_entry_type[_entry.id] = _entry

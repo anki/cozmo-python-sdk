@@ -20,41 +20,29 @@ RobotAlignment related classes, functions, events and values.
 __all__ = ['RobotAlignmentTypes']
 
 import collections
-from ._clad import _clad_to_engine_cozmo
+from ._clad import _clad_to_engine_cozmo, CladEnumWrapper
 
 _RobotAlignmentType = collections.namedtuple('_RobotAlignmentType', ['name', 'id'])
 
-try:
-    class RobotAlignmentTypes:
-        '''Defines all robot alignment types.
-        '''
-        #: Align the tips of the lift fingers with the target object
-        LiftFinger = _RobotAlignmentType("LiftFinger", _clad_to_engine_cozmo.AlignmentType.LIFT_FINGER)
 
-        #: Align the flat part of the life with the object
-        #: (Useful for getting the fingers in the cube's grooves)
-        LiftPlate = _RobotAlignmentType("LiftPlate", _clad_to_engine_cozmo.AlignmentType.LIFT_PLATE)
+class RobotAlignmentTypes(CladEnumWrapper):
+    '''Defines all robot alignment types.
+    '''
+    _clad_enum = _clad_to_engine_cozmo.AlignmentType
+    _entry_type = _RobotAlignmentType
 
-        #: Align the front of cozmo's body
-        #: (Useful for when the lift is up)
-        Body = _RobotAlignmentType("Body", _clad_to_engine_cozmo.AlignmentType.BODY)
+    #: Align the tips of the lift fingers with the target object
+    LiftFinger = _entry_type("LiftFinger", _clad_enum.LIFT_FINGER)
 
-        #: For use with distanceFromMarker parameter
-        Custom = _RobotAlignmentType("Custom", _clad_to_engine_cozmo.AlignmentType.CUSTOM)
+    #: Align the flat part of the life with the object
+    #: (Useful for getting the fingers in the cube's grooves)
+    LiftPlate = _entry_type("LiftPlate", _clad_enum.LIFT_PLATE)
 
-        _id_to_robot_alignment_type = dict()
+    #: Align the front of cozmo's body
+    #: (Useful for when the lift is up)
+    Body = _entry_type("Body", _clad_enum.BODY)
 
-        @classmethod
-        def find_by_id(cls, id):
-            return cls._id_to_robot_alignment_type.get(id)
+    #: For use with distanceFromMarker parameter
+    Custom = _entry_type("Custom", _clad_enum.CUSTOM)
 
-    # populate RobotAlignmentTypes _id_to_alignment_type mapping
-    for (_name, _rat) in RobotAlignmentTypes.__dict__.items():
-        if isinstance(_rat, _RobotAlignmentType):
-            RobotAlignmentTypes._id_to_robot_alignment_type[_rat.id] = _rat
-
-except AttributeError as exc:
-    err = ('Incorrect version of cozmoclad package installed.  '
-            'run "pip3 install --user --ignore-installed cozmoclad==%s" '
-            '(error: %s in robot_alignment.py)' % (__cozmoclad_version__, exc))
-    raise ImportError(err) from exc
+RobotAlignmentTypes._init_class()
