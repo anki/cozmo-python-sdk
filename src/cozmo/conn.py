@@ -83,8 +83,15 @@ FORCED_ROBOT_MESSAGES = {"AnimationAborted",
                          "ConnectedObjectStates",
                          "CubeLightsStateTransition",
                          "CurrentCameraParams",
+                         "DeviceAccelerometerValuesRaw",
+                         "DeviceAccelerometerValuesUser",
+                         "DeviceGyroValues",
+                         "IsDeviceIMUSupported",
                          "LoadedKnownFace",
                          "LocatedObjectStates",
+                         "MemoryMapMessageBegin",
+                         "MemoryMapMessage",
+                         "MemoryMapMessageEnd",
                          "ObjectConnectionState",
                          "ObjectPowerLevel",
                          "ObjectProjectsIntoFOV",
@@ -379,7 +386,7 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
                                   'Your Python and C++ CLAD versions do not match - connection refused.\n'
                                   'Please check that you have the most recent versions of both the SDK and the\n'
                                   'Cozmo app. You may update your SDK by calling:\n'
-                                  '"pip3 install --user --ignore-installed cozmo".\n'
+                                  '"pip3 install --user --upgrade cozmo".\n'
                                   'Please also check the app store for a Cozmo app update.\n')
 
             error_message += line_separator

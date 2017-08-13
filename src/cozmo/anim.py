@@ -72,21 +72,42 @@ class AnimationTrigger(action.Action):
     Asking Cozmo to play an AnimationTrigger causes him to pick one of the
     animations represented by the group.
     '''
-    def __init__(self, trigger, loop_count, **kw):
+    def __init__(self, trigger, loop_count, use_lift_safe, ignore_body_track,
+                 ignore_head_track, ignore_lift_track, **kw):
         super().__init__(**kw)
 
-        #: The trigger that was dispatched
+        #: An attribute of :class:`cozmo.anim.Triggers`: The animation trigger dispatched.
         self.trigger = trigger
 
-        #: The number of iterations the animation was requested for
+        #: int: The number of iterations the animation was requested for
         self.loop_count = loop_count
 
+        #: bool: True to automatically ignore the lift track if Cozmo is carrying a cube.
+        self.use_lift_safe = use_lift_safe
+
+        #: bool: True to ignore the body track (i.e. the wheels / treads)
+        self.ignore_body_track = ignore_body_track
+
+        #: bool: True to ignore the head track
+        self.ignore_head_track = ignore_head_track
+
+        #: bool: True to ignore the lift track
+        self.ignore_lift_track = ignore_lift_track
+
     def _repr_values(self):
-        return "trigger=%s loop_count=%s" % (self.trigger.name, self.loop_count)
+        all_tracks = {"body":self.ignore_body_track,
+                      "head":self.ignore_head_track,
+                      "lift":self.ignore_lift_track}
+        ignore_tracks = [k for k, v in all_tracks.items() if v]
+
+        return "trigger=%s loop_count=%s ignore_tracks=%s use_lift_safe=%s" % (
+            self.trigger.name, self.loop_count, str(ignore_tracks), self.use_lift_safe)
 
     def _encode(self):
         return _clad_to_engine_iface.PlayAnimationTrigger(
-            robotID=self.robot.robot_id, trigger=self.trigger.id, numLoops=self.loop_count)
+            robotID=self.robot.robot_id, trigger=self.trigger.id, numLoops=self.loop_count,
+            useLiftSafe=self.use_lift_safe, ignoreBodyTrack=self.ignore_body_track,
+            ignoreHeadTrack=self.ignore_head_track, ignoreLiftTrack=self.ignore_lift_track)
 
     def _dispatch_completed_event(self, msg):
         self._completed_event = EvtAnimationCompleted(

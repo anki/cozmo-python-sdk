@@ -38,13 +38,11 @@ __all__ = ['BEHAVIOR_IDLE', 'BEHAVIOR_REQUESTED', 'BEHAVIOR_RUNNING',
            'EvtBehaviorRequested', 'EvtBehaviorStarted', 'EvtBehaviorStopped',
            'Behavior', 'BehaviorTypes']
 
-import asyncio
 import collections
 
-from .version import __cozmoclad_version__
 from . import logger
 from . import event
-from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo
+from ._clad import _clad_to_engine_cozmo, CladEnumWrapper
 
 
 #: string: Behavior idle state (not requested to run)
@@ -171,50 +169,38 @@ class Behavior(event.Dispatcher):
 
 _BehaviorType = collections.namedtuple('_BehaviorType', ['name', 'id'])
 
-try:
-    class BehaviorTypes:
-        '''Defines all executable robot behaviors.
 
-        For use with :meth:`cozmo.robot.Robot.start_behavior`.
-        '''
+class BehaviorTypes(CladEnumWrapper):
+    '''Defines all executable robot behaviors.
 
-        #: Turn and move head, but don't drive, with Cozmo's head angled
-        #: upwards where faces are likely to be.
-        FindFaces = _BehaviorType("FindFaces", _clad_to_engine_cozmo.ExecutableBehaviorType.FindFaces)
+    For use with :meth:`cozmo.robot.Robot.start_behavior`.
+    '''
+    _clad_enum = _clad_to_engine_cozmo.ExecutableBehaviorType
+    _entry_type = _BehaviorType
 
-        #: Knock over a stack of cubes.
-        KnockOverCubes = _BehaviorType("KnockOverCubes", _clad_to_engine_cozmo.ExecutableBehaviorType.KnockOverCubes)
+    #: Turn and move head, but don't drive, with Cozmo's head angled
+    #: upwards where faces are likely to be.
+    FindFaces = _entry_type("FindFaces", _clad_enum.FindFaces)
 
-        #: Turn and move head, but don't drive, to see what is around Cozmo.
-        LookAroundInPlace = _BehaviorType("LookAroundInPlace", _clad_to_engine_cozmo.ExecutableBehaviorType.LookAroundInPlace)
+    #: Knock over a stack of cubes.
+    KnockOverCubes = _entry_type("KnockOverCubes", _clad_enum.KnockOverCubes)
 
-        #: Tries to "pounce" (drive forward and lower lift) when it detects
-        #: nearby motion on the ground plane.
-        PounceOnMotion = _BehaviorType("PounceOnMotion", _clad_to_engine_cozmo.ExecutableBehaviorType.PounceOnMotion)
+    #: Turn and move head, but don't drive, to see what is around Cozmo.
+    LookAroundInPlace = _entry_type("LookAroundInPlace", _clad_enum.LookAroundInPlace)
 
-        #: Roll a block, regardless of orientation.
-        RollBlock = _BehaviorType("RollBlock", _clad_to_engine_cozmo.ExecutableBehaviorType.RollBlock)
+    #: Tries to "pounce" (drive forward and lower lift) when it detects
+    #: nearby motion on the ground plane.
+    PounceOnMotion = _entry_type("PounceOnMotion", _clad_enum.PounceOnMotion)
 
-        #: Pickup one block, and stack it onto another block.
-        StackBlocks = _BehaviorType("StackBlocks", _clad_to_engine_cozmo.ExecutableBehaviorType.StackBlocks)
+    #: Roll a block, regardless of orientation.
+    RollBlock = _entry_type("RollBlock", _clad_enum.RollBlock)
 
-        # Enroll a Face - for internal use by Face.name_face (requires additional pre/post setup)
-        _EnrollFace = _BehaviorType("EnrollFace", _clad_to_engine_cozmo.ExecutableBehaviorType.EnrollFace)
+    #: Pickup one block, and stack it onto another block.
+    StackBlocks = _entry_type("StackBlocks", _clad_enum.StackBlocks)
 
-        _id_to_behavior_type = dict()
+    # Enroll a Face - for internal use by Face.name_face (requires additional pre/post setup)
+    _EnrollFace = _entry_type("EnrollFace", _clad_enum.EnrollFace)
 
-        @classmethod
-        def find_by_id(cls, id):
-            return cls._id_to_behavior_type.get(id)
 
-    # populate BehaviorTypes _id_to_behavior_type mapping
-    for (_name, _bt) in BehaviorTypes.__dict__.items():
-        if isinstance(_bt, _BehaviorType):
-            BehaviorTypes._id_to_behavior_type[_bt.id] = _bt
-
-except AttributeError as exc:
-    err = ('Incorrect version of cozmoclad package installed.  '
-            'run "pip3 install --user --ignore-installed cozmoclad==%s" '
-            '(error: %s in behavior.py)' % (__cozmoclad_version__, exc))
-    raise ImportError(err) from exc
-
+# This enum deliberately only exposes a sub-set of working behaviors
+BehaviorTypes._init_class(warn_on_missing_definitions=False, add_missing_definitions=False)

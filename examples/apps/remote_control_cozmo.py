@@ -51,12 +51,12 @@ class RobotStateDisplay(cozmo.annotate.Annotator):
         bounds = [3, 0, image.width, image.height]
 
         def print_line(text_line):
-            text = cozmo.annotate.ImageText(text_line, position=cozmo.annotate.TOP_LEFT, color='lightblue')
+            text = cozmo.annotate.ImageText(text_line, position=cozmo.annotate.TOP_LEFT, outline_color='black', color='lightblue')
             text.render(d, bounds)
             TEXT_HEIGHT = 11
             bounds[1] += TEXT_HEIGHT
 
-        robot = self.world.robot
+        robot = self.world.robot  # type: cozmo.robot.Robot
 
         # Display the Pose info for the robot
 
@@ -70,6 +70,18 @@ class RobotStateDisplay(cozmo.annotate.Annotator):
 
         print_line('Accelmtr: <%.1f, %.1f, %.1f>' % robot.accelerometer.x_y_z)
         print_line('Gyro: <%.1f, %.1f, %.1f>' % robot.gyro.x_y_z)
+
+        # Display the Accelerometer and Gyro data for the mobile device
+
+        if robot.device_accel_raw is not None:
+            print_line('Device Acc Raw: <%.2f, %.2f, %.2f>' % robot.device_accel_raw.x_y_z)
+        if robot.device_accel_user is not None:
+            print_line('Device Acc User: <%.2f, %.2f, %.2f>' % robot.device_accel_user.x_y_z)
+        if robot.device_gyro is not None:
+            mat = robot.device_gyro.to_matrix()
+            print_line('Device Gyro Up: <%.2f, %.2f, %.2f>' % mat.up_xyz)
+            print_line('Device Gyro Fwd: <%.2f, %.2f, %.2f>' % mat.forward_xyz)
+            print_line('Device Gyro Left: <%.2f, %.2f, %.2f>' % mat.left_xyz)
 
 
 def create_default_image(image_width, image_height, do_gradient=False):
@@ -801,6 +813,7 @@ def handle_getDebugInfo():
 def run(sdk_conn):
     robot = sdk_conn.wait_for_robot()
     robot.world.image_annotator.add_annotator('robotState', RobotStateDisplay)
+    robot.enable_device_imu(True, True, True)
 
     global remote_control_cozmo
     remote_control_cozmo = RemoteControlCozmo(robot)

@@ -594,15 +594,15 @@ class Robot(event.Dispatcher):
     _current_behavior = None  # type: Behavior
     _is_freeplay_mode_active = False
 
-    def __init__(self, conn, robot_id, is_primary, **kw):
+    def __init__(self, conn, robot_id: int, is_primary: bool, **kw):
         super().__init__(**kw)
         #: :class:`cozmo.conn.CozmoConnection`: The active connection to the engine.
-        self.conn = conn
+        self.conn = conn  # type: conn.CozmoConnection
         #: int: The internal ID number of the robot.
         self.robot_id = robot_id
 
         self._is_ready = False
-        self._pose = None
+        self._pose = None  # type: util.Pose
         #: bool: Specifies that this is the primary robot (always True currently)
         self.is_primary = is_primary
 
@@ -614,29 +614,50 @@ class Robot(event.Dispatcher):
 
         self._action_dispatcher = self._action_dispatcher_factory(self)
 
-        self._current_face_image_action = None
+        self._current_face_image_action = None  # type: DisplayOledFaceImage
 
         #: :class:`cozmo.util.Speed`: Speed of the left wheel
-        self.left_wheel_speed = None
+        self.left_wheel_speed = None  # type: util.Speed
         #: :class:`cozmo.util.Speed`: Speed of the right wheel
-        self.right_wheel_speed = None
+        self.right_wheel_speed = None  # type: util.Speed
         #: :class:`cozmo.util.Distance`: Height of the lift from the ground
         #: (in :const:`MIN_LIFT_HEIGHT_MM` to :const:`MAX_LIFT_HEIGHT_MM` range)
-        self.lift_height = None
+        self.lift_height = None  # type: util.Distance
         #: float: The current battery voltage (not linear, but < 3.5 is low)
-        self.battery_voltage = None
+        self.battery_voltage = None  # type: float
 
         #: :class:`cozmo.util.Vector3`: The current accelerometer reading (x,y,z)
         #: In mm/s^2, measured in Cozmo's head (e.g. x=0 when Cozmo's head is level
         #: but x = z = ~7000 mm/s^2 when Cozmo's head is angled 45 degrees up)
-        self.accelerometer = None
+        self.accelerometer = None  # type: util.Vector3
+
+        self._is_device_accelerometer_supported = None  # type: bool
+        self._is_device_gyro_supported = None  # type: bool
+
+        #: :class:`cozmo.util.Vector3`: The current accelerometer reading for
+        #: the connected mobile device. Requires that you have first called
+        #: :meth:`enable_device_imu` with `enable_raw = True`. See
+        #: :attr:`device_accel_user` for a user-filtered equivalent.
+        self.device_accel_raw = None  # type: util.Vector3
+
+        #: :class:`cozmo.util.Vector3`: The current user-filtered accelerometer
+        #: reading for the connected mobile device. Requires that you have first
+        #: called :meth:`enable_device_imu` with `enable_user = True`. This
+        #: filtered version removes the constant acceleration from Gravity. See
+        #: :attr:`device_accel_raw` for a raw version.
+        self.device_accel_user = None  # type: util.Vector3
+
+        #: :class:`cozmo.util.Quaternion`: The current gyro reading for
+        #: the connected mobile device. Requires that you have first called
+        #: :meth:`enable_device_imu` with `enable_gyro = True`
+        self.device_gyro = None  # type: util.Quaternion
 
         #: :class:`cozmo.util.Vector3`: The current gyro reading (x,y,z)
         #: In radians/s, measured in Cozmo's head.
         #: Therefore a large value in a given component would indicate Cozmo is
         #: being rotated around that axis (where x=forward, y=left, z=up), e.g.
         #: y = -5 would indicate that Cozmo is being rolled onto his back
-        self.gyro = None
+        self.gyro = None  # type: util.Vector3
 
         #: int: The ID of the object currently being carried (-1 if none)
         self.carrying_object_id = -1
@@ -649,10 +670,10 @@ class Robot(event.Dispatcher):
         #: int: The robot's timestamp for the last image seen.
         #: ``None`` if no image was received yet.
         #: In milliseconds relative to robot epoch.
-        self.last_image_robot_timestamp = None
-        self._pose_angle = None
-        self._pose_pitch = None
-        self._head_angle = None
+        self.last_image_robot_timestamp = None  # type: int
+        self._pose_angle = None  # type: util.Angle
+        self._pose_pitch = None  # type: util.Angle
+        self._head_angle = None  # type: util.Angle
         self._robot_status_flags = 0
         self._game_status_flags = 0
 
@@ -676,6 +697,12 @@ class Robot(event.Dispatcher):
             self.stop_all_motors()
             self.enable_all_reaction_triggers(False)
             self._set_none_behavior()
+
+            # Default to no memory map data being streamed
+            self.world.request_nav_memory_map(-1.0)
+
+            # Default to no device IMU data being streamed
+            self.enable_device_imu(False, False, False)
 
             # Ensure the SDK has full control of cube lights
             self._set_cube_light_state(False)
@@ -880,6 +907,16 @@ class Robot(event.Dispatcher):
         '''
         return "%08x" % self._serial_number_body
 
+    @property
+    def is_device_accelerometer_supported(self):
+        """bool: True if the attached mobile device supports accelerometer data."""
+        return self._is_device_accelerometer_supported
+
+    @property
+    def is_device_gyro_supported(self):
+        """bool: True if the attached mobile device supports gyro data."""
+        return self._is_device_gyro_supported
+
     #### Private Event Handlers ####
 
     #def _recv_default_handler(self, event, **kw):
@@ -938,6 +975,23 @@ class Robot(event.Dispatcher):
             else:
                 self._current_behavior._set_stopped()
 
+    # Device IMU
+
+    def _recv_msg_device_accelerometer_values_raw(self, evt, *, msg):
+        self.device_accel_raw = util.Vector3(msg.x_gForce, msg.y_gForce, msg.z_gForce)
+
+    def _recv_msg_device_accelerometer_values_user(self, evt, *, msg):
+        self.device_accel_user = util.Vector3(msg.x_gForce, msg.y_gForce, msg.z_gForce)
+
+    def _recv_msg_device_gyro_values(self, evt, *, msg):
+        self.device_gyro = util.Quaternion(msg.w, msg.x, msg.y, msg.z)
+
+    def _recv_msg_is_device_imu_supported(self, evt, *, msg):
+        self._is_device_accelerometer_supported = msg.isAccelerometerSupported
+        self._is_device_gyro_supported = msg.isGyroSupported
+        logger.debug("Mobile Device IMU support: accelerometer=%s gyro=%s",
+                    self._is_device_accelerometer_supported, self._is_device_gyro_supported)
+
     #### Public Event Handlers ####
 
 
@@ -965,12 +1019,16 @@ class Robot(event.Dispatcher):
         msg = _clad_to_engine_iface.SetRobotVolume(robotId=self.robot_id, volume=robot_volume)
         self.conn.send_msg(msg)
 
-    def abort_all_actions(self):
+    def abort_all_actions(self, log_abort_messages=False):
         '''Abort all actions on this robot
+
+        Args:
+            log_abort_messages (bool): True to log info on every action that
+                is aborted.
 
         Abort / Cancel any action that is currently either running or queued within the engine
         '''
-        self._action_dispatcher._abort_all_actions()
+        self._action_dispatcher._abort_all_actions(log_abort_messages)
 
     def enable_facial_expression_estimation(self, enable=True):
         '''Enable or Disable facial expression estimation
@@ -987,6 +1045,26 @@ class Robot(event.Dispatcher):
         msg = _clad_to_engine_iface.EnableVisionMode(
             mode=_clad_to_engine_cozmo.VisionMode.EstimatingFacialExpression,
             enable=enable)
+        self.conn.send_msg(msg)
+
+    def enable_device_imu(self, enable_raw=False, enable_user=False, enable_gyro=False):
+        """Enable streaming of the connected Mobile devices' IMU data.
+
+        The accelerometer and gyro data for the connected phone or tablet can
+        be streamed from the app to the SDK. You can request any combination of
+        the 3 data types.
+
+        Args:
+            enable_raw (bool): True to enable streaming of the raw accelerometer
+                data, which can be accessed via :attr:`device_accel_raw`
+            enable_user (bool): True to enable streaming of the user-filtered
+                accelerometer data, which can be accessed via :attr:`device_accel_user`
+            enable_gyro (bool): True to enable streaming of the gyro
+                data, which can be accessed via :attr:`device_gyro`
+        """
+        msg = _clad_to_engine_iface.EnableDeviceIMUData(enableAccelerometerRaw=enable_raw,
+                                                        enableAccelerometerUser=enable_user,
+                                                        enableGyro=enable_gyro)
         self.conn.send_msg(msg)
 
     ### Camera Commands ###
@@ -1263,7 +1341,8 @@ class Robot(event.Dispatcher):
         return action
 
     def play_anim_trigger(self, trigger, loop_count=1, in_parallel=False,
-                          num_retries=0):
+                          num_retries=0, use_lift_safe=False, ignore_body_track=False,
+                          ignore_head_track=False, ignore_lift_track=False):
         """Starts an animation trigger playing on a robot.
 
         As noted in the Triggers class, playing a trigger requests that an
@@ -1278,6 +1357,14 @@ class Robot(event.Dispatcher):
                 be already complete.
             num_retries (int): Number of times to retry the action if the
                 previous attempt(s) failed.
+            use_lift_safe (bool): True to automatically ignore the lift track
+                if Cozmo is currently carrying an object.
+            ignore_body_track (bool): True to ignore the animation track for
+                Cozmo's body (i.e. the wheels / treads).
+            ignore_head_track (bool): True to ignore the animation track for
+                Cozmo's head.
+            ignore_lift_track (bool): True to ignore the animation track for
+                Cozmo's lift.
         Returns:
             A :class:`cozmo.anim.AnimationTrigger` action object which can be
                 queried to see when it is complete
@@ -1287,8 +1374,9 @@ class Robot(event.Dispatcher):
         if not isinstance(trigger, anim._AnimTrigger):
             raise TypeError("Invalid trigger supplied")
 
-        action = self.animation_trigger_factory(trigger, loop_count,
-            conn=self.conn, robot=self, dispatch_parent=self)
+        action = self.animation_trigger_factory(trigger, loop_count, use_lift_safe,
+                                                ignore_body_track, ignore_head_track, ignore_lift_track,
+                                                conn=self.conn, robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action,
                                                     in_parallel=in_parallel,
                                                     num_retries=num_retries)
