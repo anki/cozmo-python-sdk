@@ -354,6 +354,7 @@ class ColorFinder(cozmo.annotate.Annotator):
             
         Args:
             blob_center (int, int): coordinates of the blob's center in self.pixel_matrix
+            blob_size (int): number of pixels in the blob
         '''
         self.robot.set_center_backpack_lights(map_color_to_light[self.color_to_find])
         if blob_size > (self.pixel_matrix.size/4):
@@ -673,9 +674,15 @@ class BlobDetector():
         return blob_center
 
     def update_largest_blob_size(self, key):
+        '''Updates self.largest_blob_size based on the current largest blob.'''
         self.largest_blob_size = len(self.blobs_dict[key])
 
     def get_blob_size(self):
+        '''Gets the number of pixels in the largest blob.
+
+        Returns:
+            int specifying the size of the blob
+        '''
         return self.largest_blob_size
 
 
