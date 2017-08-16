@@ -373,6 +373,13 @@ class ObservableObject(ObservableElement):
             logger.debug("Setting object_id for %s to %s", self.__class__, value)
         self._object_id = value
 
+    @property
+    def descriptive_name(self):
+        '''str: A descriptive name for this ObservableObject instance.'''
+        # Note: Sub-classes should override this to add any other relevant info
+        # for that object type.
+        return "%s id=%d" % (self.__class__.__name__, self.object_id)
+
     #### Private Event Handlers ####
 
     def _recv_msg_robot_observed_object(self, evt, *, msg):
@@ -417,7 +424,7 @@ class LightCube(ObservableObject):
     pickupable = True
     place_objects_on_this = True
 
-    def __init__(self, *a, **kw):
+    def __init__(self, cube_id, *a, **kw):
         super().__init__(*a, **kw)
 
         #: float: The time the object was last tapped
@@ -455,6 +462,8 @@ class LightCube(ObservableObject):
 
         #: bool: True if the cube is currently connected to the robot via radio.
         self.is_connected = False
+
+        self._cube_id = cube_id
 
     def _repr_values(self):
         super_values = super()._repr_values()
@@ -513,6 +522,16 @@ class LightCube(ObservableObject):
         else:
             return ('{self.battery_percentage:.0f}%'.format(self=self))
 
+    @property
+    def cube_id(self):
+        """int: The Light Cube ID.
+
+        This will be one of :attr:`~cozmo.objects.LightCube1Id`,
+        :attr:`~cozmo.objects.LightCube2Id` and :attr:`~cozmo.objects.LightCube3Id`.
+        Note: the cube_id is not the same thing as the object_id.
+        """
+        return self._cube_id
+
     #### Private Event Handlers ####
     def _recv_msg_object_tapped(self, evt, *, msg):
         now = time.time()
@@ -568,6 +587,12 @@ class LightCube(ObservableObject):
             self.is_connected = msg.connected
             self.dispatch_event(EvtObjectConnectChanged, obj=self,
                                 connected=self.is_connected)
+
+    @property
+    def descriptive_name(self):
+        '''str: A descriptive name for this LightCube instance.'''
+        # Specialization of ObservableObject's method to include the cube ID.
+        return "%s %s id=%d" % (self.__class__.__name__, self._cube_id, self.object_id)
 
     #### Public Event Handlers ####
 
@@ -688,6 +713,12 @@ class CustomObject(ObservableObject):
     def is_unique(self):
         '''bool: True if there should only be one of this object type in the world.'''
         return self._is_unique
+
+    @property
+    def descriptive_name(self):
+        '''str: A descriptive name for this CustomObject instance.'''
+        # Specialization of ObservableObject's method to include the object type.
+        return "%s id=%d" % (self.object_type.name, self.object_id)
 
     #### Private Event Handlers ####
 
