@@ -650,7 +650,7 @@ class BlobDetector():
             longest_points_list = functools.reduce(lambda largest, current: largest if (largest > current) else current, values)
             sample_x, sample_y = longest_points_list[0]
             largest_blob_key = self.keys.at(sample_x, sample_y).value
-            self.update_largest_blob_size(largest_blob_key)
+            self.largest_blob_size = len(self.blobs_dict[largest_blob_key])
         return largest_blob_key
 
     def get_blob_center(self):
@@ -673,15 +673,11 @@ class BlobDetector():
             blob_center = (int(average_x), int(average_y))
         return blob_center
 
-    def update_largest_blob_size(self, key):
-        '''Updates self.largest_blob_size based on the current largest blob.'''
-        self.largest_blob_size = len(self.blobs_dict[key])
-
     def get_blob_size(self):
         '''Gets the number of pixels in the largest blob.
 
         Returns:
-            int specifying the size of the blob
+            int: The size, in pixels, of the largest blob
         '''
         return self.largest_blob_size
 
