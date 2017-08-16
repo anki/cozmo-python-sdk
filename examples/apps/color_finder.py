@@ -288,12 +288,13 @@ class ColorFinder(cozmo.annotate.Annotator):
         blob_center = blob_detector.get_blob_center()
         if blob_center:
             self.last_known_blob_center = blob_center
+            blob_size = blob_detector.get_blob_size()
             if self.state == LOOK_AROUND_STATE:
                 self.state = FOUND_COLOR_STATE
                 if self.look_around_behavior:
                     self.look_around_behavior.stop()
                     self.look_around_behavior = None
-            self.on_finding_a_blob(blob_center)
+            self.on_finding_a_blob(blob_center, blob_size)
         else:
             self.robot.set_backpack_lights_off()
             self.abort_actions(self.drive_action)
@@ -348,13 +349,16 @@ class ColorFinder(cozmo.annotate.Annotator):
         downsized_image = image.resize((DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), resample = Image.LANCZOS)
         return downsized_image
 
-    def on_finding_a_blob(self, blob_center):
+    def on_finding_a_blob(self, blob_center, blob_size):
         '''Determines whether Cozmo should continue to look at the blob, or drive towards it.
             
         Args:
             blob_center (int, int): coordinates of the blob's center in self.pixel_matrix
+            blob_size (int): number of pixels in the blob
         '''
         self.robot.set_center_backpack_lights(map_color_to_light[self.color_to_find])
+        if blob_size > (self.pixel_matrix.size/4):
+            self.lift_action = self.robot.set_lift_height(0.0, in_parallel = True)
         x, y = blob_center
         # 'fov' stands for 'field of view'. This is the angle amount
         # that Cozmo can see to the edges of his camera view.
@@ -474,8 +478,8 @@ class ColorFinder(cozmo.annotate.Annotator):
         # Updates self.state and resets self.amount_turned_recently every 1 second.
         while True:
             await asyncio.sleep(1)
-            # if self.state == LOOK_AROUND_STATE:
-            #     await self.start_lookaround()
+            if self.state == LOOK_AROUND_STATE:
+                await self.start_lookaround()
             if self.state == FOUND_COLOR_STATE and self.amount_turned_recently < self.moving_threshold:
                 self.state = DRIVING_STATE
             self.amount_turned_recently = radians(0)
@@ -499,7 +503,8 @@ class BlobDetector():
         self.blobs_dict = {}
         self.keys = MyMatrix(self.matrix.num_cols, self.matrix.num_rows)
         self.make_blobs_dict()
-        self.filter_blobs_dict_by_size(10) # prevents a lot of irrelevant blobs from being processed
+        self.filter_blobs_dict_by_size(5) # prevents a lot of irrelevant blobs from being processed
+        self.largest_blob_size = 0
 
     def make_blobs_dict(self):
         '''Using a connected components algorithm, constructs a dictionary 
@@ -645,6 +650,7 @@ class BlobDetector():
             longest_points_list = functools.reduce(lambda largest, current: largest if (largest > current) else current, values)
             sample_x, sample_y = longest_points_list[0]
             largest_blob_key = self.keys.at(sample_x, sample_y).value
+            self.largest_blob_size = len(self.blobs_dict[largest_blob_key])
         return largest_blob_key
 
     def get_blob_center(self):
@@ -667,6 +673,14 @@ class BlobDetector():
             blob_center = (int(average_x), int(average_y))
         return blob_center
 
+    def get_blob_size(self):
+        '''Gets the number of pixels in the largest blob.
+
+        Returns:
+            int: The size, in pixels, of the largest blob
+        '''
+        return self.largest_blob_size
+
 
 class MyMatrix():
     '''A custom class to get dimensions, values, and neighboring values of the pixel_matrix.
@@ -679,6 +693,7 @@ class MyMatrix():
         self.num_cols = num_cols
         self.num_rows = num_rows
         self._matrix = [[MatrixValueContainer() for _ in range(self.num_rows)] for _ in range(self.num_cols)]
+        self.size = self.num_cols * self.num_rows
 
     def at(self, i, j):
         '''Gets the desired MatrixValueContainer object.
