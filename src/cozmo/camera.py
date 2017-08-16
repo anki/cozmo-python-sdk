@@ -232,7 +232,7 @@ class Camera(event.Dispatcher):
         Args:
             enable_auto_exposure (bool): whether the camera should automcatically adjust exposure
         '''
-        msg = _clad_to_engine_iface.SetCameraSettings(enableAutoExposure = enable_exposure)
+        msg = _clad_to_engine_iface.SetCameraSettings(enableAutoExposure = enable_auto_exposure)
         self.robot.conn.send_msg(msg)
 
     def set_manual_exposure(self, exposure_ms, gain):
