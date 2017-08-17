@@ -52,7 +52,10 @@ class CLADProtocol(asyncio.Protocol):
 
         while True:
             msg = self.decode_msg()
-            if not msg:
+            # must compare msg against None, not just "if not msg" as the latter
+            # would match against any message with len==0 (which is the case
+            # for deliberately empty messages where the tag alone is the signal).
+            if msg is None:
                 return
             name = msg.tag_name
             if self._clad_log_which is LOG_ALL or (self._clad_log_which is not None and name in self._clad_log_which):

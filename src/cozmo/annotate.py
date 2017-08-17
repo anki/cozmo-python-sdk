@@ -130,7 +130,7 @@ class ImageText:
             draw.text(pos, self.text, font=self.font, fill=color,
                       align=self.align, spacing=self.line_spacing)
 
-        if self.outline_color:
+        if self.outline_color is not None:
             # Pillow doesn't support outlined or shadowed text directly.
             # We manually draw the text multiple times to achieve the effect.
             if self.full_outline:
@@ -271,7 +271,7 @@ class ObjectAnnotator(Annotator):
 
         Override or replace to customize.
         '''
-        return ImageText('%s=%d' % (obj.__class__.__name__, obj.object_id))
+        return ImageText(obj.descriptive_name)
 
 
 class FaceAnnotator(Annotator):
@@ -307,7 +307,9 @@ class FaceAnnotator(Annotator):
         '''
         expression = obj.known_expression
         if len(expression) > 0:
-            expression += " "
+            # if there is a specific known expression, then also show the score
+            # (display a % to make it clear the value is out of 100)
+            expression += "=%s%% " % obj.expression_score
         if obj.name:
             return ImageText('%s%s (%d)' % (expression, obj.name, obj.face_id))
         return ImageText('(unknown%s face %d)' % (expression, obj.face_id))

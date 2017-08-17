@@ -49,6 +49,20 @@ Install
     .. important:: Wait for `vagrant up` to completely finish before continuing to the next step.
 
   d. Navigate to where the Virtual Machine is currently running.
+
+  .. raw:: html
+
+    <blockquote>
+    <div><div class="admonition note">
+    <p class="first admonition-title">Note</p>
+    <p class="last">The Virtual Machine is set up with the following credentials:
+    <br><br>user - vagrant
+    <br>password - vagrant</p>
+    </div>
+    </div></blockquote>
+
+  |
+
   e. Within the VM, open xterm. Once xterm is open, run the following commands in order. Please wait for each command to finish before entering the next one. This step may take several minutes. ::
 
       /vagrant/setup-vm.sh
@@ -80,6 +94,20 @@ Install
     .. important:: Wait for `vagrant up` to completely finish before continuing to the next step.
 
   d. Navigate to where the Virtual Machine is currently running.
+
+  .. raw:: html
+
+    <blockquote>
+    <div><div class="admonition note">
+    <p class="first admonition-title">Note</p>
+    <p class="last">The Virtual Machine is set up with the following credentials:
+    <br><br>user - vagrant
+    <br>password - vagrant</p>
+    </div>
+    </div></blockquote>
+
+  |
+
   e. Within the VM, open xterm. Once xterm is open, run the following commands in order. Please wait for each command to finish before entering the next one. This step may take several minutes. ::
 
         /vagrant/setup-vm.sh
@@ -103,6 +131,8 @@ Install
         ./program_name.py
 
 For example, to run the Hello World example program, you would type ``./hello_world.py``.
+
+.. important:: You must either relaunch with "vagrant up" or save your virtual machine's state when shutting down.  Otherwise the /vagrant/ folder on the virtual machine will be empty on subsequent runs.
 
 ----
 

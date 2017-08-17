@@ -16,9 +16,10 @@ The API
     cozmo.event
     cozmo.exceptions
     cozmo.faces
-    cozmo.oled_face
     cozmo.lights
+    cozmo.nav_memory_map
     cozmo.objects
+    cozmo.oled_face
     cozmo.pets
     cozmo.robot
     cozmo.robot_alignment

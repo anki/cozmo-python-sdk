@@ -19,9 +19,9 @@
 # (util keeps class related functions close to their associated class)
 __all__ = ['Angle', 'degrees', 'radians',
            'ImageBox',
-           'Distance', 'distance_mm', 'distance_inches',
+           'Distance', 'distance_mm', 'distance_inches', 'Matrix44',
            'Pose', 'pose_quaternion', 'pose_z_angle',
-           'Position',
+           'Position', 'Quaternion',
            'Rotation', 'rotation_quaternion', 'rotation_z_angle',
            'angle_z_to_quaternion',
            'Speed', 'speed_mmps',
@@ -30,7 +30,6 @@ __all__ = ['Angle', 'degrees', 'radians',
 
 import collections
 import math
-import re
 import time
 from ._clad import _clad_to_engine_anki
 
@@ -43,6 +42,7 @@ class ImageBox(collections.namedtuple('ImageBox', 'top_left_x top_left_y width h
     used by the :mod:`cozmo.annotate` module to show an outline of a box around
     the object, face or pet.
     '''
+    __slots__ = ()
 
     @classmethod
     def _create_from_clad_rect(cls, img_rect):
@@ -133,6 +133,14 @@ class Angle:
     def degrees(self):
         '''float: The angle in degrees.'''
         return self._radians / math.pi * 180
+
+    @property
+    def abs_value(self):
+        """:class:`cozmo.util.Angle`: The absolute value of the angle.
+        
+        If the Angle is positive then it returns a copy of this Angle, otherwise it returns -Angle.
+        """
+        return Angle(radians = abs(self._radians))
 
 
 def degrees(degrees):
@@ -302,7 +310,7 @@ class Pose:
     def __init__(self, x, y, z, q0=None, q1=None, q2=None, q3=None,
                  angle_z=None, origin_id=-1, is_accurate=True):
         self._position = Position(x,y,z)
-        self._rotation = Rotation(q0,q1,q2,q3,angle_z)
+        self._rotation = Quaternion(q0,q1,q2,q3,angle_z)
         self._origin_id = origin_id
         self._is_accurate = is_accurate
 
@@ -410,6 +418,15 @@ class Pose:
         ''':class:`cozmo.util.Rotation`: The rotation component of this pose.'''
         return self._rotation
 
+    def to_matrix(self):
+        """Convert the Pose to a Matrix44.
+
+        Returns:
+            :class:`cozmo.util.Matrix44`: A matrix representing this Pose's
+            position and rotation.
+        """
+        return self.rotation.to_matrix(*self.position.x_y_z)
+
     @property
     def origin_id(self):
         '''int: An ID maintained by the engine which represents which coordinate frame this pose is in.'''
@@ -442,7 +459,143 @@ def pose_z_angle(x, y, z, angle_z, origin_id=0):
     return Pose(x, y, z, angle_z=angle_z, origin_id=origin_id)
 
 
-class Rotation:
+class Matrix44:
+    """A 4x4 Matrix for representing the rotation and/or position of an object in the world.
+    
+    Can be generated from a :class:`Quaternion` for a pure rotation matrix, or
+    combined with a position for a full translation matrix, as done by
+    :meth:`Pose.to_matrix`.
+    """
+    __slots__ = ('m00', 'm10', 'm20', 'm30',
+                 'm01', 'm11', 'm21', 'm31',
+                 'm02', 'm12', 'm22', 'm32',
+                 'm03', 'm13', 'm23', 'm33')
+
+    def __init__(self,
+                 m00, m10, m20, m30,
+                 m01, m11, m21, m31,
+                 m02, m12, m22, m32,
+                 m03, m13, m23, m33):
+        self.m00 = m00
+        self.m10 = m10
+        self.m20 = m20
+        self.m30 = m30
+
+        self.m01 = m01
+        self.m11 = m11
+        self.m21 = m21
+        self.m31 = m31
+
+        self.m02 = m02
+        self.m12 = m12
+        self.m22 = m22
+        self.m32 = m32
+
+        self.m03 = m03
+        self.m13 = m13
+        self.m23 = m23
+        self.m33 = m33
+
+    def __repr__(self):
+        return ("<%s: "
+                "%.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f "
+                "%.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f>" % (
+                self.__class__.__name__, *self.in_row_order))
+
+    @property
+    def tabulated_string(self):
+        """str: A multi-line string formatted with tabs to show the matrix contents."""
+        return ("%.1f\t%.1f\t%.1f\t%.1f\n"
+                "%.1f\t%.1f\t%.1f\t%.1f\n"
+                "%.1f\t%.1f\t%.1f\t%.1f\n"
+                "%.1f\t%.1f\t%.1f\t%.1f" % self.in_row_order)
+
+    @property
+    def in_row_order(self):
+        """tuple of 16 floats: The contents of the matrix in row order."""
+        return self.m00, self.m01, self.m02, self.m03,\
+               self.m10, self.m11, self.m12, self.m13,\
+               self.m20, self.m21, self.m22, self.m23,\
+               self.m30, self.m31, self.m32, self.m33
+
+    @property
+    def in_column_order(self):
+        """tuple of 16 floats: The contents of the matrix in column order."""
+        return self.m00, self.m10, self.m20, self.m30,\
+               self.m01, self.m11, self.m21, self.m31,\
+               self.m02, self.m12, self.m22, self.m32,\
+               self.m03, self.m13, self.m23, self.m33
+
+    @property
+    def forward_xyz(self):
+        """tuple of 3 floats: The x,y,z components representing the matrix's forward vector."""
+        return self.m00, self.m01, self.m02
+
+    @property
+    def left_xyz(self):
+        """tuple of 3 floats: The x,y,z components representing the matrix's left vector."""
+        return self.m10, self.m11, self.m12
+
+    @property
+    def up_xyz(self):
+        """tuple of 3 floats: The x,y,z components representing the matrix's up vector."""
+        return self.m20, self.m21, self.m22
+
+    @property
+    def pos_xyz(self):
+        """tuple of 3 floats: The x,y,z components representing the matrix's position vector."""
+        return self.m30, self.m31, self.m32
+
+    def set_forward(self, x, y, z):
+        """Set the x,y,z components representing the matrix's forward vector.
+
+        Args:
+            x (float): The X component.
+            y (float): The Y component.
+            z (float): The Z component.
+        """
+        self.m00 = x
+        self.m01 = y
+        self.m02 = z
+
+    def set_left(self, x, y, z):
+        """Set the x,y,z components representing the matrix's left vector.
+
+        Args:
+            x (float): The X component.
+            y (float): The Y component.
+            z (float): The Z component.
+        """
+        self.m10 = x
+        self.m11 = y
+        self.m12 = z
+
+    def set_up(self, x, y, z):
+        """Set the x,y,z components representing the matrix's up vector.
+
+        Args:
+            x (float): The X component.
+            y (float): The Y component.
+            z (float): The Z component.
+        """
+        self.m20 = x
+        self.m21 = y
+        self.m22 = z
+
+    def set_pos(self, x, y, z):
+        """Set the x,y,z components representing the matrix's position vector.
+
+        Args:
+            x (float): The X component.
+            y (float): The Y component.
+            z (float): The Z component.
+        """
+        self.m30 = x
+        self.m31 = y
+        self.m32 = z
+
+
+class Quaternion:
     '''Represents the rotation of an object in the world. Can be generated with
     quaternion to define its rotation in 3d space, or with only a z axis rotation
     to define things limited to the x-y plane like Cozmo.
@@ -471,15 +624,61 @@ class Rotation:
         return ("<%s q0: %.2f q1: %.2f q2: %.2f q3: %.2f (angle_z: %s)>" %
             (self.__class__.__name__, self.q0, self.q1, self.q2, self.q3, self.angle_z))
 
+    def to_matrix(self, pos_x=0.0, pos_y=0.0, pos_z=0.0):
+        """Convert the Quaternion to a 4x4 matrix representing this rotation.
+
+        A position can also be provided to generate a full translation matrix.
+
+        Args:
+            pos_x (float): The x component for the position.
+            pos_y (float): The y component for the position.
+            pos_z (float): The z component for the position.
+
+        Returns:
+            :class:`cozmo.util.Matrix44`: A matrix representing this Quaternion's
+            rotation, with the provided position (which defaults to 0,0,0).
+        """
+        # See https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
+        q0q0 = self.q0 * self.q0
+        q1q1 = self.q1 * self.q1
+        q2q2 = self.q2 * self.q2
+        q3q3 = self.q3 * self.q3
+
+        q0x2 = self.q0 * 2.0  # saves 2 multiplies
+        q0q1x2 = q0x2 * self.q1
+        q0q2x2 = q0x2 * self.q2
+        q0q3x2 = q0x2 * self.q3
+        q1x2 = self.q1 * 2.0  # saves 1 multiply
+        q1q2x2 = q1x2 * self.q2
+        q1q3x2 = q1x2 * self.q3
+        q2q3x2 = 2.0 * self.q2 * self.q3
+
+        m00 = (q0q0 + q1q1 - q2q2 - q3q3)
+        m01 = (q1q2x2 + q0q3x2)
+        m02 = (q1q3x2 - q0q2x2)
+
+        m10 = (q1q2x2 - q0q3x2)
+        m11 = (q0q0 - q1q1 + q2q2 - q3q3)
+        m12 = (q0q1x2 + q2q3x2)
+
+        m20 = (q0q2x2 + q1q3x2)
+        m21 = (q2q3x2 - q0q1x2)
+        m22 = (q0q0 - q1q1 - q2q2 + q3q3)
+
+        return Matrix44(m00, m10, m20, pos_x,
+                        m01, m11, m21, pos_y,
+                        m02, m12, m22, pos_z,
+                        0.0, 0.0, 0.0, 1.0)
+
     #These are only for angle_z because quaternion addition/subtraction is not relevant here
     def __add__(self, other):
-        if not isinstance(other, Rotation):
-            raise TypeError("Unsupported operand for + expected Rotation")
+        if not isinstance(other, Quaternion):
+            raise TypeError("Unsupported operand for + expected Quaternion")
         return rotation_z_angle(self.angle_z + other.angle_z)
 
     def __sub__(self, other):
-        if not isinstance(other, Rotation):
-            raise TypeError("Unsupported operand for - expected Rotation")
+        if not isinstance(other, Quaternion):
+            raise TypeError("Unsupported operand for - expected Quaternion")
         return rotation_z_angle(self.angle_z - other.angle_z)
 
     def __mul__(self, other):
@@ -494,22 +693,22 @@ class Rotation:
 
     @property
     def q0(self):
-        '''float: The q0 (w) value of the quaternion defining this rotation.'''
+        '''float: The q0 (w) value of the quaternion.'''
         return self._q0
 
     @property
     def q1(self):
-        '''float: The q1 (i) value of the quaternion defining this rotation.'''
+        '''float: The q1 (i) value of the quaternion.'''
         return self._q1
 
     @property
     def q2(self):
-        '''float: The q2 (j) value of the quaternion defining this rotation.'''
+        '''float: The q2 (j) value of the quaternion.'''
         return self._q2
 
     @property
     def q3(self):
-        '''float: The q3 (k) value of the quaternion defining this rotation.'''
+        '''float: The q3 (k) value of the quaternion.'''
         return self._q3
 
     @property
@@ -524,14 +723,20 @@ class Rotation:
         return Angle(radians=math.atan2(2*(q1*q2+q0*q3), 1-2*(q2**2+q3**2)))
 
 
+class Rotation(Quaternion):
+    '''An alias for :class:`Quaternion`'''
+    __slots__ = ()
+
+
 def rotation_quaternion(q0, q1, q2, q3):
     '''Returns a :class:`Rotation` instance set by a quaternion.'''
-    return Rotation(q0=q0, q1=q1, q2=q2, q3=q3)
+    return Quaternion(q0=q0, q1=q1, q2=q2, q3=q3)
 
 
 def rotation_z_angle(angle_z):
     '''Returns a class:`Rotation` instance set by an angle in the z axis'''
-    return Rotation(angle_z=angle_z)
+    return Quaternion(angle_z=angle_z)
+
 
 def angle_z_to_quaternion(angle_z):
     '''This function converts an angle in the z axis (Euler angle z component) to a quaternion.
@@ -680,6 +885,7 @@ class Position(Vector3):
         y (float): Y position in millimeters
         z (float): Z position in millimeters
     '''
+    __slots__ = ()
 
 
 class Timeout:

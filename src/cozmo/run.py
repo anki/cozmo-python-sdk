@@ -14,7 +14,11 @@
 
 '''The run module contains helper classes and functions for opening a connection to the engine.
 
-To get started, the :func:`connect` function can be used to open a connection
+To get started, the :func:`run_program` function can be used for most cases,
+it handles connecting to a device and then running the function you provide with
+the SDK-provided Robot object passed in.
+
+The :func:`connect` function can be used to open a connection
 and run your own code connected to a :class:`cozmo.conn.CozmoConnection`
 instance.  It takes care of setting up an event loop, finding the Android or
 iOS device running the Cozmo app and making sure the connection is ok.
@@ -499,12 +503,12 @@ def _connect_async(f, conn_factory=conn.CozmoConnection, connector=None):
         loop.run_forever()
 
 
+_sync_loop = asyncio.new_event_loop()
 def _connect_sync(f, conn_factory=conn.CozmoConnection, connector=None):
-    loop = asyncio.new_event_loop()
     abort_future = concurrent.futures.Future()
     conn_factory = functools.partial(conn_factory, _sync_abort_future=abort_future)
-    lt = _LoopThread(loop, conn_factory=conn_factory, connector=connector, abort_future=abort_future)
-    loop.set_exception_handler(functools.partial(_sync_exception_handler, abort_future))
+    lt = _LoopThread(_sync_loop, conn_factory=conn_factory, connector=connector, abort_future=abort_future)
+    _sync_loop.set_exception_handler(functools.partial(_sync_exception_handler, abort_future))
 
     coz_conn = lt.start()
 
@@ -590,7 +594,7 @@ def connect(f, conn_factory=conn.CozmoConnection, connector=None):
 def connect_with_tkviewer(f, conn_factory=conn.CozmoConnection, connector=None, force_on_top=False):
     '''Setup a connection to a device and run a user function while displaying Cozmo's camera.
 
-    This display a Tk window on the screen showing a view of Cozmo's camera.
+    This displays a Tk window on the screen showing a view of Cozmo's camera.
     It will return an error if the current system does not support Tk.
 
     The function may be either synchronous or asynchronous (defined
