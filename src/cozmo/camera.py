@@ -308,8 +308,7 @@ class Camera(event.Dispatcher):
         else:
             image_send_mode = _clad_to_engine_cozmo.ImageSendMode.Off
 
-        msg = _clad_to_engine_iface.ImageRequest(
-                robotID=self.robot.robot_id, mode=image_send_mode)
+        msg = _clad_to_engine_iface.ImageRequest(mode=image_send_mode)
 
         self.robot.conn.send_msg(msg)
 

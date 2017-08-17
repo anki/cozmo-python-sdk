@@ -1206,7 +1206,7 @@ class Robot(event.Dispatcher):
             light4 (:class:`cozmo.lights.Light`): The rear backpack light
             light5 (:class:`cozmo.lights.Light`): The right backpack light
         '''
-        msg = _clad_to_engine_iface.SetBackpackLEDs(robotID=self.robot_id)
+        msg = _clad_to_engine_iface.SetBackpackLEDs()
         for i, light in enumerate( (light1, light2, light3, light4, light5) ):
             if light is not None:
                 lights._set_light(msg, i, light)
