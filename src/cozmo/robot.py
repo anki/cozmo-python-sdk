@@ -35,9 +35,9 @@ methods such as :meth:`~cozmo.event.Dispatcher.wait_for` and
 
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['MAX_HEAD_ANGLE', 'MIN_HEAD_ANGLE', 'MIN_LIFT_HEIGHT_MM', 'MAX_LIFT_HEIGHT_MM',
-           'EvtRobotReady',           
+           'EvtRobotReady',
            'DisplayOledFaceImage', 'DockWithCube', 'DriveOffChargerContacts', 'DriveStraight',
-           'GoToObject', 'GoToPose', 'PerformOffChargerContext', 'PickupObject', 
+           'GoToObject', 'GoToPose', 'PerformOffChargerContext', 'PickupObject',
            'PlaceObjectOnGroundHere', 'PlaceOnObject', 'RollCube', 'SayText', 'SetHeadAngle',
            'SetLiftHeight', 'TurnInPlace', 'TurnTowardsFace',
            'Robot']
@@ -807,22 +807,22 @@ class Robot(event.Dispatcher):
 
     @property
     def is_head_in_pos(self):
-        '''bool: True Cozmo's head in the desired position (False if still trying to move there).'''
+        '''bool: True if Cozmo's head in the desired position (False if still trying to move there).'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.HEAD_IN_POS) != 0
 
     @property
     def is_anim_buffer_full(self):
-        '''bool: True Is Cozmo's animation buffer full (on robot).'''
+        '''bool: True if Cozmo's animation buffer full (on robot).'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_ANIM_BUFFER_FULL) != 0
 
     @property
     def is_on_charger(self):
-        '''bool: True if Cozmo currently on the charger.'''
+        '''bool: True if Cozmo is currently on the charger.'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_ON_CHARGER) != 0
 
     @property
     def is_charging(self):
-        '''bool: True if Cozmo currently charging.'''
+        '''bool: True if Cozmo is currently charging.'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_CHARGING) != 0
 
     @property
@@ -1160,7 +1160,7 @@ class Robot(event.Dispatcher):
         self.conn.send_msg(msg)
 
     def say_text(self, text, play_excited_animation=False, use_cozmo_voice=True,
-                 duration_scalar=1.8, voice_pitch=0.0, in_parallel=False, num_retries=0):
+                 duration_scalar=1.0, voice_pitch=0.0, in_parallel=False, num_retries=0):
         '''Have Cozmo say text!
 
         Args:
@@ -1419,7 +1419,7 @@ class Robot(event.Dispatcher):
     def clear_idle_animation(self):
         '''Clears any Idle Animation currently playing on Cozmo'''
         msg = _clad_to_engine_iface.RemoveIdleAnimation(lockName="sdk")
-        
+
         while(self._idle_stack_depth > 0):
             self.conn.send_msg(msg)
             self._idle_stack_depth -= 1
@@ -1548,7 +1548,7 @@ class Robot(event.Dispatcher):
 
     def pickup_object(self, obj, use_pre_dock_pose=True, in_parallel=False,
                       num_retries=0):
-        '''Instruct the robot to pick-up the supplied object.
+        '''Instruct the robot to pick up the supplied object.
 
         Args:
             obj (:class:`cozmo.objects.ObservableObject`): The target object to
@@ -1763,7 +1763,7 @@ class Robot(event.Dispatcher):
                                                     num_retries=num_retries)
         return action
 
-    def roll_cube(self, target_object, approach_angle=None, check_for_object_on_top=False, 
+    def roll_cube(self, target_object, approach_angle=None, check_for_object_on_top=False,
                   in_parallel=False, num_retries=0):
         '''Tells Cozmo to roll a specified cube object.
 
