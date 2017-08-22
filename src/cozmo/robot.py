@@ -968,9 +968,6 @@ class Robot(event.Dispatcher):
         self._robot_status_flags = msg.status  # uint_16 as bitflags - See _clad_to_game_cozmo.RobotStatusFlag
         self._game_status_flags = msg.gameStatus  # uint_8  as bitflags - See _clad_to_game_cozmo.GameStatusFlag
 
-        if msg.robotID != self.robot_id:
-            logger.error("robot ID changed mismatch (msg=%s, self=%s)", msg.robotID, self.robot_id )
-
     def _recv_msg_behavior_transition(self, evt, *, msg):
         new_type = behavior.BehaviorTypes.find_by_id(msg.newBehaviorExecType)
         if self._current_behavior is not None:

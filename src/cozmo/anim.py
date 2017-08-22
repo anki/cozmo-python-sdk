@@ -56,8 +56,7 @@ class Animation(action.Action):
         return "anim_name=%s loop_count=%s" % (self.anim_name, self.loop_count)
 
     def _encode(self):
-        return _clad_to_engine_iface.PlayAnimation(
-            robotID=self.robot.robot_id, animationName=self.anim_name, numLoops=self.loop_count)
+        return _clad_to_engine_iface.PlayAnimation(animationName=self.anim_name, numLoops=self.loop_count)
 
     def _dispatch_completed_event(self, msg):
         self._completed_event = EvtAnimationCompleted(
@@ -105,7 +104,7 @@ class AnimationTrigger(action.Action):
 
     def _encode(self):
         return _clad_to_engine_iface.PlayAnimationTrigger(
-            robotID=self.robot.robot_id, trigger=self.trigger.id, numLoops=self.loop_count,
+            trigger=self.trigger.id, numLoops=self.loop_count,
             useLiftSafe=self.use_lift_safe, ignoreBodyTrack=self.ignore_body_track,
             ignoreHeadTrack=self.ignore_head_track, ignoreLiftTrack=self.ignore_lift_track)
 
