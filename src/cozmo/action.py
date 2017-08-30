@@ -219,6 +219,9 @@ class ActionResults(CladEnumWrapper):
 
     #: Not carrying an object when it was expected, but may succeed if the action is retried.
     NOT_CARRYING_OBJECT_RETRY = _ActionResult("NOT_CARRYING_OBJECT_RETRY", _clad_enum.NOT_CARRYING_OBJECT_RETRY)
+    
+    #: Cozmo is expected to be on the charger, but is not.
+    NOT_ON_CHARGER = _ActionResult("NOT_ON_CHARGER", _clad_enum.NOT_ON_CHARGER)
 
     #: Cozmo was unable to plan a path, but may succeed if the action is retried.
     PATH_PLANNING_FAILED_RETRY = _ActionResult("PATH_PLANNING_FAILED_RETRY", _clad_enum.PATH_PLANNING_FAILED_RETRY)
