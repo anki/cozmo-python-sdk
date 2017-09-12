@@ -81,14 +81,21 @@ def _glut_install_instructions():
         return "(Instructions unknown for platform %s)" % sys.platform
 
 
-if not bool(glutInit()):
+def _verify_glut_init():
+    # According to the documentation, just checking bool(glutInit) is supposed to be enough
+    # However on Windows with no GLUT DLL that can still pass, even if calling the method throws a null function error.
+    if bool(glutInit):
+        try:
+            glutInit()
+            return True
+        except OpenGL.error.NullFunctionError as e:
+            pass
+
+    return False
+
+
+if not _verify_glut_init():
     raise InvalidOpenGLGlutImplementation(_glut_install_instructions())
-
-
-# Warn on old GLUT implementations that don't implement much of the interface.
-if not bool(glutKeyboardUpFunc) or not bool(glutSpecialUpFunc):
-    logger.warning("Warning: Old GLUT implementation detected. We recommend installing freeglut. %s",
-                   _glut_install_instructions())
 
 
 _resource_package = __name__  # All resources are in subdirectories from this file's location
@@ -605,6 +612,8 @@ class OpenGLViewer():
 
         self._last_robot_control_intents = RobotControlIntents()
 
+        self._is_keyboard_control_enabled = False
+
         self._image_handler = None
         self._nav_map_handler = None
         self._robot_state_handler = None
@@ -650,6 +659,11 @@ class OpenGLViewer():
         self._camera_pos = util.Vector3(0, 0, 0)
         self._camera_up = util.Vector3(0.0, 0.0, 1.0)
         self._calculate_camera_pos()
+
+    def _request_exit(self):
+        self._exit_requested = True
+        if bool(glutLeaveMainLoop):
+            glutLeaveMainLoop()
 
     def _calculate_camera_pos(self):
         # Calculate camera position based on look-at, distance and angles
@@ -709,7 +723,8 @@ class OpenGLViewer():
         self._input_intent_queue.append(control_intents)
 
     def _idle(self):
-        self._update_intents_for_robot()
+        if self._is_keyboard_control_enabled:
+            self._update_intents_for_robot()
         glutPostRedisplay()
 
     def _visible(self, vis):
@@ -1152,7 +1167,7 @@ class OpenGLViewer():
                 self._display_camera_view(self.viewer_window)
         except KeyboardInterrupt:
             logger.info("_display caught KeyboardInterrupt - exitting")
-            self._exit_requested = True
+            self._request_exit()
 
     def _key_byte_to_lower(self, key):
         # Convert bytes-object (representing keyboard character) to lowercase equivalent
@@ -1179,7 +1194,7 @@ class OpenGLViewer():
                 robot_pos = world_frame.robot_frame.pose.position
                 self._camera_look_at.set_to(robot_pos)
         elif ord(key) == 27:  # Escape key
-            self._exit_requested = True
+            self._request_exit()
 
     def _on_special_key_up(self, key, x, y):
         self._update_modifier_keys()
@@ -1250,7 +1265,6 @@ class OpenGLViewer():
         self._on_mouse_move_internal(x, y, False)
 
     def init_display(self):
-        glutInit()
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
 
         self.main_window.init_display()
@@ -1258,11 +1272,28 @@ class OpenGLViewer():
         glutDisplayFunc(self._display)  # Note: both windows call the same DisplayFunc
         glutKeyboardFunc(self._on_key_down)
         glutSpecialFunc(self._on_special_key_down)
+
         # [Keyboard/Special]Up methods aren't supported on some old GLUT implementations
-        if bool(glutKeyboardUpFunc):
-            glutKeyboardUpFunc(self._on_key_up)
-        if bool(glutSpecialUpFunc):
-            glutSpecialUpFunc(self._on_special_key_up)
+        has_keyboard_up = False
+        has_special_up = False
+        try:
+            if bool(glutKeyboardUpFunc):
+                glutKeyboardUpFunc(self._on_key_up)
+                has_keyboard_up = True
+            if bool(glutSpecialUpFunc):
+                glutSpecialUpFunc(self._on_special_key_up)
+                has_special_up = True
+        except OpenGL.error.NullFunctionError:
+            # Methods aren't available on this GLUT version
+            pass
+
+        if not has_keyboard_up or not has_special_up:
+            # Warn on old GLUT implementations that don't implement much of the interface.
+            logger.warning("Warning: Old GLUT implementation detected - keyboard remote control of Cozmo disabled."
+                            "We recommend installing freeglut. %s", _glut_install_instructions())
+            self._is_keyboard_control_enabled = False
+        else:
+            self._is_keyboard_control_enabled = True
 
         glutMouseFunc(self._on_mouse_button)
         glutMotionFunc(self._on_mouse_move)
@@ -1338,7 +1369,7 @@ class OpenGLViewer():
             self._robot_state_handler.disable()
             self._robot_state_handler = None
         if not self._exit_requested:
-            self._exit_requested = True
+            self._request_exit()
 
     def _update_robot_remote_control(self, robot):
         # Called on SDK thread, for controlling robot from input intents
