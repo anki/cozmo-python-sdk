@@ -1,0 +1,9 @@
+newmtl cube_mtl
+map_Kd cube1.jpg
+illum 4
+Kd 0.65 0.65 0.65
+Ka 0.15 0.15 0.15
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.99 0.99 0.99
+Ns 10

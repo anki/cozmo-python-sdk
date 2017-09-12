@@ -83,7 +83,7 @@ setup(
     license='Apache License, Version 2.0',
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Libraries',
         'License :: OSI Approved :: Apache Software License',
@@ -94,10 +94,13 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages('src'),
     package_data={
-        'cozmo': ['LICENSE.txt']
+        'cozmo': ['LICENSE.txt', 'assets/*.obj', 'assets/*.mtl', 'assets/*.jpg',
+                  'assets/LICENSE.txt']
     },
     install_requires=install_requires,
     extras_require={
+        '3dviewer': ['PyOpenGL>=3.1', 'PyOpenGL_accelerate>= 3.1',
+                     'Pillow>=3.3', 'numpy>=1.11'],
         'camera': ['Pillow>=3.3', 'numpy>=1.11'],
         'test': ['tox', 'pytest'],
     }

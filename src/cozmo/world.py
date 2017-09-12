@@ -825,7 +825,7 @@ class World(event.Dispatcher):
             raise TypeError("Unsupported object_type, requires CustomObjectType")
 
         # verify all 6 markers are unique
-        markers = set([marker_front, marker_back, marker_top, marker_bottom, marker_left, marker_right])
+        markers = {marker_front, marker_back, marker_top, marker_bottom, marker_left, marker_right}
         if len(markers) != 6:
             raise ValueError("all markers must be unique for a custom box")
 
@@ -1117,7 +1117,7 @@ class CameraImage:
         #: float: The time the image was received and processed by the SDK
         self.image_recv_time = time.time()
 
-    def annotate_image(self, scale=None, fit_size=None):
+    def annotate_image(self, scale=None, fit_size=None, resample_mode=annotate.RESAMPLE_MODE_NEAREST):
         '''Adds any enabled annotations to the image.
 
         Optionally resizes the image prior to annotations being applied.  The
@@ -1129,7 +1129,14 @@ class CameraImage:
             fit_size (tuple of ints (width, height)):  If set, then scale the
                 image to fit inside the supplied dimensions.  The original
                 aspect ratio will be preserved.  Cannot be combined with scale.
+            resample_mode (int): The resampling mode to use when scaling the
+                image. Should be either :attr:`~cozmo.annotate.RESAMPLE_MODE_NEAREST`
+                (fast) or :attr:`~cozmo.annotate.RESAMPLE_MODE_BILINEAR` (slower,
+                but smoother).
         Returns:
             :class:`PIL.Image.Image`
         '''
-        return self.image_annotator.annotate_image(self.raw_image, scale=scale, fit_size=fit_size)
+        return self.image_annotator.annotate_image(self.raw_image,
+                                                   scale=scale,
+                                                   fit_size=fit_size,
+                                                   resample_mode=resample_mode)

@@ -1,0 +1,67 @@
+# rim around the screen
+newmtl ScreenOp_matSG
+illum 4
+Kd 0.00 0.00 0.00 0.2
+Ka 0.00 0.00 0.00 0.2
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.08 0.08 0.08 0.2
+Ns 10
+
+# glass screen
+newmtl anisotropic1SG
+illum 4
+Kd 0.00 0.00 0.00 0.2
+Ka 0.00 0.00 0.00 0.2
+Tf 0.09 0.09 0.09
+Ni 1.00
+Ks 0.1 0.1 0.1 0.2
+Ns 10
+
+# head, arms+fork, wheels (but not treads)
+newmtl blinn2SG
+illum 4
+Kd 0.82 0.82 0.82
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.50 0.50 0.50
+Ns 10
+
+# Treads
+newmtl blinn3SG
+illum 4
+Kd 0.10 0.10 0.10
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.5 0.5 0.5
+Ns 10
+
+# Body and wheel-spacers
+newmtl blinn4SG
+illum 4
+Kd 0.70 0.70 0.70
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.50 0.50 0.50
+Ns 10
+
+# Eyelids
+newmtl lambert2SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.50 0.50 0.50
+Ns 10
+
+# eyes
+newmtl shadingMap1SG
+illum 4
+Kd 0.00 1.00 1.00
+Ka 0.00 1.00 1.00
+Tf 1.00 1.00 1.00
+Ni 0.00

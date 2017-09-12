@@ -358,7 +358,7 @@ class ColorFinder(cozmo.annotate.Annotator):
         '''
         self.robot.set_center_backpack_lights(map_color_to_light[self.color_to_find])
         if blob_size > (self.pixel_matrix.size/4):
-            self.lift_action = self.robot.set_lift_height(0.0, in_parallel = True)
+            self.lift_action = self.robot.set_lift_height(0.0, in_parallel=True)
         x, y = blob_center
         # 'fov' stands for 'field of view'. This is the angle amount
         # that Cozmo can see to the edges of his camera view.
@@ -399,8 +399,8 @@ class ColorFinder(cozmo.annotate.Annotator):
         '''
         self.abort_actions(self.tilt_head_action, self.rotate_action, self.drive_action)
         new_head_angle = self.robot.head_angle + amount_to_move_head
-        self.tilt_head_action = self.robot.set_head_angle(new_head_angle, in_parallel = True)
-        self.rotate_action = self.robot.turn_in_place(amount_to_rotate, in_parallel = True)
+        self.tilt_head_action = self.robot.set_head_angle(new_head_angle, warn_on_clamp=False, in_parallel=True)
+        self.rotate_action = self.robot.turn_in_place(amount_to_rotate, in_parallel=True)
         if self.state == FOUND_COLOR_STATE:
             self.amount_turned_recently += amount_to_move_head.abs_value + amount_to_rotate.abs_value
 
@@ -408,9 +408,9 @@ class ColorFinder(cozmo.annotate.Annotator):
         '''Drives straight once prior actions have been cancelled.'''
         self.abort_actions(self.tilt_head_action, self.rotate_action)
         if self.should_start_new_action(self.drive_action):
-            self.drive_action = self.robot.drive_straight(distance_mm(500), speed_mmps(300), should_play_anim = False, in_parallel = True)
+            self.drive_action = self.robot.drive_straight(distance_mm(500), speed_mmps(300), should_play_anim=False, in_parallel=True)
         if self.should_start_new_action(self.lift_action):
-            self.lift_action = self.robot.set_lift_height(1.0, in_parallel = True)
+            self.lift_action = self.robot.set_lift_height(1.0, in_parallel=True)
 
     def turn_toward_last_known_blob(self):
         '''Turns toward the coordinates of the last recorded blob in memory.
