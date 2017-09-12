@@ -84,6 +84,9 @@ class NodeContentTypes(CladEnumWrapper):
     #: The node contains a visible edge (based on the camera feed).
     VisionBorder = _entry_type("VisionBorder", _clad_enum.VisionBorder)
 
+    # This entry is undocumented and not currently used
+    _ObstacleProx = _entry_type("ObstacleProx", _clad_enum.ObstacleProx)
+
 
 NodeContentTypes._init_class()
 

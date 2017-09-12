@@ -98,4 +98,4 @@ def custom_objects(robot: cozmo.robot.Robot):
         time.sleep(0.1)
 
 
-cozmo.run_program(custom_objects, use_viewer=True, force_viewer_on_top=True)
+cozmo.run_program(custom_objects, use_3d_viewer=True, use_viewer=True)

@@ -34,16 +34,24 @@ methods such as :meth:`~cozmo.event.Dispatcher.wait_for` and
 '''
 
 # __all__ should order by constants, event classes, other classes, functions.
-__all__ = ['MAX_HEAD_ANGLE', 'MIN_HEAD_ANGLE', 'MIN_LIFT_HEIGHT_MM', 'MAX_LIFT_HEIGHT_MM',
-           'EvtRobotReady',           
+__all__ = ['MIN_HEAD_ANGLE', 'MAX_HEAD_ANGLE',
+           'MIN_LIFT_HEIGHT', 'MIN_LIFT_HEIGHT_MM', 'MAX_LIFT_HEIGHT', 'MAX_LIFT_HEIGHT_MM',
+           'MIN_LIFT_ANGLE', 'MAX_LIFT_ANGLE',
+           # Event classes
+           'EvtRobotReady', 'EvtRobotStateUpdated',
+           # Helper classes
+           'LiftPosition',
+           # Robot Action classes
            'DisplayOledFaceImage', 'DockWithCube', 'DriveOffChargerContacts', 'DriveStraight',
-           'GoToObject', 'GoToPose', 'PerformOffChargerContext', 'PickupObject', 
+           'GoToObject', 'GoToPose', 'PerformOffChargerContext', 'PickupObject',
            'PlaceObjectOnGroundHere', 'PlaceOnObject', 'RollCube', 'SayText', 'SetHeadAngle',
            'SetLiftHeight', 'TurnInPlace', 'TurnTowardsFace',
+           # Robot
            'Robot']
 
 
 import asyncio
+import math
 import warnings
 
 from . import logger, logger_protocol
@@ -69,6 +77,11 @@ class EvtRobotReady(event.Event):
     robot = "Robot object representing the robot to command"
 
 
+class EvtRobotStateUpdated(event.Event):
+    '''Dispatched whenever the robot's state is updated (multiple times per second).'''
+    robot = "Robot object representing the robot to command"
+
+
 #### Constants
 
 
@@ -78,11 +91,87 @@ MIN_HEAD_ANGLE = util.degrees(-25)
 #: The maximum angle the robot's head can be set to
 MAX_HEAD_ANGLE = util.degrees(44.5)
 
-#: The lowest height-above-ground that lift can be moved to
+# The lowest height-above-ground that lift can be moved to in millimeters.
 MIN_LIFT_HEIGHT_MM = 32.0
 
-#: The largest height-above-ground that lift can be moved to
+#: The lowest height-above-ground that lift can be moved to
+MIN_LIFT_HEIGHT = util.distance_mm(MIN_LIFT_HEIGHT_MM)
+
+# The largest height-above-ground that lift can be moved to in millimeters.
 MAX_LIFT_HEIGHT_MM = 92.0
+
+#: The largest height-above-ground that lift can be moved to
+MAX_LIFT_HEIGHT = util.distance_mm(MAX_LIFT_HEIGHT_MM)
+
+#: The length of Cozmo's lift arm
+LIFT_ARM_LENGTH = util.distance_mm(66.0)
+
+#: The height above ground of Cozmo's lift arm's pivot
+LIFT_PIVOT_HEIGHT = util.distance_mm(45.0)
+
+#: The minimum angle the robot's lift can be set to
+MIN_LIFT_ANGLE = util.radians(math.asin((MIN_LIFT_HEIGHT_MM - LIFT_PIVOT_HEIGHT.distance_mm) / LIFT_ARM_LENGTH.distance_mm))
+
+#: The maximum angle the robot's lift can be set to
+MAX_LIFT_ANGLE = util.radians(math.asin((MAX_LIFT_HEIGHT_MM - LIFT_PIVOT_HEIGHT.distance_mm) / LIFT_ARM_LENGTH.distance_mm))
+
+
+class LiftPosition:
+    '''Represents the position of Cozmo's lift.
+
+    The class allows the position to be referred to as either absolute height
+    above the ground, as a ratio from 0.0 to 1.0, or as the angle of the lift
+    arm relative to the ground.
+
+    Args:
+        height (:class:`cozmo.util.Distance`): The height of the lift above the ground.
+        ratio (float): The ratio from 0.0 to 1.0 that the lift is raised from the ground.
+        angle (:class:`cozmo.util.Angle`): The angle of the lift arm relative to the ground.
+    '''
+    __slots__ = ('_height')
+
+    def __init__(self, height=None, ratio=None, angle=None):
+        def _count_arg(arg):
+            # return 1 if argument is set (not None), 0 otherwise
+            return 0 if (arg is None) else 1
+        num_provided_args = _count_arg(height) + _count_arg(ratio) + _count_arg(angle)
+        if num_provided_args != 1:
+            raise ValueError("Expected one, and only one, of the distance, ratio or angle keyword arguments")
+
+        if height is not None:
+            if not isinstance(height, util.Distance):
+                raise TypeError("Unsupported type for distance - expected util.Distance")
+            self._height = height
+        elif ratio is not None:
+            height_mm = MIN_LIFT_HEIGHT_MM + (ratio * (MAX_LIFT_HEIGHT_MM - MIN_LIFT_HEIGHT_MM))
+            self._height = util.distance_mm(height_mm)
+        elif angle is not None:
+            if not isinstance(angle, util.Angle):
+                raise TypeError("Unsupported type for angle - expected util.Angle")
+            height_mm = (math.sin(angle.radians) * LIFT_ARM_LENGTH.distance_mm) + LIFT_PIVOT_HEIGHT.distance_mm
+            self._height = util.distance_mm(height_mm)
+
+    def __repr__(self):
+        return "<%s height=%s ratio=%s angle=%s>" % (self.__class__.__name__, self._height, self.ratio, self.angle)
+
+    @property
+    def height(self):
+        ''':class:`cozmo.util.Distance`: The height above the ground.'''
+        return self._height
+
+    @property
+    def ratio(self):
+        '''float: The ratio from 0 to 1 that the lift is raised, 0 at the bottom, 1 at the top.'''
+        ratio = ((self._height.distance_mm - MIN_LIFT_HEIGHT_MM) /
+                 (MAX_LIFT_HEIGHT_MM - MIN_LIFT_HEIGHT_MM))
+        return ratio
+
+    @property
+    def angle(self):
+        ''':class:`cozmo.util.Angle`: The angle of the lift arm relative to the ground.'''
+        sin_angle = (self._height.distance_mm - LIFT_PIVOT_HEIGHT.distance_mm) / LIFT_ARM_LENGTH.distance_mm
+        angle_radians = math.asin(sin_angle)
+        return util.radians(angle_radians)
 
 
 #### Actions
@@ -351,14 +440,16 @@ class SetHeadAngle(action.Action):
     '''Represents the Set Head Angle action in progress.
        Returned by :meth:`~cozmo.robot.Robot.set_head_angle`
     '''
-    def __init__(self, angle, max_speed, accel, duration, **kw):
+    def __init__(self, angle, max_speed, accel, duration, warn_on_clamp, **kw):
         super().__init__(**kw)
 
         if angle < MIN_HEAD_ANGLE:
-            logger.info("Clamping head angle from %s to min %s" % (angle, MIN_HEAD_ANGLE))
+            if warn_on_clamp:
+                logger.warning("Clamping head angle from %s to min %s" % (angle, MIN_HEAD_ANGLE))
             self.angle = MIN_HEAD_ANGLE
         elif angle > MAX_HEAD_ANGLE:
-            logger.info("Clamping head angle from %s to max %s" % (angle, MAX_HEAD_ANGLE))
+            if warn_on_clamp:
+                logger.warning("Clamping head angle from %s to max %s" % (angle, MAX_HEAD_ANGLE))
             self.angle = MAX_HEAD_ANGLE
         else:
             self.angle = angle
@@ -620,9 +711,7 @@ class Robot(event.Dispatcher):
         self.left_wheel_speed = None  # type: util.Speed
         #: :class:`cozmo.util.Speed`: Speed of the right wheel
         self.right_wheel_speed = None  # type: util.Speed
-        #: :class:`cozmo.util.Distance`: Height of the lift from the ground
-        #: (in :const:`MIN_LIFT_HEIGHT_MM` to :const:`MAX_LIFT_HEIGHT_MM` range)
-        self.lift_height = None  # type: util.Distance
+        self._lift_position = LiftPosition(height=util.distance_mm(MIN_LIFT_HEIGHT_MM))
         #: float: The current battery voltage (not linear, but < 3.5 is low)
         self.battery_voltage = None  # type: float
 
@@ -696,6 +785,7 @@ class Robot(event.Dispatcher):
             # Note: Robot state is reset on entering SDK mode, and after any SDK program exits
             self.stop_all_motors()
             self.enable_all_reaction_triggers(False)
+            self.enable_stop_on_cliff(True)
             self._set_none_behavior()
 
             # Default to no memory map data being streamed
@@ -718,12 +808,15 @@ class Robot(event.Dispatcher):
             self._is_ready = True
             logger.info('Robot id=%s serial=%s initialized OK', self.robot_id, self.serial)
             self.dispatch_event(EvtRobotReady, robot=self)
+
+            self._idle_stack_depth = 0
+            self.set_idle_animation(anim.Triggers.Count)
         asyncio.ensure_future(_init(), loop=self._loop)
 
     def _set_none_behavior(self):
         # Internal helper method called from Behavior.stop etc.
         msg = _clad_to_engine_iface.ExecuteBehaviorByExecutableType(
-                behaviorType=_clad_to_engine_cozmo.ExecutableBehaviorType.NoneBehavior)
+                behaviorType=_clad_to_engine_cozmo.ExecutableBehaviorType.Wait)
         self.conn.send_msg(msg)
         if self._current_behavior is not None:
             self._current_behavior._set_stopped()
@@ -758,67 +851,67 @@ class Robot(event.Dispatcher):
 
     @property
     def is_moving(self):
-        '''bool: True if Cozmo currently moving anything (head, lift or wheels/treads).'''
+        '''bool: True if Cozmo is currently moving anything (head, lift or wheels/treads).'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_MOVING) != 0
 
     @property
     def is_carrying_block(self):
-        '''bool: True if Cozmo currently carrying a block.'''
+        '''bool: True if Cozmo is currently carrying a block.'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_CARRYING_BLOCK) != 0
 
     @property
     def is_picking_or_placing(self):
-        '''bool: True if Cozmo picking or placing something.'''
+        '''bool: True if Cozmo is picking or placing something.'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_PICKING_OR_PLACING) != 0
 
     @property
     def is_picked_up(self):
-        '''bool: True if Cozmo currently picked up (in the air).'''
+        '''bool: True if Cozmo is currently picked up (in the air).'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_PICKED_UP) != 0
 
     @property
     def is_falling(self):
-        '''bool: True if Cozmo currently falling.'''
+        '''bool: True if Cozmo is currently falling.'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_FALLING) != 0
 
     @property
     def is_animating(self):
-        '''bool: True if Cozmo currently playing an animation.'''
+        '''bool: True if Cozmo is currently playing an animation.'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_ANIMATING) != 0
 
     @property
     def is_animating_idle(self):
-        '''bool: True if Cozmo currently playing an idle animation.'''
+        '''bool: True if Cozmo is currently playing an idle animation.'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_ANIMATING_IDLE) != 0
 
     @property
     def is_pathing(self):
-        '''bool: True if Cozmo currently traversing a path.'''
+        '''bool: True if Cozmo is currently traversing a path.'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_PATHING) != 0
 
     @property
     def is_lift_in_pos(self):
-        '''bool: True if Cozmo's lift in the desired position (False if still trying to move there).'''
+        '''bool: True if Cozmo's lift is in the desired position (False if still trying to move there).'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.LIFT_IN_POS) != 0
 
     @property
     def is_head_in_pos(self):
-        '''bool: True Cozmo's head in the desired position (False if still trying to move there).'''
+        '''bool: True if Cozmo's head is in the desired position (False if still trying to move there).'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.HEAD_IN_POS) != 0
 
     @property
     def is_anim_buffer_full(self):
-        '''bool: True Is Cozmo's animation buffer full (on robot).'''
+        '''bool: True if Cozmo's animation buffer is full (on robot).'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_ANIM_BUFFER_FULL) != 0
 
     @property
     def is_on_charger(self):
-        '''bool: True if Cozmo currently on the charger.'''
+        '''bool: True if Cozmo is currently on the charger.'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_ON_CHARGER) != 0
 
     @property
     def is_charging(self):
-        '''bool: True if Cozmo currently charging.'''
+        '''bool: True if Cozmo is currently charging.'''
         return (self._robot_status_flags & _clad_to_game_cozmo.RobotStatusFlag.IS_CHARGING) != 0
 
     @property
@@ -833,7 +926,7 @@ class Robot(event.Dispatcher):
 
     @property
     def is_localized(self):
-        '''bool: True if Cozmo is localized (i.e. knows where he is, and has both treads on the ground).'''
+        '''bool: True if Cozmo is localized (i.e. knows where he is with respect to a cube, and has both treads on the ground).'''
         return (self._game_status_flags & _clad_to_game_cozmo.GameStatusFlag.IsLocalized) != 0
 
     @property
@@ -850,6 +943,32 @@ class Robot(event.Dispatcher):
     def head_angle(self):
         ''':class:`cozmo.util.Angle`: Cozmo's head angle (up/down).'''
         return self._head_angle
+
+    @property
+    def lift_position(self):
+        ''':class:`LiftPosition`: The position of Cozmo's lift.'''
+        return self._lift_position
+
+    @property
+    def lift_height(self):
+        ''':class:`cozmo.util.Distance`: Height of Cozmo's lift from the ground.
+
+        In :const:`MIN_LIFT_HEIGHT` to :const:`MAX_LIFT_HEIGHT` range.
+        '''
+        return self._lift_position.height
+
+    @property
+    def lift_ratio(self):
+        '''float: Ratio from 0 to 1 of how high Cozmo's lift is.'''
+        return self._lift_position.ratio
+
+    @property
+    def lift_angle(self):
+        ''':class:`cozmo.util.Angle`: Angle of Cozmo's lift relative to the ground.
+
+        In :const:`MIN_LIFT_ANGLE` to :const:`MAX_LIFT_ANGLE` range.
+        '''
+        return self._lift_position.angle
 
     @property
     def current_behavior(self):
@@ -952,7 +1071,7 @@ class Robot(event.Dispatcher):
         self._head_angle = util.radians(msg.headAngle_rad)
         self.left_wheel_speed = util.speed_mmps(msg.leftWheelSpeed_mmps)
         self.right_wheel_speed = util.speed_mmps(msg.rightWheelSpeed_mmps)
-        self.lift_height = util.distance_mm(msg.liftHeight_mm)
+        self._lift_position = LiftPosition(height=util.distance_mm(msg.liftHeight_mm))
         self.battery_voltage = msg.batteryVoltage
         self.accelerometer = util.Vector3(msg.accel.x, msg.accel.y, msg.accel.z)
         self.gyro = util.Vector3(msg.gyro.x, msg.gyro.y, msg.gyro.z)
@@ -963,6 +1082,8 @@ class Robot(event.Dispatcher):
         self.last_image_robot_timestamp = msg.lastImageTimeStamp
         self._robot_status_flags = msg.status  # uint_16 as bitflags - See _clad_to_game_cozmo.RobotStatusFlag
         self._game_status_flags = msg.gameStatus  # uint_8  as bitflags - See _clad_to_game_cozmo.GameStatusFlag
+
+        self.dispatch_event(EvtRobotStateUpdated, robot=self)
 
         if msg.robotID != self.robot_id:
             logger.error("robot ID changed mismatch (msg=%s, self=%s)", msg.robotID, self.robot_id )
@@ -1009,6 +1130,15 @@ class Robot(event.Dispatcher):
         else:
             msg = _clad_to_engine_iface.DisableAllReactionsWithLock("sdk")
             self.conn.send_msg(msg)
+
+    def enable_stop_on_cliff(self, enable):
+        '''Enable or disable Cozmo's ability to drive off a cliff.
+
+        Args:
+            enable (bool): True if the robot should stop moving when a cliff is encountered.
+        '''
+        msg = _clad_to_engine_iface.EnableStopOnCliff(enable=enable)
+        self.conn.send_msg(msg)
 
     def set_robot_volume(self, robot_volume):
         '''Set the volume for the speaker in the robot.
@@ -1089,19 +1219,20 @@ class Robot(event.Dispatcher):
 
     ### Low-Level Commands ###
 
-    async def drive_wheels(self, l_wheel_speed, r_wheel_speed,
-                                 l_wheel_acc=None, r_wheel_acc=None, duration=None):
-        '''Tell Cozmo to directly move his treads.
+    def drive_wheel_motors(self, l_wheel_speed, r_wheel_speed,
+                                 l_wheel_acc=None, r_wheel_acc=None):
+        '''Tell Cozmo to move his wheels / treads at a given speed.
+
+        The wheels will continue to move at that speed until commanded to drive
+        at a new speed, or if :meth:`~cozmo.robot.Robot.stop_all_motors` is called.
 
         Args:
             l_wheel_speed (float): Speed of the left tread (in millimeters per second)
             r_wheel_speed (float): Speed of the right tread (in millimeters per second)
             l_wheel_acc (float): Acceleration of left tread (in millimeters per second squared)
-            None value defaults this to the same as l_wheel_speed
+                ``None`` value defaults this to the same as l_wheel_speed.
             r_wheel_acc (float): Acceleration of right tread (in millimeters per second squared)
-            None value defaults this to the same as r_wheel_speed
-            duration (float): Time for the robot to drive. Will call :meth:`~cozmo.robot.stop_all_motors`
-            after this duration has passed
+                ``None`` value defaults this to the same as r_wheel_speed.
         '''
         if l_wheel_acc is None:
             l_wheel_acc = l_wheel_speed
@@ -1112,8 +1243,26 @@ class Robot(event.Dispatcher):
                                                 rwheel_speed_mmps=r_wheel_speed,
                                                 lwheel_accel_mmps2=l_wheel_acc,
                                                 rwheel_accel_mmps2=r_wheel_acc)
-
         self.conn.send_msg(msg)
+
+    async def drive_wheels(self, l_wheel_speed, r_wheel_speed,
+                                 l_wheel_acc=None, r_wheel_acc=None, duration=None):
+        '''Tell Cozmo to move his wheels / treads at a given speed, and optionally stop them after a given duration.
+
+        If duration is ``None`` then this is equivalent to the non-async
+        :meth:`~cozmo.robot.Robot.drive_wheel_motors` method.
+
+        Args:
+            l_wheel_speed (float): Speed of the left tread (in millimeters per second).
+            r_wheel_speed (float): Speed of the right tread (in millimeters per second).
+            l_wheel_acc (float): Acceleration of left tread (in millimeters per second squared).
+                ``None`` value defaults this to the same as l_wheel_speed.
+            r_wheel_acc (float): Acceleration of right tread (in millimeters per second squared).
+                ``None`` value defaults this to the same as r_wheel_speed.
+            duration (float): Time for the robot to drive. Will call :meth:`~cozmo.robot.Robot.stop_all_motors`
+                after this duration has passed.
+        '''
+        self.drive_wheel_motors(l_wheel_speed, r_wheel_speed, l_wheel_acc, r_wheel_acc)
         if duration:
             await asyncio.sleep(duration, loop=self._loop)
             self.stop_all_motors()
@@ -1147,7 +1296,7 @@ class Robot(event.Dispatcher):
         self.conn.send_msg(msg)
 
     def say_text(self, text, play_excited_animation=False, use_cozmo_voice=True,
-                 duration_scalar=1.8, voice_pitch=0.0, in_parallel=False, num_retries=0):
+                 duration_scalar=1.0, voice_pitch=0.0, in_parallel=False, num_retries=0):
         '''Have Cozmo say text!
 
         Args:
@@ -1244,7 +1393,7 @@ class Robot(event.Dispatcher):
         self.conn.send_msg(msg)
 
     def set_head_angle(self, angle, accel=10.0, max_speed=10.0, duration=0.0,
-                       in_parallel=False, num_retries=0):
+                       warn_on_clamp=True, in_parallel=False, num_retries=0):
         '''Tell Cozmo's head to turn to a given angle.
 
         Args:
@@ -1255,6 +1404,9 @@ class Robot(event.Dispatcher):
             max_speed (float): Maximum speed of Cozmo's head in radians per second.
             duration (float): Time for Cozmo's head to turn in seconds. A value
                 of zero will make Cozmo try to do it as quickly as possible.
+            warn_on_clamp (bool): True to log a warning if the angle had to be
+                clamped to the valid range (:const:`MIN_HEAD_ANGLE` to
+                :const:`MAX_HEAD_ANGLE`).
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
                 be already complete.
@@ -1265,8 +1417,8 @@ class Robot(event.Dispatcher):
                 queried to see when it is complete
         '''
         action = self.set_head_angle_factory(angle=angle, max_speed=max_speed,
-                accel=accel, duration=duration, conn=self.conn,
-                robot=self, dispatch_parent=self)
+                accel=accel, duration=duration, warn_on_clamp=warn_on_clamp,
+                conn=self.conn, robot=self, dispatch_parent=self)
 
         self._action_dispatcher._send_single_action(action,
                                                     in_parallel=in_parallel,
@@ -1385,29 +1537,31 @@ class Robot(event.Dispatcher):
     def set_idle_animation(self, anim_trigger):
         '''Set the Idle Animation on Cozmo
 
-        Idle animations behave the same as regular animations except that they
-        loop forever on Cozmo regardless of what actions and animations
-        are being played.
+        Idle animations keep Cozmo alive inbetween the times other animations play.
+        They behave the same as regular animations except that they
+        loop forever until another animation is started.
 
         Args:
             anim_trigger (:class:`cozmo.anim.Triggers`): The animation trigger to set
-                Note: :attr:`cozmo.anim.Triggers.Count` will clear all idle animations.
         Raises:
             :class:`ValueError` if supplied an invalid animation trigger.
         '''
         if not isinstance(anim_trigger, anim._AnimTrigger):
             raise TypeError("Invalid anim_trigger supplied")
 
-        msg = _clad_to_engine_iface.SetIdleAnimation(robotID=self.robot_id,
-                                                     animTrigger=anim_trigger.id)
+        msg = _clad_to_engine_iface.PushIdleAnimation(animTrigger=anim_trigger.id,
+                                                      lockName="sdk")
         self.conn.send_msg(msg)
+        self._idle_stack_depth += 1
+
 
     def clear_idle_animation(self):
         '''Clears any Idle Animation currently playing on Cozmo'''
+        msg = _clad_to_engine_iface.RemoveIdleAnimation(lockName="sdk")
 
-        #NOTE: pylint doesn't identify the member "Count" on this namedTuple which is added at runtime
-        #pylint: disable=no-member
-        self.set_idle_animation(anim.Triggers.Count)
+        while(self._idle_stack_depth > 0):
+            self.conn.send_msg(msg)
+            self._idle_stack_depth -= 1
 
     # Cozmo's Face animation commands
 
@@ -1533,7 +1687,7 @@ class Robot(event.Dispatcher):
 
     def pickup_object(self, obj, use_pre_dock_pose=True, in_parallel=False,
                       num_retries=0):
-        '''Instruct the robot to pick-up the supplied object.
+        '''Instruct the robot to pick up the supplied object.
 
         Args:
             obj (:class:`cozmo.objects.ObservableObject`): The target object to
@@ -1748,7 +1902,7 @@ class Robot(event.Dispatcher):
                                                     num_retries=num_retries)
         return action
 
-    def roll_cube(self, target_object, approach_angle=None, check_for_object_on_top=False, 
+    def roll_cube(self, target_object, approach_angle=None, check_for_object_on_top=False,
                   in_parallel=False, num_retries=0):
         '''Tells Cozmo to roll a specified cube object.
 

@@ -20,6 +20,7 @@ RobotAlignment related classes, functions, events and values.
 __all__ = ['RobotAlignmentTypes']
 
 import collections
+
 from ._clad import _clad_to_engine_cozmo, CladEnumWrapper
 
 _RobotAlignmentType = collections.namedtuple('_RobotAlignmentType', ['name', 'id'])

@@ -684,14 +684,23 @@ def handle_updateCozmo():
 def handle_cozmoImage():
     '''Called very frequently from Javascript to request the latest camera image'''
     if remote_control_cozmo:
-        image = remote_control_cozmo.cozmo.world.latest_image
-        if image:
-            if _display_debug_annotations != DEBUG_ANNOTATIONS_DISABLED:
-                image = image.annotate_image(scale=2)
-            else:
-                image = image.raw_image
+        try:
+            image = remote_control_cozmo.cozmo.world.latest_image
+            if image:
+                if _display_debug_annotations != DEBUG_ANNOTATIONS_DISABLED:
+                    image = image.annotate_image(scale=2)
+                else:
+                    image = image.raw_image
 
-            return flask_helpers.serve_pil_image(image)
+                return flask_helpers.serve_pil_image(image)
+        except cozmo.exceptions.SDKShutdown:
+            # SDK is shutting down - Flask will block and spam errors here - force it to exit
+            shutdown_func = request.environ.get('werkzeug.server.shutdown')
+            if shutdown_func is not None:
+                cozmo.logger.info("Shutting down Flask")
+                shutdown_func()
+            else:
+                sys.exit("SDKShutdown")
     return flask_helpers.serve_pil_image(_default_camera_image)
 
 
