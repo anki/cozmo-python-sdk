@@ -1251,7 +1251,7 @@ class OpenGLViewer():
             else:
                 # Adjust the Camera pitch and yaw
                 self._camera_pitch = (self._camera_pitch - (mouse_delta.y * MOUSE_ROTATE_SCALAR))
-                self._camera_yaw = (self._camera_yaw + (mouse_delta.x * MOUSE_ROTATE_SCALAR)) % math.tau
+                self._camera_yaw = (self._camera_yaw + (mouse_delta.x * MOUSE_ROTATE_SCALAR)) % (2.0 * math.pi)
                 # Clamp pitch to slightyly less than pi/2 to avoid lock/errors at full up/down
                 max_rotation = math.pi * 0.49
                 self._camera_pitch = max(-max_rotation, min(max_rotation, self._camera_pitch))
