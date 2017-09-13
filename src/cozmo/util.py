@@ -778,6 +778,7 @@ class Vector2:
 
     def set_to(self, rhs):
         """Copy the x and y components of the given vector.
+
         Args:
             rhs (:class:`Vector2`): The right-hand-side of this assignment - the
                 source vector to copy into this vector.
@@ -842,6 +843,7 @@ class Vector3:
 
     def set_to(self, rhs):
         """Copy the x, y and z components of the given vector.
+
         Args:
             rhs (:class:`Vector3`): The right-hand-side of this assignment - the
                 source vector to copy into this vector.
