@@ -1126,9 +1126,9 @@ class CameraImage:
         Args:
             scale (float): If set then the base image will be scaled by the
                 supplied multiplier.  Cannot be combined with fit_size
-            fit_size (tuple of ints (width, height)):  If set, then scale the
-                image to fit inside the supplied dimensions.  The original
-                aspect ratio will be preserved.  Cannot be combined with scale.
+            fit_size (tuple of int):  If set, then scale the image to fit inside
+                the supplied (width, height) dimensions. The original aspect
+                ratio will be preserved.  Cannot be combined with scale.
             resample_mode (int): The resampling mode to use when scaling the
                 image. Should be either :attr:`~cozmo.annotate.RESAMPLE_MODE_NEAREST`
                 (fast) or :attr:`~cozmo.annotate.RESAMPLE_MODE_BILINEAR` (slower,

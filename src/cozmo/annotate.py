@@ -70,10 +70,14 @@ TOP_RIGHT = TOP | RIGHT
 #: Bottom right position
 BOTTOM_RIGHT = BOTTOM | RIGHT
 
-#: Fastest resampling mode, use nearest pixel
-RESAMPLE_MODE_NEAREST = Image.NEAREST
-#: Slower, but smoother, resampling mode - linear interpolation from 2x2 grid of pixels
-RESAMPLE_MODE_BILINEAR = Image.BILINEAR
+if ImageDraw is not None:
+    #: Fastest resampling mode, use nearest pixel
+    RESAMPLE_MODE_NEAREST = Image.NEAREST
+    #: Slower, but smoother, resampling mode - linear interpolation from 2x2 grid of pixels
+    RESAMPLE_MODE_BILINEAR = Image.BILINEAR
+else:
+    RESAMPLE_MODE_NEAREST = None
+    RESAMPLE_MODE_BILINEAR = None
 
 
 class ImageText:
