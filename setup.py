@@ -44,6 +44,11 @@ Optional requirements for camera image processing/display:
     * Tkinter (Usually supplied by default with Python)
     * Pillow
     * NumPy
+
+Optional requirements for 3D viewer/visualization:
+    * PyOpenGL
+    * PyOpenGL-accelerate
+    * Pillow
 '''
 
 
