@@ -25,6 +25,8 @@ import struct
 import sys
 import time
 
+from cozmo import logger
+
 
 DEFAULT_SOCKET_PATH = '/var/run/usbmuxd'
 DEFAULT_SOCKET_PORT = 27015
@@ -110,13 +112,18 @@ class USBMuxConnector(PlistProto):
             self.transport.pause_reading()
 
         elif status == 2:
-            self.waiter.set_exception(DeviceNotConnected("Device %s is not currently connected" % (self.device_id,)))
+            ex = DeviceNotConnected("Device %s is not currently connected" % (self.device_id,))
+            logger.warning("USBMux failure: status %s: %s", status, str(ex))
+            self.waiter.set_exception(ex)
 
         elif status == 3:
-            self.waiter.set_exception(ConnectionRefused("Connection refused to device_id=%s port=%d" % (self.device_id, self.port)))
-
+            ex = ConnectionRefused("Connection refused to device_id=%s port=%d" % (self.device_id, self.port))
+            logger.warning("USBMux failure: status %s: %s", status, str(ex))
+            self.waiter.set_exception(ex)
         else:
-            self.waiter.set_exception(ConnectionFailed("Protocol error connecting to device %s" % (self.device_id,)))
+            ex = ConnectionFailed("Protocol error connecting to device %s" % (self.device_id,))
+            logger.warning("USBMux failure: status %s: %s", status, str(ex))
+            self.waiter.set_exception(ex)
 
 
 class _ProtoSwitcher(asyncio.Protocol):
@@ -317,8 +324,10 @@ class USBMux(PlistProto):
                 try:
                     return await self.connect_to_device(protocol_factory, device_id, port)
                 except USBMuxError:
+                    logger.warning("USBMuxError in connect_to_first_device")
                     pass
 
+        logger.warning("connect_to_first_device raising timeout")
         raise asyncio.TimeoutError("No available devices")
 
     async def wait_for_attach(self, timeout=None):
