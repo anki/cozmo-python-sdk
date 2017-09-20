@@ -37,7 +37,12 @@ try:
     from PIL import Image, ImageColor, ImageDraw, ImageStat
 except ImportError:
     sys.exit('Cannot import from PIL: Do `pip3 install --user Pillow` to install')
-    
+
+
+# Set ENABLE_COLOR_BALANCING to False to skip the color_balance step
+ENABLE_COLOR_BALANCING = True
+
+
 # map_color_to_light (dict): maps each color name with its cozmo.lights.Light value.
 # Red, green, and blue lights are already defined as constants in lights.py, 
 # but we need to define our own custom Light for yellow.
@@ -283,6 +288,8 @@ class ColorFinder(cozmo.annotate.Annotator):
     def on_new_camera_image(self, evt, **kwargs):
         '''Processes the blobs in Cozmo's view, and determines the correct reaction.'''
         downsized_image = self.get_low_res_view()
+        if ENABLE_COLOR_BALANCING:
+            downsized_image = color_balance(downsized_image)
         self.update_pixel_matrix(downsized_image)
         blob_detector = BlobDetector(self.pixel_matrix, self.color_to_find)
         blob_center = blob_detector.get_blob_center()
