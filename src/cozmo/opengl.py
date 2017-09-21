@@ -569,7 +569,7 @@ class WorldRenderFrame():
 
         self.face_frames = []
         for face in world._faces.values():
-            # Ignore face's that have a newer version (with updated id)
+            # Ignore faces that have a newer version (with updated id)
             # or if they haven't been seen in a while).
             if not face.has_updated_face_id and (face.time_since_last_seen < 60):
                 self.face_frames.append(FaceRenderFrame(face))
