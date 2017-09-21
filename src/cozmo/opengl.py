@@ -569,7 +569,10 @@ class WorldRenderFrame():
 
         self.face_frames = []
         for face in world._faces.values():
-            self.face_frames.append(FaceRenderFrame(face))
+            # Ignore faces that have a newer version (with updated id)
+            # or if they haven't been seen in a while).
+            if not face.has_updated_face_id and (face.time_since_last_seen < 60):
+                self.face_frames.append(FaceRenderFrame(face))
 
         self.custom_object_frames = []
         for obj in world._objects.values():
@@ -1066,7 +1069,8 @@ class OpenGLViewer():
                     glScalef(100, 25, 100)
 
                     FACE_OBJECT_COLOR = [0.5, 0.5, 0.5, 1.0]
-                    self._draw_unit_cube(FACE_OBJECT_COLOR, True)
+                    draw_solid = face.time_since_last_seen < 30
+                    self._draw_unit_cube(FACE_OBJECT_COLOR, draw_solid)
 
                     glPopMatrix()
 
