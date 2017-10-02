@@ -4,8 +4,6 @@
 Alternate Install via Virtual Machine
 #####################################
 
-.. important:: THIS IS THE COZMO SDK BETA. The SDK is under development and is subject to change.
-
 .. important:: The installation steps on this page are intended only for people that are having difficulties installing the SDK using the main Installation Guide steps.
 
 If you have difficulties using the regular Installation Guide steps (e.g. you are using an unsupported Operating System / OS Version), then we also provide a self-contained VM (Virtual Machine) setup using Vagrant that you can install to run entirely inside VirtualBox. The steps are listed below.

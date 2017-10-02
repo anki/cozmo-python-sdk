@@ -1,4 +1,6 @@
-# Copyright (c) 2016-2017 Anki, Inc.
+#!/usr/bin/env python3
+
+# Copyright (c) 2017 Anki, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +14,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "1.0.2.dev0"
+'''3d Viewer example, with remote control.
 
-# Specify the version of cozmoclad that this package requires
-# Releases of the Cozmo package must specify an exact cozmoclad release
-# to ensure compatibility with a specific release of the ios/android app.
-__cozmoclad_version__ = None
-#__cozmoclad_version__ = "1.7.1"
+This is an example of how you can use the 3D viewer with a program, and the
+3D viewer and controls will work automatically.
+'''
 
-# Minimum cozmoclad version supported by the API
-__min_cozmoclad_version__ = "2.0.0"
+import asyncio
+
+import cozmo
+
+
+async def cozmo_program(robot: cozmo.robot.Robot):
+    while True:
+        await asyncio.sleep(1)
+
+
+cozmo.robot.Robot.drive_off_charger_on_connect = False
+cozmo.run_program(cozmo_program, use_3d_viewer=True, use_viewer=True)
+
+
+

@@ -1,7 +1,7 @@
 [
     {
       "question": "What is 3 times 4?",
-      "answer_options": ["twelve", "nine", "fifteen", "fourteen"]
+      "answer_options": ["12", "9", "15", "14"]
     },
     {
       "question": "Which of these is not a type of penguin?",
@@ -17,6 +17,6 @@
     },
     {
       "question": "What is the 8th digit of Pi?",
-      "answer_options": ["six", "five", "two", "three"]
+      "answer_options": ["6", "5", "2", "3"]
     }
 ]

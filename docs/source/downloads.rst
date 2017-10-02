@@ -2,8 +2,6 @@
 Downloads
 #########
 
-.. important:: THIS IS THE COZMO SDK BETA. The SDK is under development and is subject to change.
-
 ------------
 SDK Examples
 ------------

@@ -4,8 +4,6 @@
 Installation - Linux
 ####################
 
-.. important:: THIS IS THE COZMO SDK BETA. The SDK is under development and is subject to change.
-
 This guide provides instructions on installing the Cozmo SDK for computers running with an Ubuntu Linux operating system.
 
 .. warning:: The Cozmo SDK is tested and and supported on Ubuntu 14.04 and 16.04. Anki makes no guarantee the Cozmo SDK will work on other versions of Linux.  If you wish to try the Cozmo SDK on versions of Linux *other than* Ubuntu 14.04 or 16.04, please ensure the following dependencies are installed:

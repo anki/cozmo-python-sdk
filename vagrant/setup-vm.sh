@@ -10,11 +10,14 @@ curl \
 python3-pip \
 expect \
 python3-pil \
-python3-pil.imagetk
+python3-pil.imagetk \
+freeglut3
 pip3 install numpy \
 pillow \
 tweepy \
-flask
+flask \
+PyOpenGL \
+PyOpenGL-accelerate
 sudo localectl set-locale LANG="en_US.UTF-8"
 
 echo ">>> Installing Android Command Line Tools"

@@ -37,7 +37,12 @@ try:
     from PIL import Image, ImageColor, ImageDraw, ImageStat
 except ImportError:
     sys.exit('Cannot import from PIL: Do `pip3 install --user Pillow` to install')
-    
+
+
+# Set ENABLE_COLOR_BALANCING to False to skip the color_balance step
+ENABLE_COLOR_BALANCING = True
+
+
 # map_color_to_light (dict): maps each color name with its cozmo.lights.Light value.
 # Red, green, and blue lights are already defined as constants in lights.py, 
 # but we need to define our own custom Light for yellow.
@@ -283,6 +288,8 @@ class ColorFinder(cozmo.annotate.Annotator):
     def on_new_camera_image(self, evt, **kwargs):
         '''Processes the blobs in Cozmo's view, and determines the correct reaction.'''
         downsized_image = self.get_low_res_view()
+        if ENABLE_COLOR_BALANCING:
+            downsized_image = color_balance(downsized_image)
         self.update_pixel_matrix(downsized_image)
         blob_detector = BlobDetector(self.pixel_matrix, self.color_to_find)
         blob_center = blob_detector.get_blob_center()
@@ -358,7 +365,7 @@ class ColorFinder(cozmo.annotate.Annotator):
         '''
         self.robot.set_center_backpack_lights(map_color_to_light[self.color_to_find])
         if blob_size > (self.pixel_matrix.size/4):
-            self.lift_action = self.robot.set_lift_height(0.0, in_parallel = True)
+            self.lift_action = self.robot.set_lift_height(0.0, in_parallel=True)
         x, y = blob_center
         # 'fov' stands for 'field of view'. This is the angle amount
         # that Cozmo can see to the edges of his camera view.
@@ -399,8 +406,8 @@ class ColorFinder(cozmo.annotate.Annotator):
         '''
         self.abort_actions(self.tilt_head_action, self.rotate_action, self.drive_action)
         new_head_angle = self.robot.head_angle + amount_to_move_head
-        self.tilt_head_action = self.robot.set_head_angle(new_head_angle, in_parallel = True)
-        self.rotate_action = self.robot.turn_in_place(amount_to_rotate, in_parallel = True)
+        self.tilt_head_action = self.robot.set_head_angle(new_head_angle, warn_on_clamp=False, in_parallel=True)
+        self.rotate_action = self.robot.turn_in_place(amount_to_rotate, in_parallel=True)
         if self.state == FOUND_COLOR_STATE:
             self.amount_turned_recently += amount_to_move_head.abs_value + amount_to_rotate.abs_value
 
@@ -408,9 +415,9 @@ class ColorFinder(cozmo.annotate.Annotator):
         '''Drives straight once prior actions have been cancelled.'''
         self.abort_actions(self.tilt_head_action, self.rotate_action)
         if self.should_start_new_action(self.drive_action):
-            self.drive_action = self.robot.drive_straight(distance_mm(500), speed_mmps(300), should_play_anim = False, in_parallel = True)
+            self.drive_action = self.robot.drive_straight(distance_mm(500), speed_mmps(300), should_play_anim=False, in_parallel=True)
         if self.should_start_new_action(self.lift_action):
-            self.lift_action = self.robot.set_lift_height(1.0, in_parallel = True)
+            self.lift_action = self.robot.set_lift_height(1.0, in_parallel=True)
 
     def turn_toward_last_known_blob(self):
         '''Turns toward the coordinates of the last recorded blob in memory.
