@@ -49,4 +49,4 @@ def cozmo_program(robot: cozmo.robot.Robot):
         robot.pickup_object(targ, num_retries=3).wait_for_completed()
 
 
-cozmo.run_program(cozmo_program)
+cozmo.run_program(cozmo_program, use_viewer=True)

@@ -32,7 +32,7 @@ def cozmo_program(robot: cozmo.robot.Robot):
 
     cubes = robot.world.wait_until_observe_num_objects(num=2, object_type=cozmo.objects.LightCube, timeout=10)
 
-    print(cubes)
+    print("Found %s cubes" % len(cubes))
 
     lookaround.stop()
 

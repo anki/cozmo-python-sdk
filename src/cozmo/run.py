@@ -23,9 +23,11 @@ and run your own code connected to a :class:`cozmo.conn.CozmoConnection`
 instance.  It takes care of setting up an event loop, finding the Android or
 iOS device running the Cozmo app and making sure the connection is ok.
 
-You can also use the :func:`connect_with_tkviewer` function which works in
-a similar way to :func:`connect`, but will also display a window on the screen
-showing a view from Cozmo's camera, if your system supports Tk.
+You can also use the :func:`connect_with_tkviewer` or :func:`connect_with_3dviewer`
+functions which works in a similar way to :func:`connect`, but will also display
+either a a window on the screen showing a view from Cozmo's camera (using Tk), or
+a 3d viewer (with optional 2nd window showing Cozmo's camera) (using OpenGL), if
+supported on your system.
 
 Finally, more advanced progarms can integrate the SDK with an existing event
 loop by using the :func:`connect_with_loop` function.
@@ -37,7 +39,7 @@ normally be a need to modify them or write your own.
 
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['DeviceConnector', 'IOSConnector', 'AndroidConnector', 'TCPConnector',
-           'connect',  'connect_with_tkviewer', 'connect_on_loop',
+           'connect', 'connect_with_3dviewer', 'connect_with_tkviewer', 'connect_on_loop',
            'run_program', 'setup_basic_logging']
 
 import threading
@@ -591,6 +593,81 @@ def connect(f, conn_factory=conn.CozmoConnection, connector=None):
     return _connect_sync(f, conn_factory, connector)
 
 
+def _connect_viewer(f, conn_factory, connector, viewer):
+    # Run the viewer in the main thread, with the SDK running on a new background thread.
+    loop = asyncio.new_event_loop()
+    abort_future = concurrent.futures.Future()
+
+    async def view_connector(coz_conn):
+        try:
+            await viewer.connect(coz_conn)
+
+            if inspect.iscoroutinefunction(f):
+                await f(coz_conn)
+            else:
+                await coz_conn._loop.run_in_executor(None, f, base._SyncProxy(coz_conn))
+        finally:
+            viewer.disconnect()
+
+    try:
+        if not inspect.iscoroutinefunction(f):
+            conn_factory = functools.partial(conn_factory, _sync_abort_future=abort_future)
+        lt = _LoopThread(loop, f=view_connector, conn_factory=conn_factory, connector=connector)
+        lt.start()
+        viewer.mainloop()
+    except BaseException as e:
+        abort_future.set_exception(exceptions.SDKShutdown(repr(e)))
+        raise
+    finally:
+        lt.stop()
+
+
+def connect_with_3dviewer(f, conn_factory=conn.CozmoConnection, connector=None,
+                          enable_camera_view=False):
+    '''Setup a connection to a device and run a user function while displaying Cozmo's 3d world.
+
+    This displays an OpenGL window on the screen with a 3D view of Cozmo's
+    understanding of the world. Optionally, if `use_viewer` is True, a 2nd OpenGL
+    window will also display showing a view of Cozmo's camera. It will return an
+    error if the current system does not support PyOpenGL.
+
+    The function may be either synchronous or asynchronous (defined
+    used ``async def``).
+
+    The function must accept a :class:`cozmo.CozmoConnection` object as
+    its only argument.
+    This call will block until the supplied function completes.
+
+    Args:
+        f (callable): The function to execute
+        conn_factory (callable): Override the factory function to generate a
+            :class:`cozmo.conn.CozmoConnection` (or subclass) instance.
+        connector (:class:`DeviceConnector`): Optional instance of a DeviceConnector
+            subclass that handles opening the USB connection to a device.
+            By default it will connect to the first Android or iOS device that
+            has the Cozmo app running in SDK mode.
+        enable_camera_view (bool): Specifies whether to also open a 2D camera
+            view in a second OpenGL window.
+    '''
+    try:
+        from . import opengl
+    except ImportError as exc:
+        opengl = exc
+
+    if isinstance(opengl, Exception):
+        if isinstance(opengl, exceptions.InvalidOpenGLGlutImplementation):
+            raise NotImplementedError('GLUT (OpenGL Utility Toolkit) is not available:\n%s'
+                                      % opengl)
+        else:
+            raise NotImplementedError('opengl is not available; '
+                'make sure the PyOpenGL, PyOpenGL-accelerate and Pillow packages are installed:\n'
+                'Do `pip3 install --user cozmo[3dviewer]` to install. Error: %s' % opengl)
+
+    viewer = opengl.OpenGLViewer(enable_camera_view=enable_camera_view)
+
+    _connect_viewer(f, conn_factory, connector, viewer)
+
+
 def connect_with_tkviewer(f, conn_factory=conn.CozmoConnection, connector=None, force_on_top=False):
     '''Setup a connection to a device and run a user function while displaying Cozmo's camera.
 
@@ -625,31 +702,7 @@ def connect_with_tkviewer(f, conn_factory=conn.CozmoConnection, connector=None, 
 
     viewer = tkview.TkImageViewer(force_on_top=force_on_top)
 
-    loop = asyncio.new_event_loop()
-    abort_future = concurrent.futures.Future()
-
-    async def view_connector(coz_conn):
-        try:
-            await viewer.connect(coz_conn)
-
-            if inspect.iscoroutinefunction(f):
-                await f(coz_conn)
-            else:
-                await coz_conn._loop.run_in_executor(None, f, base._SyncProxy(coz_conn))
-        finally:
-            viewer.disconnect()
-
-    try:
-        if not inspect.iscoroutinefunction(f):
-            conn_factory = functools.partial(conn_factory, _sync_abort_future=abort_future)
-        lt = _LoopThread(loop, f=view_connector, conn_factory=conn_factory, connector=connector)
-        lt.start()
-        viewer.mainloop()
-    except BaseException as e:
-        abort_future.set_exception(exceptions.SDKShutdown(repr(e)))
-        raise
-    finally:
-        lt.stop()
+    _connect_viewer(f, conn_factory, connector, viewer)
 
 
 def setup_basic_logging(general_log_level=None, protocol_log_level=None,
@@ -713,7 +766,7 @@ def setup_basic_logging(general_log_level=None, protocol_log_level=None,
 
 def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
                 connector=None, force_viewer_on_top=False,
-                deprecated_filter="default"):
+                deprecated_filter="default", use_3d_viewer=False):
     '''Connect to Cozmo and run the provided program/function f.
 
     Args:
@@ -730,11 +783,17 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
             has the Cozmo app running in SDK mode.
         force_viewer_on_top (bool): Specifies whether the window should be
             forced on top of all others (only relevant if use_viewer is True).
+            Note that this is ignored if use_3d_viewer is True (as it's not
+            currently supported on that windowing system).
         deprecated_filter (str): The filter for any DeprecationWarning messages.
             This is defaulted to "default" which shows the warning once per
             location. You can hide all deprecated warnings by passing in "ignore",
             see https://docs.python.org/3/library/warnings.html#warning-filter
             for more information.
+        use_3d_viewer (bool): Specifies whether to display a 3D view of Cozmo's
+            understanding of the world in a window. Note that if both this and
+            `use_viewer` are set then the 2D camera view will render in an OpenGL
+            window instead of a TkView window.
     '''
     setup_basic_logging(deprecated_filter=deprecated_filter)
 
@@ -762,8 +821,12 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
                 logger.info('Exit requested by user')
 
     try:
-        if use_viewer:
-            connect_with_tkviewer(wrapper, conn_factory=conn_factory, connector=connector, force_on_top=force_viewer_on_top)
+        if use_3d_viewer:
+            connect_with_3dviewer(wrapper, conn_factory=conn_factory, connector=connector,
+                                  enable_camera_view=use_viewer)
+        elif use_viewer:
+            connect_with_tkviewer(wrapper, conn_factory=conn_factory, connector=connector,
+                                  force_on_top=force_viewer_on_top)
         else:
             connect(wrapper, conn_factory=conn_factory, connector=connector)
     except KeyboardInterrupt:

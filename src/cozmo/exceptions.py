@@ -19,7 +19,7 @@ __all__ = ['CozmoSDKException', 'SDKShutdown', 'StopPropogation',
         'AnimationsNotLoaded', 'ActionError', 'ConnectionError',
         'ConnectionAborted', 'ConnectionCheckFailed', 'NoDevicesFound',
         'SDKVersionMismatch', 'NotPickupable', 'CannotPlaceObjectsOnThis',
-        'RobotBusy']
+        'RobotBusy', 'InvalidOpenGLGlutImplementation']
 
 
 class CozmoSDKException(Exception):
@@ -60,3 +60,6 @@ class CannotPlaceObjectsOnThis(ActionError):
 
 class RobotBusy(ActionError):
     '''Raised if an attempt is made to perform an action while another action is still running.'''
+
+class InvalidOpenGLGlutImplementation(ImportError):
+    '''Raised by opengl viewer if no valid GLUT implementation available.'''

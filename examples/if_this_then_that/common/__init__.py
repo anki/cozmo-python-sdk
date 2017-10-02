@@ -40,8 +40,11 @@ class IFTTTRobot(cozmo.robot.Robot):
         '''If necessary, Move Cozmo's Head and Lift to make it easy to see Cozmo's face'''
         if (self.lift_height.distance_mm > 45) or (self.head_angle.degrees < 40):
             async with self.perform_off_charger():
-                await self.set_lift_height(0.0).wait_for_completed()
-                await self.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE).wait_for_completed()
+                lift_action = self.set_lift_height(0.0, in_parallel=True)
+                head_action = self.set_head_angle(cozmo.robot.MAX_HEAD_ANGLE,
+                                                  in_parallel=True)
+                await lift_action.wait_for_completed()
+                await head_action.wait_for_completed()
 
     def display_image_file_on_face(self, image_name):
         # load image and convert it for display on cozmo's face

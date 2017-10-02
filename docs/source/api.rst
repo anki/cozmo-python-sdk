@@ -20,6 +20,7 @@ The API
     cozmo.nav_memory_map
     cozmo.objects
     cozmo.oled_face
+    cozmo.opengl
     cozmo.pets
     cozmo.robot
     cozmo.robot_alignment

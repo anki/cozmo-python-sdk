@@ -5,11 +5,11 @@
 
 .. image:: images/cozmo-sdk-img.jpg
 
-.. important:: THIS IS THE COZMO SDK BETA. The SDK is under development and is subject to change.
+|
 
-==============================
-Welcome to the Cozmo SDK Beta!
-==============================
+=========================
+Welcome to the Cozmo SDK!
+=========================
 
 .. toctree::
     :maxdepth: 1

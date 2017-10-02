@@ -776,6 +776,16 @@ class Vector2:
         self._x = x
         self._y = y
 
+    def set_to(self, rhs):
+        """Copy the x and y components of the given vector.
+
+        Args:
+            rhs (:class:`Vector2`): The right-hand-side of this assignment - the
+                source vector to copy into this vector.
+        """
+        self._x = rhs.x
+        self._y = rhs.y
+
     @property
     def x(self):
         '''float: The x component.'''
@@ -830,6 +840,17 @@ class Vector3:
         self._x = x
         self._y = y
         self._z = z
+
+    def set_to(self, rhs):
+        """Copy the x, y and z components of the given vector.
+
+        Args:
+            rhs (:class:`Vector3`): The right-hand-side of this assignment - the
+                source vector to copy into this vector.
+        """
+        self._x = rhs.x
+        self._y = rhs.y
+        self._z = rhs.z
 
     @property
     def x(self):

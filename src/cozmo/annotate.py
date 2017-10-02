@@ -29,6 +29,7 @@ The ImageAnnotator instance can be accessed as
 # __all__ should order by constants, event classes, other classes, functions.
 __all__ = ['DEFAULT_OBJECT_COLORS',
            'TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT',
+           'RESAMPLE_MODE_NEAREST', 'RESAMPLE_MODE_BILINEAR',
            'ImageText', 'Annotator', 'ObjectAnnotator', 'FaceAnnotator',
            'PetAnnotator', 'TextAnnotator', 'ImageAnnotator',
            'add_img_box_to_image', 'add_polygon_to_image', 'annotator']
@@ -38,7 +39,7 @@ import collections
 import functools
 
 try:
-    from PIL import ImageDraw
+    from PIL import Image, ImageDraw
 except ImportError:
     ImageDraw = None
 
@@ -68,6 +69,15 @@ TOP_RIGHT = TOP | RIGHT
 
 #: Bottom right position
 BOTTOM_RIGHT = BOTTOM | RIGHT
+
+if ImageDraw is not None:
+    #: Fastest resampling mode, use nearest pixel
+    RESAMPLE_MODE_NEAREST = Image.NEAREST
+    #: Slower, but smoother, resampling mode - linear interpolation from 2x2 grid of pixels
+    RESAMPLE_MODE_BILINEAR = Image.BILINEAR
+else:
+    RESAMPLE_MODE_NEAREST = None
+    RESAMPLE_MODE_BILINEAR = None
 
 
 class ImageText:
@@ -513,16 +523,19 @@ class ImageAnnotator(event.Dispatcher):
             text = ImageText(text, position=position, color=color)
         self.add_annotator(name, TextAnnotator(self, text))
 
-    def annotate_image(self, image, scale=None, fit_size=None):
+    def annotate_image(self, image, scale=None, fit_size=None, resample_mode=RESAMPLE_MODE_NEAREST):
         '''Called by :class:`~cozmo.world.World` to annotate camera images.
 
         Args:
             image (:class:`PIL.Image.Image`): The image to annotate
             scale (float): If set then the base image will be scaled by the
                 supplied multiplier.  Cannot be combined with fit_size
-            fit_size (tuple of int (width, height)):  If set, then scale the
-                image to fit inside the supplied dimensions.  The original
-                aspect ratio will be preserved.  Cannot be combined with scale.
+            fit_size (tuple of int):  If set, then scale the image to fit inside
+                the supplied (width, height) dimensions. The original aspect
+                ratio will be preserved.  Cannot be combined with scale.
+            resample_mode (int): The resampling mode to use when scaling the
+                image. Should be either :attr:`RESAMPLE_MODE_NEAREST` (fast) or
+                :attr:`RESAMPLE_MODE_BILINEAR` (slower, but smoother).
         Returns:
             :class:`PIL.Image.Image`
         '''
@@ -533,7 +546,8 @@ class ImageAnnotator(event.Dispatcher):
             if scale == 1:
                 image = image.copy()
             else:
-                image = image.resize((int(image.width * scale), int(image.height * scale)))
+                image = image.resize((int(image.width * scale), int(image.height * scale)),
+                                     resample=resample_mode)
 
         elif fit_size is not None:
             if fit_size == (image.width, image.height):
