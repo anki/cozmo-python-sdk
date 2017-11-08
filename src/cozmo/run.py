@@ -323,22 +323,19 @@ class TCPConnector(DeviceConnector):
         return self.tcp_port is not None
 
     async def connect(self, loop, protocol_factory, conn_check):
-        try:
-            transport, proto = await loop.create_connection(protocol_factory, self.ip_addr, self.tcp_port)
-            proto.device_info={
-                'device_type': 'tcp',
-                'host': '%s:%s' % (self.ip_addr, self.tcp_port),
-            }
-            if conn_check:
-                try:
-                    await conn_check(proto)
-                except Exception as e:
-                    logger.debug('Failed connection check: %s', e)
-                    raise exceptions.ConnectionCheckFailed('Failed connection check: %s' % e)
-            logger.info("Connected to device on TCP port %d" % self.tcp_port)
-            return transport, proto
-        except Exception as e:
-            raise exceptions.ConnectionError("No connected device running Cozmo in SDK mode on port %d" % self.tcp_port)
+        transport, proto = await loop.create_connection(protocol_factory, self.ip_addr, self.tcp_port)
+        proto.device_info={
+            'device_type': 'tcp',
+            'host': '%s:%s' % (self.ip_addr, self.tcp_port),
+        }
+        if conn_check:
+            try:
+                await conn_check(proto)
+            except Exception as e:
+                logger.debug('Failed connection check: %s', e)
+                raise
+        logger.info("Connected to device on TCP port %d" % self.tcp_port)
+        return transport, proto
 
 
 class FirstAvailableConnector(DeviceConnector):
@@ -363,11 +360,12 @@ class FirstAvailableConnector(DeviceConnector):
     async def connect(self, loop, protocol_factory, conn_check):
         conn_args = (loop, protocol_factory, conn_check)
 
+        tcp_result = None
         if self.tcp.enabled:
-            result = await self._do_connect(self.tcp, *conn_args)
-            if not isinstance(result, BaseException):
-                return result
-            logger.warning('No TCP connection found running Cozmo: %s', result)
+            tcp_result = await self._do_connect(self.tcp, *conn_args)
+            if not isinstance(tcp_result, BaseException):
+                return tcp_result
+            logger.warning('No TCP connection found running Cozmo: %s', tcp_result)
 
         android_result = await self._do_connect(self.android, *conn_args)
         if not isinstance(android_result, BaseException):
@@ -379,6 +377,13 @@ class FirstAvailableConnector(DeviceConnector):
 
         logger.warning('No iOS device found running Cozmo: %s', ios_result)
         logger.warning('No Android device found running Cozmo: %s', android_result)
+
+        if isinstance(tcp_result, exceptions.SDKVersionMismatch):
+            raise tcp_result
+        if isinstance(ios_result, exceptions.SDKVersionMismatch):
+            raise ios_result
+        if isinstance(android_result, exceptions.SDKVersionMismatch):
+            raise android_result
 
         raise exceptions.NoDevicesFound('No devices connected running Cozmo in SDK mode')
 

@@ -38,6 +38,7 @@ class CLADProtocol(asyncio.Protocol):
         super().__init__()
 
         self._buf = bytearray()
+        self._abort_connection = False  # abort connection on failed handshake, ignore subsequent messages!
 
     def connection_made(self, transport):
         self.transport = transport
@@ -50,7 +51,7 @@ class CLADProtocol(asyncio.Protocol):
         self._buf.extend(data)
         # pull clad messages out
 
-        while True:
+        while not self._abort_connection:
             msg = self.decode_msg()
             # must compare msg against None, not just "if not msg" as the latter
             # would match against any message with len==0 (which is the case
