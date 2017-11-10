@@ -724,19 +724,26 @@ class Quaternion:
 
     @property
     def euler_angles(self):
-        # convert from matrix space into euler space
+        '''class:`Vector3`: The pitch, yaw, roll Euler components of the object's rotation defined as rotations in the x, y, and z axis respectively.'''
+        # convert to matrix
         matrix = self.to_matrix()
+
+        # normalize the magnitudes of cos(roll)*sin(pitch) (i.e. m12) and cos(roll)*cos(pitch) (ie. m22), to isolate
+        # cos(roll) to be compared against -sin(roll) (m02).  Unfortunately, this omits results with an absolute angle larger than 90 degrees on roll.
         sy = math.sqrt(matrix.m12*matrix.m12 + matrix.m22*matrix.m22)
         singular = sy < 1e-6
         if not singular:
+            # general case euler decomposition
             pitch = math.atan2(matrix.m22, matrix.m12)
             yaw = math.atan2(matrix.m00, matrix.m01)
             roll = math.atan2(sy, -matrix.m02)
         else:
+            # special case euler angle decomposition near gimbal lock
             pitch = math.atan2(matrix.m11, -matrix.m21)
             yaw = 0
             roll = math.atan2(sy, -matrix.m02)
 
+        # adjust roll to be consistent with how we orient the device
         roll = math.pi/2 - roll
         if roll > math.pi:
             roll -= math.pi * 2
