@@ -819,6 +819,7 @@ def handle_setDeviceGyroEnabled():
             remote_control_cozmo.is_device_gyro_mode_enabled = True
         else:
             remote_control_cozmo.is_device_gyro_mode_enabled = False
+            # stop movement when turning off gyro mode
             remote_control_cozmo.cozmo.drive_wheels(0, 0, 0, 0)
     return ""
 
