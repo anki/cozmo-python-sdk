@@ -722,6 +722,27 @@ class Quaternion:
         q0,q1,q2,q3 = self.q0_q1_q2_q3
         return Angle(radians=math.atan2(2*(q1*q2+q0*q3), 1-2*(q2**2+q3**2)))
 
+    @property
+    def euler_angles(self):
+        # convert from matrix space into euler space
+        matrix = self.to_matrix()
+        sy = math.sqrt(matrix.m12*matrix.m12 + matrix.m22*matrix.m22)
+        singular = sy < 1e-6
+        if not singular:
+            pitch = math.atan2(matrix.m22, matrix.m12)
+            yaw = math.atan2(matrix.m00, matrix.m01)
+            roll = math.atan2(sy, -matrix.m02)
+        else:
+            pitch = math.atan2(matrix.m11, -matrix.m21)
+            yaw = 0
+            roll = math.atan2(sy, -matrix.m02)
+
+        roll = math.pi/2 - roll
+        if roll > math.pi:
+            roll -= math.pi * 2
+
+        return Vector3(pitch, yaw, roll)
+
 
 class Rotation(Quaternion):
     '''An alias for :class:`Quaternion`'''

@@ -21,10 +21,12 @@ This example lets you control Cozmo by Remote Control, using a webpage served by
 
 import json
 import sys
+from threading import Event, Thread
 
 sys.path.append('../lib/')
 import flask_helpers
 import cozmo
+import math
 
 
 try:
@@ -105,6 +107,8 @@ flask_app = Flask(__name__)
 remote_control_cozmo = None
 _default_camera_image = create_default_image(320, 240)
 _is_mouse_look_enabled_by_default = False
+_is_device_gyro_mode_enabled_by_default = False
+_gyro_driving_deadzone_ratio = 0.025
 
 _display_debug_annotations = DEBUG_ANNOTATIONS_ENABLED_ALL
 
@@ -138,6 +142,7 @@ class RemoteControlCozmo:
         self.go_slow = 0
 
         self.is_mouse_look_enabled = _is_mouse_look_enabled_by_default
+        self.is_device_gyro_mode_enabled = _is_device_gyro_mode_enabled_by_default
         self.mouse_dir = 0
 
         all_anim_names = list(self.cozmo.anim_names)
@@ -193,7 +198,7 @@ class RemoteControlCozmo:
         if self.is_mouse_look_enabled:
             mouse_sensitivity = 1.5 # higher = more twitchy
             self.mouse_dir = remap_to_range(mouse_x, 0.0, 1.0, -mouse_sensitivity, mouse_sensitivity)
-            self.update_driving()
+            self.update_mouse_driving()
 
             desired_head_angle = remap_to_range(mouse_y, 0.0, 1.0, 45, -25)
             head_angle_delta = desired_head_angle - self.cozmo.head_angle.degrees
@@ -208,7 +213,7 @@ class RemoteControlCozmo:
             # cancel any current mouse-look turning
             self.mouse_dir = 0
             if was_mouse_look_enabled:
-                self.update_driving()
+                self.update_mouse_driving()
                 self.update_head()
 
 
@@ -262,7 +267,7 @@ class RemoteControlCozmo:
 
         # Update driving, head and lift as appropriate
         if update_driving:
-            self.update_driving()
+            self.update_mouse_driving()
         if update_head:
             self.update_head()
         if update_lift:
@@ -368,8 +373,34 @@ class RemoteControlCozmo:
             head_vel = (self.head_up - self.head_down) * head_speed
             self.cozmo.move_head(head_vel)
 
+    def update_driving(self, drive_dir, turn_dir):
 
-    def update_driving(self):
+        forward_speed = self.pick_speed(150, 75, 50)
+        turn_speed = self.pick_speed(100, 50, 30)
+
+        l_wheel_speed = (drive_dir * forward_speed) + (turn_speed * turn_dir)
+        r_wheel_speed = (drive_dir * forward_speed) - (turn_speed * turn_dir)
+
+        self.cozmo.drive_wheels(l_wheel_speed, r_wheel_speed, l_wheel_speed*4, r_wheel_speed*4)
+
+    def scale_deadzone(self, value, deadzone, maximum):
+        if math.fabs(value) > deadzone:
+            adjustment = math.copysign(deadzone, value)
+            scaleFactor = maximum / (maximum - deadzone)
+            return (value - adjustment) * scaleFactor
+        else:
+            return 0
+
+    def update_gyro_driving(self):
+        if self.is_device_gyro_mode_enabled and self.cozmo.device_gyro:
+            eulerAngles = self.cozmo.device_gyro.euler_angles
+            # these are multiplied by 2 because 90 degress feels better for full velocity than 180 degrees
+            drive_dir = self.scale_deadzone(eulerAngles.x/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
+            turn_dir = self.scale_deadzone(eulerAngles.z/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
+
+            self.update_driving(drive_dir, turn_dir)
+
+    def update_mouse_driving(self):
         drive_dir = (self.drive_forwards - self.drive_back)
 
         if (drive_dir > 0.1) and self.cozmo.is_on_charger:
@@ -387,14 +418,7 @@ class RemoteControlCozmo:
             # It feels more natural to turn the opposite way when reversing
             turn_dir = -turn_dir
 
-        forward_speed = self.pick_speed(150, 75, 50)
-        turn_speed = self.pick_speed(100, 50, 30)
-
-        l_wheel_speed = (drive_dir * forward_speed) + (turn_speed * turn_dir)
-        r_wheel_speed = (drive_dir * forward_speed) - (turn_speed * turn_dir)
-
-        self.cozmo.drive_wheels(l_wheel_speed, r_wheel_speed, l_wheel_speed*4, r_wheel_speed*4)
-
+        self.update_driving(drive_dir, turn_dir)
 
 def get_anim_sel_drop_down(selectorIndex):
     html_text = '''<select onchange="handleDropDownSelect(this)" name="animSelector''' + str(selectorIndex) + '''">'''
@@ -460,6 +484,7 @@ def handle_index_page():
                         <b>L</b> : Toggle IR Headlight: <button id="headlightId" onClick=onHeadlightButtonClicked(this) style="font-size: 14px">Default</button><br>
                         <b>O</b> : Toggle Debug Annotations: <button id="debugAnnotationsId" onClick=onDebugAnnotationsButtonClicked(this) style="font-size: 14px">Default</button><br>
                         <b>P</b> : Toggle Free Play mode: <button id="freeplayId" onClick=onFreeplayButtonClicked(this) style="font-size: 14px">Default</button><br>
+                        <b>Y</b> : Toggle Device Gyro mode: <button id="deviceGyroId" onClick=onDeviceGyroButtonClicked(this) style="font-size: 14px">Default</button><br>
                         <h3>Play Animations</h3>
                         <b>0 .. 9</b> : Play Animation mapped to that key<br>
                         <h3>Talk</h3>
@@ -480,6 +505,7 @@ def handle_index_page():
                 var gAreDebugAnnotationsEnabled = '''+ str(_display_debug_annotations) + '''
                 var gIsHeadlightEnabled = false
                 var gIsFreeplayEnabled = false
+                var gIsDeviceGyroEnabled = false
 
                 function postHttpRequest(url, dataSet)
                 {
@@ -577,10 +603,19 @@ def handle_index_page():
                     postHttpRequest("setFreeplayEnabled", {isFreeplayEnabled})
                 }
 
+                function onDeviceGyroButtonClicked(button)
+                {
+                    gIsDeviceGyroEnabled = !gIsDeviceGyroEnabled;
+                    updateButtonEnabledText(button, gIsDeviceGyroEnabled);
+                    isDeviceGyroEnabled = gIsDeviceGyroEnabled
+                    postHttpRequest("setDeviceGyroEnabled", {isDeviceGyroEnabled})
+                }
+
                 updateButtonEnabledText(document.getElementById("mouseLookId"), gIsMouseLookEnabled);
                 updateButtonEnabledText(document.getElementById("headlightId"), gIsHeadlightEnabled);
                 updateDebugAnnotationButtonEnabledText(document.getElementById("debugAnnotationsId"), gAreDebugAnnotationsEnabled);
                 updateButtonEnabledText(document.getElementById("freeplayId"), gIsFreeplayEnabled);
+                updateButtonEnabledText(document.getElementById("deviceGyroId"), gIsDeviceGyroEnabled);
 
                 function handleDropDownSelect(selectObject)
                 {
@@ -617,6 +652,11 @@ def handle_index_page():
                         {
                             // Simulate a click of the mouse look button
                             onMouseLookButtonClicked(document.getElementById("mouseLookId"))
+                        }
+                        else if (keyCode == 89) // 'Y'
+                        {
+                            // Simulate a click of the device gyro button
+                            onDeviceGyroButtonClicked(document.getElementById("deviceGyroId"))
                         }
                     }
 
@@ -769,6 +809,20 @@ def handle_setFreeplayEnabled():
     return ""
 
 
+@flask_app.route('/setDeviceGyroEnabled', methods=['POST'])
+def handle_setDeviceGyroEnabled():
+    '''Called from Javascript whenever device gyro mode is toggled on/off'''
+    message = json.loads(request.data.decode("utf-8"))
+    if remote_control_cozmo:
+        isDeviceGyroEnabled = message['isDeviceGyroEnabled']
+        if isDeviceGyroEnabled:
+            remote_control_cozmo.is_device_gyro_mode_enabled = True
+        else:
+            remote_control_cozmo.is_device_gyro_mode_enabled = False
+            remote_control_cozmo.cozmo.drive_wheels(0, 0, 0, 0)
+    return ""
+
+
 @flask_app.route('/keydown', methods=['POST'])
 def handle_keydown():
     '''Called from Javascript whenever a key is down (note: can generate repeat calls if held down)'''
@@ -818,6 +872,13 @@ def handle_getDebugInfo():
         '''
     return ""
 
+def call_repeatedly(interval, func, *args):
+    stopped = Event()
+    def loop():
+        while not stopped.wait(interval): # the first call is in `interval` secs
+            func(*args)
+    Thread(target=loop).start()
+    return stopped.set
 
 def run(sdk_conn):
     robot = sdk_conn.wait_for_robot()
@@ -829,6 +890,8 @@ def run(sdk_conn):
 
     # Turn on image receiving by the camera
     robot.camera.image_stream_enabled = True
+
+    call_repeatedly(0.1, remote_control_cozmo.update_gyro_driving)
 
     flask_helpers.run_flask(flask_app)
 
