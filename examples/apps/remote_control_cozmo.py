@@ -892,6 +892,7 @@ def run(sdk_conn):
     # Turn on image receiving by the camera
     robot.camera.image_stream_enabled = True
 
+    # call the optional gyro update function ten times per second
     call_repeatedly(0.1, remote_control_cozmo.update_gyro_driving)
 
     flask_helpers.run_flask(flask_app)
