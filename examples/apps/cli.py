@@ -19,8 +19,13 @@
 This is an example of integrating Cozmo with an ipython-based command line interface.
 '''
 
-from IPython.terminal.embed import InteractiveShellEmbed
-from IPython.terminal.prompts import Prompts, Token
+import sys
+
+try:
+    from IPython.terminal.embed import InteractiveShellEmbed
+    from IPython.terminal.prompts import Prompts, Token
+except ImportError:
+    sys.exit('Cannot import from ipython: Do `pip3 install ipython` to install')
 
 import cozmo
 

@@ -19,7 +19,10 @@
 This example lets you control Cozmo by Remote Control, using a webpage served by Flask.
 '''
 
+import asyncio
+import io
 import json
+import requests
 import sys
 
 sys.path.append('../lib/')
@@ -488,20 +491,7 @@ def handle_index_page():
                     xhr.send( JSON.stringify( dataSet ) );
                 }
 
-                function updateImage()
-                {
-                    // Note: Firefox ignores the no_store and still caches, needs the "?UID" suffix to fool it
-                    document.getElementById("cozmoImageId").src="cozmoImage?" + (new Date()).getTime();
-                }
-                setInterval(updateImage , 90); // repeat every X ms
-
                 function updateCozmo()
-                {
-                    postHttpRequest("updateCozmo", {} )
-                }
-                setInterval(updateCozmo , 60);
-
-                function updateDebugInfo()
                 {
                     var xhr = new XMLHttpRequest();
                     xhr.onreadystatechange = function() {
@@ -510,10 +500,11 @@ def handle_index_page():
                         }
                     }
 
-                    xhr.open("POST", "getDebugInfo", true);
+                    xhr.open("POST", "updateCozmo", true);
                     xhr.send( null );
+                    setTimeout(updateCozmo , 60);
                 }
-                setInterval(updateDebugInfo, 60); // repeat every X ms
+                setTimeout(updateCozmo , 60);
 
                 function updateButtonEnabledText(button, isEnabled)
                 {
@@ -671,38 +662,31 @@ def handle_index_page():
     </html>
     '''
 
-
-@flask_app.route('/updateCozmo', methods=['POST'])
-def handle_updateCozmo():
-    '''Called very frequently from Javascript to provide an update loop'''
-    if remote_control_cozmo:
-        remote_control_cozmo.update()
-    return ""
-
-
-@flask_app.route("/cozmoImage")
-def handle_cozmoImage():
-    '''Called very frequently from Javascript to request the latest camera image'''
-    if remote_control_cozmo:
-        try:
-            image = remote_control_cozmo.cozmo.world.latest_image
-            if image:
+def streaming_video(url_root):
+    '''Video streaming generator function'''
+    try:
+        while True:
+            if remote_control_cozmo:
+                image = remote_control_cozmo.cozmo.world.latest_image
                 if _display_debug_annotations != DEBUG_ANNOTATIONS_DISABLED:
                     image = image.annotate_image(scale=2)
                 else:
                     image = image.raw_image
 
-                return flask_helpers.serve_pil_image(image)
-        except cozmo.exceptions.SDKShutdown:
-            # SDK is shutting down - Flask will block and spam errors here - force it to exit
-            shutdown_func = request.environ.get('werkzeug.server.shutdown')
-            if shutdown_func is not None:
-                cozmo.logger.info("Shutting down Flask")
-                shutdown_func()
+                img_io = io.BytesIO()
+                image.save(img_io, 'PNG')
+                img_io.seek(0)
+                yield (b'--frame\r\n'
+                    b'Content-Type: image/png\r\n\r\n' + img_io.getvalue() + b'\r\n')
             else:
-                sys.exit("SDKShutdown")
-    return flask_helpers.serve_pil_image(_default_camera_image)
+                asyncio.sleep(.1)
+    except cozmo.exceptions.SDKShutdown:
+        # Tell the main flask thread to shutdown
+        requests.post(url_root + 'shutdown')
 
+@flask_app.route("/cozmoImage")
+def handle_cozmoImage():
+    return flask_helpers.stream_video(streaming_video, request.url_root)
 
 def handle_key_event(key_request, is_key_down):
     message = json.loads(key_request.data.decode("utf-8"))
@@ -712,6 +696,10 @@ def handle_key_event(key_request, is_key_down):
                                         is_key_down=is_key_down)
     return ""
 
+@flask_app.route('/shutdown', methods=['POST'])
+def shutdown():
+    flask_helpers.shutdown_flask(request)
+    return ""
 
 @flask_app.route('/mousemove', methods=['POST'])
 def handle_mousemove():
@@ -805,9 +793,10 @@ def handle_sayText():
     return ""
 
 
-@flask_app.route('/getDebugInfo', methods=['POST'])
-def handle_getDebugInfo():
+@flask_app.route('/updateCozmo', methods=['POST'])
+def handle_updateCozmo():
     if remote_control_cozmo:
+        remote_control_cozmo.update()
         action_queue_text = ""
         i = 1
         for action in remote_control_cozmo.action_queue:
@@ -837,5 +826,7 @@ if __name__ == '__main__':
     cozmo.robot.Robot.drive_off_charger_on_connect = False  # RC can drive off charger if required
     try:
         cozmo.connect(run)
+    except KeyboardInterrupt as e:
+        pass
     except cozmo.ConnectionError as e:
         sys.exit("A connection error occurred: %s" % e)
