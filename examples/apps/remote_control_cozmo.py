@@ -353,6 +353,9 @@ class RemoteControlCozmo:
             queued_action, action_args = self.action_queue[0]
             if queued_action(action_args):
                 self.action_queue.pop(0)
+        # Update gyro
+        if self.is_device_gyro_mode_enabled and self.cozmo.device_gyro:
+            self.update_gyro_driving()
 
 
     def pick_speed(self, fast_speed, mid_speed, slow_speed):
@@ -384,7 +387,7 @@ class RemoteControlCozmo:
         l_wheel_speed = (drive_dir * forward_speed) + (turn_speed * turn_dir)
         r_wheel_speed = (drive_dir * forward_speed) - (turn_speed * turn_dir)
 
-        self.cozmo.drive_wheels(l_wheel_speed, r_wheel_speed, l_wheel_speed*4, r_wheel_speed*4)
+        self.cozmo.drive_wheels(l_wheel_speed, r_wheel_speed, 250, 250)
 
     def scale_deadzone(self, value, deadzone, maximum):
         if math.fabs(value) > deadzone:
@@ -395,13 +398,11 @@ class RemoteControlCozmo:
             return 0
 
     def update_gyro_driving(self):
-        if self.is_device_gyro_mode_enabled and self.cozmo.device_gyro:
-            eulerAngles = self.cozmo.device_gyro.euler_angles
-            # these are multiplied by 2 because 90 degress feels better for full velocity than 180 degrees
-            drive_dir = self.scale_deadzone(eulerAngles.x/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
-            turn_dir = self.scale_deadzone(eulerAngles.z/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
-
-            self.update_driving(drive_dir, turn_dir)
+        eulerAngles = self.cozmo.device_gyro.euler_angles
+        # these are multiplied by 2 because 90 degress feels better for full velocity than 180 degrees
+        drive_dir = self.scale_deadzone(eulerAngles.x/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
+        turn_dir = self.scale_deadzone(eulerAngles.z/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
+        self.update_driving( drive_dir, turn_dir )
 
     def update_mouse_driving(self):
         drive_dir = (self.drive_forwards - self.drive_back)
@@ -416,12 +417,10 @@ class RemoteControlCozmo:
                 pass
 
         turn_dir = (self.turn_right - self.turn_left) + self.mouse_dir
-
         if drive_dir < 0:
             # It feels more natural to turn the opposite way when reversing
             turn_dir = -turn_dir
-
-        self.update_driving(drive_dir, turn_dir)
+        self.update_driving( drive_dir, turn_dir )
 
 def get_anim_sel_drop_down(selectorIndex):
     html_text = '''<select onchange="handleDropDownSelect(this)" name="animSelector''' + str(selectorIndex) + '''">'''
@@ -862,14 +861,6 @@ def handle_updateCozmo():
         '''
     return ""
 
-def call_repeatedly(interval, func, *args):
-    stopped = Event()
-    def loop():
-        while not stopped.wait(interval): # the first call is in `interval` secs
-            func(*args)
-    Thread(target=loop).start()
-    return stopped.set
-
 def run(sdk_conn):
     robot = sdk_conn.wait_for_robot()
     robot.world.image_annotator.add_annotator('robotState', RobotStateDisplay)
@@ -880,9 +871,6 @@ def run(sdk_conn):
 
     # Turn on image receiving by the camera
     robot.camera.image_stream_enabled = True
-
-    # call the optional gyro update function ten times per second
-    call_repeatedly(0.1, remote_control_cozmo.update_gyro_driving)
 
     flask_helpers.run_flask(flask_app)
 
