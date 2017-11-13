@@ -252,6 +252,7 @@ class AndroidConnector(DeviceConnector):
         self._exec('-s', serial, 'forward', '--remove', self.portspec)
 
     async def connect(self, loop, protocol_factory, conn_check):
+        version_mismatch = None
         for serial in self._devices():
             if serial in self._connected:
                 continue
@@ -276,6 +277,8 @@ class AndroidConnector(DeviceConnector):
                     try:
                         await conn_check(proto)
                     except Exception as e:
+                        if isinstance(e, exceptions.SDKVersionMismatch):
+                            version_mismatch = e
                         logger.debug('Failed connection check: %s', e)
                         raise
 
@@ -286,6 +289,10 @@ class AndroidConnector(DeviceConnector):
             except:
                 pass
             self._remove_forward(serial)
+
+        if version_mismatch is not None:
+            raise version_mismatch
+
         raise exceptions.ConnectionError("No connected Android devices running Cozmo in SDK mode")
 
     def _disconnect(self, serial):
