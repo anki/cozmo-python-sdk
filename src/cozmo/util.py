@@ -41,6 +41,14 @@ class ImageBox(collections.namedtuple('ImageBox', 'top_left_x top_left_y width h
     the robot's camera view the object, face or pet actually appears.  It's then
     used by the :mod:`cozmo.annotate` module to show an outline of a box around
     the object, face or pet.
+
+    .. py:attribute:: width
+
+        float - The width of the box.
+
+    .. py:attribute:: height
+
+        float - The height of the box.
     '''
     __slots__ = ()
 
@@ -48,6 +56,33 @@ class ImageBox(collections.namedtuple('ImageBox', 'top_left_x top_left_y width h
     def _create_from_clad_rect(cls, img_rect):
         return cls(img_rect.x_topLeft, img_rect.y_topLeft,
                    img_rect.width, img_rect.height)
+
+    @property
+    def left_x(self):
+        """float: The x coordinate of the left of the box."""
+        return self.top_left_x
+
+    @property
+    def right_x(self):
+        """float: The x coordinate of the right of the box."""
+        return self.top_left_x + self.width
+
+    @property
+    def top_y(self):
+        """float: The y coordinate of the top of the box."""
+        return self.top_left_y
+
+    @property
+    def bottom_y(self):
+        """float: The y coordinate of the bottom of the box."""
+        return self.top_left_y + self.height
+
+    @property
+    def center(self):
+        """(float, float): The x,y coordinates of the center of the box."""
+        cen_x = self.top_left_x + (self.width * 0.5)
+        cen_y = self.top_left_y + (self.height * 0.5)
+        return cen_x, cen_y
 
     def __mul__(self, other):
         return ImageBox(self[0] * other, self[1] * other, self[2] * other, self[3] * other)
