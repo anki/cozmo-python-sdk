@@ -277,8 +277,6 @@ class AndroidConnector(DeviceConnector):
                     try:
                         await conn_check(proto)
                     except Exception as e:
-                        if isinstance(e, exceptions.SDKVersionMismatch):
-                            version_mismatch = e
                         logger.debug('Failed connection check: %s', e)
                         raise
 
@@ -286,6 +284,8 @@ class AndroidConnector(DeviceConnector):
                 self._connected.add(serial)
                 _observe_connection_lost(proto, functools.partial(self._disconnect, serial))
                 return transport, proto
+            except exceptions.SDKVersionMismatch as e:
+                version_mismatch = e
             except:
                 pass
             self._remove_forward(serial)
