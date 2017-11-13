@@ -22,6 +22,7 @@ This example lets you control Cozmo by Remote Control, using a webpage served by
 import asyncio
 import io
 import json
+import math
 import requests
 import sys
 from threading import Event, Thread
@@ -29,7 +30,6 @@ from threading import Event, Thread
 sys.path.append('../lib/')
 import flask_helpers
 import cozmo
-import math
 
 
 try:
@@ -380,7 +380,6 @@ class RemoteControlCozmo:
             self.cozmo.move_head(head_vel)
 
     def update_driving(self, drive_dir, turn_dir):
-
         forward_speed = self.pick_speed(150, 75, 50)
         turn_speed = self.pick_speed(100, 50, 30)
 
@@ -398,10 +397,10 @@ class RemoteControlCozmo:
             return 0
 
     def update_gyro_driving(self):
-        eulerAngles = self.cozmo.device_gyro.euler_angles
+        euler_angles = self.cozmo.device_gyro.euler_angles
         # these are multiplied by 2 because 90 degress feels better for full velocity than 180 degrees
-        drive_dir = self.scale_deadzone(eulerAngles.x/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
-        turn_dir = self.scale_deadzone(eulerAngles.z/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
+        drive_dir = self.scale_deadzone(euler_angles[0]/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
+        turn_dir = self.scale_deadzone(euler_angles[2]/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
         self.update_driving( drive_dir, turn_dir )
 
     def update_mouse_driving(self):
@@ -801,8 +800,8 @@ def handle_setDeviceGyroEnabled():
     '''Called from Javascript whenever device gyro mode is toggled on/off'''
     message = json.loads(request.data.decode("utf-8"))
     if remote_control_cozmo:
-        isDeviceGyroEnabled = message['isDeviceGyroEnabled']
-        if isDeviceGyroEnabled:
+        is_device_gyro_enabled = message['isDeviceGyroEnabled']
+        if is_device_gyro_enabled:
             remote_control_cozmo.is_device_gyro_mode_enabled = True
         else:
             remote_control_cozmo.is_device_gyro_mode_enabled = False
