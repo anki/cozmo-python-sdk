@@ -391,9 +391,9 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
             error_message += line_separator
             logger.error(error_message)
 
-            exc = exceptions.SDKVersionMismatch("SDK library does not match software running on device %s != %s" %
-                                                (cozmoclad.__version__,
-                                                 _trimmed_version(msg.buildVersion)))
+            exc = exceptions.SDKVersionMismatch("SDK library does not match software running on device",
+                                                sdk_version=cozmoclad.__version__,
+                                                app_version=_trimmed_version(msg.buildVersion))
 
             self._abort_connection = True  # Ignore remaining messages - they're not safe to unpack
 
