@@ -379,15 +379,6 @@ class RemoteControlCozmo:
             head_vel = (self.head_up - self.head_down) * head_speed
             self.cozmo.move_head(head_vel)
 
-    def update_driving(self, drive_dir, turn_dir):
-        forward_speed = self.pick_speed(150, 75, 50)
-        turn_speed = self.pick_speed(100, 50, 30)
-
-        l_wheel_speed = (drive_dir * forward_speed) + (turn_speed * turn_dir)
-        r_wheel_speed = (drive_dir * forward_speed) - (turn_speed * turn_dir)
-
-        self.cozmo.drive_wheels(l_wheel_speed, r_wheel_speed, 250, 250)
-
     def scale_deadzone(self, value, deadzone, maximum):
         if math.fabs(value) > deadzone:
             adjustment = math.copysign(deadzone, value)
@@ -401,7 +392,15 @@ class RemoteControlCozmo:
         # these are multiplied by 2 because 90 degress feels better for full velocity than 180 degrees
         drive_dir = self.scale_deadzone(euler_angles[0]/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
         turn_dir = self.scale_deadzone(euler_angles[2]/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
-        self.update_driving( drive_dir, turn_dir )
+
+        forward_speed = 250
+        turn_speed = 250
+        wheel_acceleration = 250
+
+        l_wheel_speed = (drive_dir * forward_speed) + (turn_speed * turn_dir)
+        r_wheel_speed = (drive_dir * forward_speed) - (turn_speed * turn_dir)
+
+        self.cozmo.drive_wheels(l_wheel_speed, r_wheel_speed, wheel_acceleration, wheel_acceleration)
 
     def update_mouse_driving(self):
         drive_dir = (self.drive_forwards - self.drive_back)
@@ -419,7 +418,14 @@ class RemoteControlCozmo:
         if drive_dir < 0:
             # It feels more natural to turn the opposite way when reversing
             turn_dir = -turn_dir
-        self.update_driving( drive_dir, turn_dir )
+
+        forward_speed = self.pick_speed(150, 75, 50)
+        turn_speed = self.pick_speed(100, 50, 30)
+
+        l_wheel_speed = (drive_dir * forward_speed) + (turn_speed * turn_dir)
+        r_wheel_speed = (drive_dir * forward_speed) - (turn_speed * turn_dir)
+
+        self.cozmo.drive_wheels(l_wheel_speed, r_wheel_speed, l_wheel_speed*4, r_wheel_speed*4 )
 
 def get_anim_sel_drop_down(selectorIndex):
     html_text = '''<select onchange="handleDropDownSelect(this)" name="animSelector''' + str(selectorIndex) + '''">'''
