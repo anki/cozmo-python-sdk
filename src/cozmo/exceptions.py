@@ -51,9 +51,14 @@ class NoDevicesFound(ConnectionError):
 
 class SDKVersionMismatch(ConnectionError):
     '''Raised if the Cozmo SDK version is not compatible with the software running on the device.'''
-    def __init__(self, message, sdk_version, app_version, *args):
-        super().__init__(message, sdk_version, app_version, *args)
+    def __init__(self, message, sdk_version, sdk_app_version, app_version, *args):
+        super().__init__(message, sdk_version, sdk_app_version, app_version, *args)
+        #: str: The SDK version number in Major.Minor.Patch format.
+        #: See :ref:`sdk-versions` for which App version is compatible with each SDK version.
         self.sdk_version = sdk_version
+        #: str: The version of the App that this SDK is compatible with in Major.Minor.Patch format.
+        self.sdk_app_version = sdk_app_version
+        #: str: The version of the App that was detected, and is incompatible, in Major.Minor.Patch format.
         self.app_version = app_version
 
 class NotPickupable(ActionError):
