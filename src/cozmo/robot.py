@@ -38,9 +38,9 @@ __all__ = ['MIN_HEAD_ANGLE', 'MAX_HEAD_ANGLE',
            'MIN_LIFT_HEIGHT', 'MIN_LIFT_HEIGHT_MM', 'MAX_LIFT_HEIGHT', 'MAX_LIFT_HEIGHT_MM',
            'MIN_LIFT_ANGLE', 'MAX_LIFT_ANGLE',
            # Event classes
-           'EvtRobotReady', 'EvtRobotStateUpdated',
+           'EvtRobotReady', 'EvtRobotStateUpdated', 'EvtUnexpectedMovement',
            # Helper classes
-           'LiftPosition',
+           'LiftPosition', 'UnexpectedMovementSide', 'UnexpectedMovementType',
            # Robot Action classes
            'DisplayOledFaceImage', 'DockWithCube', 'DriveOffChargerContacts', 'DriveStraight',
            'GoToObject', 'GoToPose', 'PerformOffChargerContext', 'PickupObject',
@@ -51,6 +51,7 @@ __all__ = ['MIN_HEAD_ANGLE', 'MAX_HEAD_ANGLE',
 
 
 import asyncio
+import collections
 import math
 import warnings
 
@@ -68,7 +69,7 @@ from . import util
 from . import world
 from . import robot_alignment
 
-from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo, _clad_to_game_cozmo
+from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo, _clad_to_game_cozmo, CladEnumWrapper
 
 #### Events
 
@@ -81,6 +82,13 @@ class EvtRobotStateUpdated(event.Event):
     '''Dispatched whenever the robot's state is updated (multiple times per second).'''
     robot = "Robot object representing the robot to command"
 
+
+class EvtUnexpectedMovement(event.Event):
+    '''Triggered whenever Cozmo does not move as expected (typically rotation)'''
+    robot = "Robot object representing the robot to command"
+    timestamp = "Robot timestamp for when the unexpected movement occurred"
+    movement_type = "An UnexpectedMovementType Object representing the type of unexpected movement"
+    movement_side = "An UnexpectedMovementSide Object representing the side that is obstructing movement"
 
 #### Constants
 
@@ -1060,6 +1068,12 @@ class Robot(event.Dispatcher):
         self._model_number = msg.modelNumber
         self._hw_version = msg.hwVersion
         self.camera._set_config(msg.cameraConfig)
+
+    def _recv_msg_unexpected_movement(self, evt, *, msg):
+        movement_type = UnexpectedMovementType.find_by_id(msg.movementType)
+        movement_side = UnexpectedMovementSide.find_by_id(msg.movementSide)
+        self.dispatch_event(EvtUnexpectedMovement, robot=self, timestamp=msg.timestamp, 
+                            movement_type=movement_type, movement_side=movement_side)
 
     def _recv_msg_robot_state(self, evt, *, msg):
         self._pose = util.Pose(x=msg.pose.x, y=msg.pose.y, z=msg.pose.z,
@@ -2054,3 +2068,37 @@ class Robot(event.Dispatcher):
     async def wait_for_all_actions_completed(self):
         '''Waits until all SDK-initiated actions are complete.'''
         await self._action_dispatcher.wait_for_all_actions_completed()
+
+
+_UnexpectedMovementSide = collections.namedtuple('_UnexpectedMovementSide', ['name', 'id'])
+
+class UnexpectedMovementSide(CladEnumWrapper):
+    '''Defines the side of collision that caused unexpected movement.
+    
+    This will always be UNKNOWN while reaction triggers are disabled.
+    Call :meth:`cozmo.robot.Robot.enable_all_reaction_triggers` to enable reaction triggers.
+    '''
+    _clad_enum = _clad_to_engine_cozmo.UnexpectedMovementSide
+    _entry_type = _UnexpectedMovementSide
+
+    UNKNOWN = _entry_type("UNKNOWN", _clad_enum.UNKNOWN)
+    FRONT = _entry_type("FRONT", _clad_enum.FRONT)
+    BACK = _entry_type("BACK", _clad_enum.BACK)
+    LEFT = _entry_type("LEFT", _clad_enum.LEFT)
+    RIGHT = _entry_type("RIGHT", _clad_enum.RIGHT)
+
+UnexpectedMovementSide._init_class()
+
+
+_UnexpectedMovementType = collections.namedtuple('_UnexpectedMovementType', ['name', 'id'])
+
+class UnexpectedMovementType(CladEnumWrapper):
+    '''Defines the type of unexpected movement.'''
+    _clad_enum = _clad_to_engine_cozmo.UnexpectedMovementType
+    _entry_type = _UnexpectedMovementType
+
+    TURNED_BUT_STOPPED = _entry_type("TURNED_BUT_STOPPED", _clad_enum.TURNED_BUT_STOPPED)
+    _TURNED_IN_SAME_DIRECTION = _entry_type("TURNED_IN_SAME_DIRECTION", _clad_enum.TURNED_IN_SAME_DIRECTION)
+    TURNED_IN_OPPOSITE_DIRECTION = _entry_type("TURNED_IN_OPPOSITE_DIRECTION", _clad_enum.TURNED_IN_OPPOSITE_DIRECTION)
+
+UnexpectedMovementType._init_class()
