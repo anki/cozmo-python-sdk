@@ -348,15 +348,14 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
             line_separator = "=" * 80
             error_message = "\n" + line_separator + "\n"
 
+            def _trimmed_version(ver_string):
+                # Trim leading zeros from the version string.
+                trimmed_string = ""
+                for i in ver_string.split("."):
+                    trimmed_string += str(int(i)) + "."
+                return trimmed_string[:-1]  # remove trailing "."
+
             if not build_versions_match:
-
-                def _trimmed_version(ver_string):
-                    # Trim leading zeros from the version string.
-                    trimmed_string = ""
-                    for i in ver_string.split("."):
-                        trimmed_string += str(int(i)) + "."
-                    return trimmed_string[:-1]  # remove trailing "."
-
                 error_message += ("App and SDK versions do not match!\n"
                                   "----------------------------------\n"
                                   "SDK's cozmoclad version: %s\n"
@@ -392,7 +391,13 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
             error_message += line_separator
             logger.error(error_message)
 
-            exc = exceptions.SDKVersionMismatch("SDK library does not match software running on device")
+            exc = exceptions.SDKVersionMismatch("SDK library does not match software running on device",
+                                                sdk_version=version.__version__,
+                                                sdk_app_version=cozmoclad.__version__,
+                                                app_version=_trimmed_version(msg.buildVersion))
+
+            self._abort_connection = True  # Ignore remaining messages - they're not safe to unpack
+
             self.abort(exc)
             return
 

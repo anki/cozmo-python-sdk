@@ -1,3 +1,5 @@
+.. _sdk-versions:
+
 ####################
 SDK vs. App Versions
 ####################
