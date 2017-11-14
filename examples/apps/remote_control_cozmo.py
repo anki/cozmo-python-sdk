@@ -25,7 +25,6 @@ import json
 import math
 import requests
 import sys
-from threading import Event, Thread
 
 sys.path.append('../lib/')
 import flask_helpers
