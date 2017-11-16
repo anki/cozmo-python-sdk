@@ -865,6 +865,7 @@ def handle_updateCozmo():
         '''
     return ""
 
+
 def run(sdk_conn):
     robot = sdk_conn.wait_for_robot()
     robot.world.image_annotator.add_annotator('robotState', RobotStateDisplay)
