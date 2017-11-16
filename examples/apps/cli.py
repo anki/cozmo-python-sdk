@@ -44,7 +44,7 @@ ipyshell = InteractiveShellEmbed(banner1='\nWelcome to the Cozmo Shell',
 def cozmo_program(robot: cozmo.robot.Robot):
     '''Invoke the ipython shell while connected to cozmo'''
     default_log_level = cozmo.logger.level
-    cozmo.logger.level = cozmo.logger.WARN
+    cozmo.logger.setLevel('WARN')
     ipyshell(usage)
     cozmo.logger.level = default_log_level
 
