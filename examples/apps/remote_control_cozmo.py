@@ -387,10 +387,10 @@ class RemoteControlCozmo:
             return 0
 
     def update_gyro_driving(self):
-        euler_angles = self.cozmo.device_gyro.euler_angles
+        pitch, yaw, roll = self.cozmo.device_gyro.euler_angles
         # these are multiplied by 2 because 90 degress feels better for full velocity than 180 degrees
-        drive_dir = self.scale_deadzone(euler_angles[0]/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
-        turn_dir = self.scale_deadzone(euler_angles[2]/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
+        drive_dir = self.scale_deadzone(pitch/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
+        turn_dir = self.scale_deadzone(roll/math.pi, _gyro_driving_deadzone_ratio, 1) * 2
 
         forward_speed = 250
         turn_speed = 250

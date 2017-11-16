@@ -719,16 +719,20 @@ class Quaternion:
     @property
     def angle_z(self):
         '''class:`Angle`: The z Euler component of the object's rotation.
-            Defined as the rotation in the z axis.
+
+        Defined as the rotation in the z axis.
         '''
         q0,q1,q2,q3 = self.q0_q1_q2_q3
         return Angle(radians=math.atan2(2*(q1*q2+q0*q3), 1-2*(q2**2+q3**2)))
 
     @property
     def euler_angles(self):
-        '''class:`Vector3`: The pitch, yaw, roll Euler components of the
-            object's rotation defined as rotations in the x, y, and z axis
-            respectively.
+        '''tuple of float: Euler angles of an object.
+
+        Returns the pitch, yaw, roll Euler components of the object's
+        rotation defined as rotations in the x, y, and z axis respectively.
+
+        It interprets the rotations performed in the order: Z, Y, X
         '''
         # convert to matrix
         matrix = self.to_matrix()
@@ -737,25 +741,25 @@ class Quaternion:
         #   cos(roll)*cos(pitch) (ie. m22), to isolate cos(roll) to be compared
         #   against -sin(roll) (m02).  Unfortunately, this omits results with an
         #   absolute angle larger than 90 degrees on roll.
-        absoluteCosRoll = math.sqrt(matrix.m12*matrix.m12+matrix.m22*matrix.m22)
-        nearGimbalLock = absoluteCosRoll < 1e-6
-        if not nearGimbalLock:
+        absolute_cos_roll = math.sqrt(matrix.m12*matrix.m12+matrix.m22*matrix.m22)
+        near_gimbal_lock = absolute_cos_roll < 1e-6
+        if not near_gimbal_lock:
             # general case euler decomposition
             pitch = math.atan2(matrix.m22, matrix.m12)
             yaw = math.atan2(matrix.m00, matrix.m01)
-            roll = math.atan2(absoluteCosRoll, -matrix.m02)
+            roll = math.atan2(absolute_cos_roll, -matrix.m02)
         else:
             # special case euler angle decomposition near gimbal lock
             pitch = math.atan2(matrix.m11, -matrix.m21)
             yaw = 0
-            roll = math.atan2(absoluteCosRoll, -matrix.m02)
+            roll = math.atan2(absolute_cos_roll, -matrix.m02)
 
         # adjust roll to be consistent with how we orient the device
         roll = math.pi * 0.5 - roll
         if roll > math.pi:
             roll -= math.pi * 2
 
-        return [pitch, yaw, roll]
+        return pitch, yaw, roll
 
 
 class Rotation(Quaternion):
