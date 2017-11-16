@@ -2084,11 +2084,21 @@ class UnexpectedMovementSide(CladEnumWrapper):
     _clad_enum = _clad_to_engine_cozmo.UnexpectedMovementSide
     _entry_type = _UnexpectedMovementSide
 
-    UNKNOWN = _entry_type("UNKNOWN", _clad_enum.UNKNOWN)
-    FRONT = _entry_type("FRONT", _clad_enum.FRONT)
-    BACK = _entry_type("BACK", _clad_enum.BACK)
-    LEFT = _entry_type("LEFT", _clad_enum.LEFT)
-    RIGHT = _entry_type("RIGHT", _clad_enum.RIGHT)
+    #: Unable to tell what side obstructed movement. 
+    #: Usually caused by reaction triggers being disabled.
+    Unknown = _entry_type("Unknown", _clad_enum.UNKNOWN)
+
+    #: Obstruction detected in front of the robot.
+    Front = _entry_type("Front", _clad_enum.FRONT)
+
+    #: Obstruction detected behind the robot.
+    Back = _entry_type("Back", _clad_enum.BACK)
+
+    #: Obstruction detected to the left of the robot
+    Left = _entry_type("Left", _clad_enum.LEFT)
+
+    #: Obstruction detected to the right of the robot
+    Right = _entry_type("Right", _clad_enum.RIGHT)
 
 UnexpectedMovementSide._init_class()
 
@@ -2100,8 +2110,15 @@ class UnexpectedMovementType(CladEnumWrapper):
     _clad_enum = _clad_to_engine_cozmo.UnexpectedMovementType
     _entry_type = _UnexpectedMovementType
 
-    TURNED_BUT_STOPPED = _entry_type("TURNED_BUT_STOPPED", _clad_enum.TURNED_BUT_STOPPED)
-    _TURNED_IN_SAME_DIRECTION = _entry_type("TURNED_IN_SAME_DIRECTION", _clad_enum.TURNED_IN_SAME_DIRECTION)
-    TURNED_IN_OPPOSITE_DIRECTION = _entry_type("TURNED_IN_OPPOSITE_DIRECTION", _clad_enum.TURNED_IN_OPPOSITE_DIRECTION)
+    #: Tried to turn, but couldn't.
+    TurnedButStopped = _entry_type("TurnedButStopped", _clad_enum.TURNED_BUT_STOPPED)
+    
+    # Turned in the expected direction, but turned further than expected. 
+    # Currently unused.
+    _TurnedInSameDirection = _entry_type("TurnedInSameDirection", _clad_enum.TURNED_IN_SAME_DIRECTION)
+    
+    #: Expected to turn in one direction, but turned the other way. 
+    #: Also happens when rotation is unexpected.
+    TurnedInOppositeDirection = _entry_type("TurnedInOppositeDirection", _clad_enum.TURNED_IN_OPPOSITE_DIRECTION)
 
 UnexpectedMovementType._init_class()
