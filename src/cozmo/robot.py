@@ -74,7 +74,7 @@ from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo, _clad_to_game_c
 #### Events
 
 class EvtRobotReady(event.Event):
-    '''Generated when the robot has been initialized and is ready for commands'''
+    '''Generated when the robot has been initialized and is ready for commands.'''
     robot = "Robot object representing the robot to command"
 
 
@@ -84,7 +84,7 @@ class EvtRobotStateUpdated(event.Event):
 
 
 class EvtUnexpectedMovement(event.Event):
-    '''Triggered whenever Cozmo does not move as expected (typically rotation)'''
+    '''Triggered whenever the robot does not move as expected (typically rotation).'''
     robot = "Robot object representing the robot to command"
     timestamp = "Robot timestamp for when the unexpected movement occurred"
     movement_type = "An UnexpectedMovementType Object representing the type of unexpected movement"
@@ -1060,6 +1060,9 @@ class Robot(event.Dispatcher):
         self.camera.dispatch_event(evt)
 
     def _recv_msg_current_camera_params(self, evt, *, msg):
+        self.camera.dispatch_event(evt)
+
+    def _recv_msg_robot_observed_motion(self, evt, *, msg):
         self.camera.dispatch_event(evt)
 
     def _recv_msg_per_robot_settings(self, evt, *, msg):
