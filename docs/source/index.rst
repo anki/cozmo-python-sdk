@@ -20,7 +20,6 @@ Welcome to the Cozmo SDK!
     install-windows.rst
     install-linux.rst
     adb.rst
-    vagrant.rst
 
 .. toctree::
     :maxdepth: 2
