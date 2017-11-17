@@ -1,5 +1,7 @@
 .. _vagrant-guide:
 
+:orphan:
+
 #####################################
 Alternate Install via Virtual Machine
 #####################################
