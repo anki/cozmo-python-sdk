@@ -100,15 +100,6 @@ class EvtRobotObservedMotion(event.Event):
     ground_area = "Area of the supporting region for the point, as a fraction of the ground ROI"
     ground_pos = "Approximate coordinates of observed motion on the ground, relative to robot, in mm"
 
-    has_top_movement = "Movement detected near the top of the robot's view"
-    top_img_pos = "Coordinates of the centroid of observed motion, relative to top-left corner"
-
-    has_left_movement = "Movement detected near the left edge of the robot's view"
-    left_img_pos = "Coordinates of the centroid of observed motion, relative to top-left corner"
-
-    has_right_movement = "Movement detected near the right edge of the robot's view"
-    right_img_pos = "Coordinates of the centroid of observed motion, relative to top-left corner"
-
 
 class CameraConfig:
     """The fixed properties for Cozmo's Camera
@@ -430,13 +421,7 @@ class Camera(event.Dispatcher):
                             img_area=msg.img_area,
                             img_pos=util.Vector2(msg.img_x, msg.img_y),
                             ground_area=msg.ground_area,
-                            ground_pos=util.Vector2(msg.ground_x, msg.ground_y),
-                            has_top_movement=(msg.top_img_area > 0),
-                            top_img_pos=util.Vector2(msg.top_img_x, msg.top_img_y),
-                            has_left_movement=(msg.left_img_area > 0),
-                            left_img_pos=util.Vector2(msg.left_img_x, msg.left_img_y),
-                            has_right_movement=(msg.right_img_area > 0),
-                            right_img_pos=util.Vector2(msg.right_img_x, msg.right_img_y))
+                            ground_pos=util.Vector2(msg.ground_x, msg.ground_y))
 
     def _process_completed_image(self):
         data = self._partial_data[0:self._partial_size]
