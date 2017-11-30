@@ -22,7 +22,6 @@ This example lets you control Cozmo by Remote Control, using a webpage served by
 import asyncio
 import io
 import json
-import requests
 import sys
 
 sys.path.append('../lib/')
@@ -39,6 +38,11 @@ try:
     from PIL import Image, ImageDraw
 except ImportError:
     sys.exit("Cannot import from PIL: Do `pip3 install --user Pillow` to install")
+
+try:
+    import requests
+except ImportError:
+    sys.exit("Cannot import from requests: Do `pip3 install --user requests` to install")
 
 
 DEBUG_ANNOTATIONS_DISABLED = 0
@@ -436,7 +440,8 @@ def handle_index_page():
             <table>
                 <tr>
                     <td valign = top>
-                        <img src="cozmoImage" id="cozmoImageId" width=640, height=480>
+                        <div id="cozmoImageMicrosoftWarning" style="display: none;color: #ff9900; text-align: center;">Video feed performance is better in Chrome or Firefox due to mjpeg limitations in this browser</div>
+                        <img src="cozmoImage" id="cozmoImageId" width=640 height=480>
                         <div id="DebugInfoId"></div>
                     </td>
                     <td width=30></td>
@@ -483,6 +488,13 @@ def handle_index_page():
                 var gAreDebugAnnotationsEnabled = '''+ str(_display_debug_annotations) + '''
                 var gIsHeadlightEnabled = false
                 var gIsFreeplayEnabled = false
+                var gUserAgent = window.navigator.userAgent;
+                var gIsMicrosoftBrowser = gUserAgent.indexOf('MSIE ') > 0 || gUserAgent.indexOf('Trident/') > 0 || gUserAgent.indexOf('Edge/') > 0;
+                var gSkipFrame = false;
+
+                if (gIsMicrosoftBrowser) {
+                    document.getElementById("cozmoImageMicrosoftWarning").style.display = "block";
+                }
 
                 function postHttpRequest(url, dataSet)
                 {
@@ -493,6 +505,14 @@ def handle_index_page():
 
                 function updateCozmo()
                 {
+                    if (gIsMicrosoftBrowser && !gSkipFrame) {
+                        // IE doesn't support MJPEG, so we need to ping the server for more images.
+                        // Though, if this happens too frequently, the controls will be unresponsive.
+                        gSkipFrame = true;
+                        document.getElementById("cozmoImageId").src="cozmoImage?" + (new Date()).getTime();
+                    } else if (gSkipFrame) {
+                        gSkipFrame = false;
+                    }
                     var xhr = new XMLHttpRequest();
                     xhr.onreadystatechange = function() {
                         if (xhr.readyState == XMLHttpRequest.DONE) {
@@ -662,30 +682,50 @@ def handle_index_page():
     </html>
     '''
 
+def get_annotated_image():
+    image = remote_control_cozmo.cozmo.world.latest_image
+    if _display_debug_annotations != DEBUG_ANNOTATIONS_DISABLED:
+        image = image.annotate_image(scale=2)
+    else:
+        image = image.raw_image
+    return image
+
 def streaming_video(url_root):
     '''Video streaming generator function'''
     try:
         while True:
             if remote_control_cozmo:
-                image = remote_control_cozmo.cozmo.world.latest_image
-                if _display_debug_annotations != DEBUG_ANNOTATIONS_DISABLED:
-                    image = image.annotate_image(scale=2)
-                else:
-                    image = image.raw_image
+                image = get_annotated_image()
 
                 img_io = io.BytesIO()
                 image.save(img_io, 'PNG')
                 img_io.seek(0)
                 yield (b'--frame\r\n'
-                    b'Content-Type: image/png\r\n\r\n' + img_io.getvalue() + b'\r\n')
+                       b'Content-Type: image/png\r\n\r\n' + img_io.getvalue() + b'\r\n')
             else:
                 asyncio.sleep(.1)
     except cozmo.exceptions.SDKShutdown:
         # Tell the main flask thread to shutdown
         requests.post(url_root + 'shutdown')
 
+def serve_single_image():
+    if remote_control_cozmo:
+        try:
+            image = get_annotated_image()
+            if image:
+                return flask_helpers.serve_pil_image(image)
+        except cozmo.exceptions.SDKShutdown:
+            requests.post('shutdown')
+    return flask_helpers.serve_pil_image(_default_camera_image)
+
+def is_microsoft_browser(request):
+    agent = request.user_agent.string
+    return 'Edge/' in agent or 'MSIE ' in agent or 'Trident/' in agent
+
 @flask_app.route("/cozmoImage")
 def handle_cozmoImage():
+    if is_microsoft_browser(request):
+        return serve_single_image()
     return flask_helpers.stream_video(streaming_video, request.url_root)
 
 def handle_key_event(key_request, is_key_down):
