@@ -58,6 +58,7 @@ import warnings
 from . import logger, logger_protocol
 from . import action
 from . import anim
+from . import audio
 from . import behavior
 from . import camera
 from . import conn
@@ -69,7 +70,7 @@ from . import util
 from . import world
 from . import robot_alignment
 
-from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo, _clad_to_game_cozmo, CladEnumWrapper
+from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo, _clad_to_engine_anki, _clad_to_game_cozmo, CladEnumWrapper
 
 #### Events
 
@@ -1540,6 +1541,22 @@ class Robot(event.Dispatcher):
                                                     num_retries=num_retries)
         return action
 
+    def play_audio(self, audio_event):
+        '''Starts playing audio on the device.
+
+        Sends an audio event to the engine using the id specified by the 
+        supplied audio_event.
+
+        Args:
+            audio_event (object): An attribute of the :class:`cozmo.audio.AudioEvents` class
+        '''
+        audio_event_id = audio_event.id
+        game_object_id = _clad_to_engine_anki.AudioMetaData.GameObjectType.CodeLab
+
+        msg = _clad_to_engine_anki.AudioEngine.Multiplexer.PostAudioEvent(
+            audioEvent=audio_event_id, gameObject=game_object_id)
+        self.conn.send_msg(msg)
+
     def play_anim_trigger(self, trigger, loop_count=1, in_parallel=False,
                           num_retries=0, use_lift_safe=False, ignore_body_track=False,
                           ignore_head_track=False, ignore_lift_track=False):
@@ -1927,9 +1944,13 @@ class Robot(event.Dispatcher):
 
         Args:
             target_object (:class:`cozmo.objects.LightCube`): The cube to dock with.
-            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.  For example, 180 degrees will cause cozmo to drive past the cube and approach it from behind.
-            alignment_type (:class:`cozmo.robot_alignment.RobotAlignmentTypes`): which part of the robot to line up with the front of the object.
-            distance_from_marker (:class:`cozmo.util.Distance`): distance from the cube marker to stop when using Custom alignment
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the
+                cube from.  For example, 180 degrees will cause cozmo to drive 
+                past the cube and approach it from behind.
+            alignment_type (:class:`cozmo.robot_alignment.RobotAlignmentTypes`):
+                which part of the robot to line up with the front of the object.
+            distance_from_marker (:class:`cozmo.util.Distance`): distance from 
+                the cube marker to stop when using Custom alignment
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
                 be already complete.
@@ -1956,8 +1977,12 @@ class Robot(event.Dispatcher):
 
         Args:
             target_object (:class:`cozmo.objects.LightCube`): The cube to roll.
-            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.   For example, 180 degrees will cause cozmo to drive past the cube and approach it from behind.
-            check_for_object_on_top (bool): If there is a cube on top of the specified cube, and check_for_object_on_top is True, then Cozmo will ignore the action.
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the 
+                cube from.   For example, 180 degrees will cause cozmo to drive
+                past the cube and approach it from behind.
+            check_for_object_on_top (bool): If there is a cube on top of the 
+                specified cube, and check_for_object_on_top is True, then Cozmo 
+                will ignore the action.
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
                 be already complete.

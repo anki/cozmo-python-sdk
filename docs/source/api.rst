@@ -10,6 +10,7 @@ The API
     cozmo.action
     cozmo.anim
     cozmo.annotate
+    cozmo.audio
     cozmo.behavior
     cozmo.camera
     cozmo.conn

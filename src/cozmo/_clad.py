@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Anki, Inc.
+# Copyright (c) 2016-2017 Anki, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -114,6 +114,7 @@ class CladEnumWrapper:
                         pascal_case_name = _all_caps_to_pascal_case(_name)
                         alternative_names.extend([pascal_case_name,
                                                   "_" + pascal_case_name])
+                    alternative_names.append(_name.replace("_",""))
                     for alt_name in alternative_names:
                         attr = getattr(cls, alt_name, None)
                         if attr is not None:
