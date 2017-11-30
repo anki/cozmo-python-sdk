@@ -44,8 +44,8 @@ __all__ = ['MIN_HEAD_ANGLE', 'MAX_HEAD_ANGLE',
            # Robot Action classes
            'DisplayOledFaceImage', 'DockWithCube', 'DriveOffChargerContacts', 'DriveStraight',
            'GoToObject', 'GoToPose', 'PerformOffChargerContext', 'PickupObject',
-           'PlaceObjectOnGroundHere', 'PlaceOnObject', 'RollCube', 'SayText', 'SetHeadAngle',
-           'SetLiftHeight', 'TurnInPlace', 'TurnTowardsFace',
+           'PlaceObjectOnGroundHere', 'PlaceOnObject', 'PopAWheelie', 'RollCube', 'SayText',
+           'SetHeadAngle', 'SetLiftHeight', 'TurnInPlace', 'TurnTowardsFace',
            # Robot
            'Robot']
 
@@ -537,6 +537,36 @@ class TurnInPlace(action.Action):
             isAbsolute = 0)
 
 
+class PopAWheelie(action.Action):
+    '''Tracks the progress of a "pop a wheelie" robot action.
+
+    Returned by :meth:`~cozmo.robot.Robot.pop_a_wheelie`
+    '''
+    def __init__(self, obj, approach_angle, **kw):
+        super().__init__(**kw)
+        #: An object (e.g. an instance of :class:`cozmo.objects.LightCube`)
+        #: being used as leverage to push cozmo on his back
+        self.obj = obj
+        if approach_angle is None:
+            self.use_approach_angle = False
+            self.approach_angle = util.degrees(0)
+        else:
+            self.use_approach_angle = True
+            self.approach_angle = approach_angle
+
+    def _repr_values(self):
+        return "object=%s, use_approach_angle=%s, approach_angle=%s" %
+            (self.obj, self.use_approach_angle, self.approach_angle)
+
+    def _encode(self):
+        return _clad_to_engine_iface.PopAWheelie(
+            objectID=self.obj.object_id,
+            approachAngle_rad=self.approach_angle.radians,
+            useApproachAngle=self.use_approach_angle,
+            usePreDockPose=self.use_approach_angle,
+            useManualSpeed=False)
+
+
 class TurnTowardsFace(action.Action):
     '''Tracks the progress of a turn towards face robot action.
 
@@ -633,6 +663,10 @@ class Robot(event.Dispatcher):
     #: callable: The factory function that returns a
     #: :class:`PlaceObjectOnGroundHere` class or subclass instance.
     place_object_on_ground_here_factory = PlaceObjectOnGroundHere
+
+    #: callable: The factory function that returns a
+    #: :class:`PopAWheelie` class or subclass instance.
+    pop_a_wheelie_factory = PopAWheelie
 
     #: callable: The factory function that returns a
     #: :class:`SayText` class or subclass instance.
@@ -1939,6 +1973,37 @@ class Robot(event.Dispatcher):
         action = self.roll_cube_factory(obj=target_object, approach_angle=approach_angle,
                                         check_for_object_on_top=check_for_object_on_top,
                                         conn=self.conn, robot=self, dispatch_parent=self)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
+        return action
+
+    def pop_a_wheelie(self, target_object, approach_angle=None,
+                      in_parallel=False, num_retries=0):
+        '''Tells Cozmo to "pop a wheelie" using a light cube.
+
+        Args:
+            target_object (:class:`cozmo.objects.LightCube`): The cube to push
+                down on with cozmo's lift, to start the wheelie.
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the
+                cube from. For example, 180 degrees will cause cozmo to drive
+                past the cube and approach it from behind.
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
+        Returns:
+            A :class:`cozmo.robot.PopAWheelie` action object which can be queried
+                to see when it is complete.
+        '''
+        if not isinstance(target_object, objects.LightCube):
+            raise TypeError("Target must be a light cube")
+
+        action = self.pop_a_wheelie_factory(obj=target_object,
+                                            approach_angle=approach_angle,
+                                            conn=self.conn,
+                                            robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action,
                                                     in_parallel=in_parallel,
                                                     num_retries=num_retries)
