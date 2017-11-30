@@ -556,8 +556,8 @@ class PopAWheelie(action.Action):
             self.approach_angle = approach_angle
 
     def _repr_values(self):
-        return "object=%s, use_approach_angle=%s, approach_angle=%s" %
-            (self.obj, self.use_approach_angle, self.approach_angle)
+        return ("object=%s, use_approach_angle=%s, approach_angle=%s" %
+            (self.obj, self.use_approach_angle, self.approach_angle) )
 
     def _encode(self):
         return _clad_to_engine_iface.PopAWheelie(
