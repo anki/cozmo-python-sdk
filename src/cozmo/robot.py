@@ -44,8 +44,8 @@ __all__ = ['MIN_HEAD_ANGLE', 'MAX_HEAD_ANGLE',
            # Robot Action classes
            'DisplayOledFaceImage', 'DockWithCube', 'DriveOffChargerContacts', 'DriveStraight',
            'GoToObject', 'GoToPose', 'PerformOffChargerContext', 'PickupObject',
-           'PlaceObjectOnGroundHere', 'PlaceOnObject', 'RollCube', 'SayText', 'SetHeadAngle',
-           'SetLiftHeight', 'TurnInPlace', 'TurnTowardsFace',
+           'PlaceObjectOnGroundHere', 'PlaceOnObject', 'PopAWheelie', 'RollCube', 'SayText',
+           'SetHeadAngle', 'SetLiftHeight', 'TurnInPlace', 'TurnTowardsFace',
            # Robot
            'Robot']
 
@@ -58,6 +58,7 @@ import warnings
 from . import logger, logger_protocol
 from . import action
 from . import anim
+from . import audio
 from . import behavior
 from . import camera
 from . import conn
@@ -69,7 +70,7 @@ from . import util
 from . import world
 from . import robot_alignment
 
-from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo, _clad_to_game_cozmo, CladEnumWrapper
+from ._clad import _clad_to_engine_iface, _clad_to_engine_cozmo, _clad_to_engine_anki, _clad_to_game_cozmo, CladEnumWrapper
 
 #### Events
 
@@ -537,6 +538,36 @@ class TurnInPlace(action.Action):
             isAbsolute = 0)
 
 
+class PopAWheelie(action.Action):
+    '''Tracks the progress of a "pop a wheelie" robot action.
+
+    Returned by :meth:`~cozmo.robot.Robot.pop_a_wheelie`
+    '''
+    def __init__(self, obj, approach_angle, **kw):
+        super().__init__(**kw)
+        #: An object (e.g. an instance of :class:`cozmo.objects.LightCube`)
+        #: being used as leverage to push cozmo on his back
+        self.obj = obj
+        if approach_angle is None:
+            self.use_approach_angle = False
+            self.approach_angle = util.degrees(0)
+        else:
+            self.use_approach_angle = True
+            self.approach_angle = approach_angle
+
+    def _repr_values(self):
+        return ("object=%s, use_approach_angle=%s, approach_angle=%s" %
+            (self.obj, self.use_approach_angle, self.approach_angle) )
+
+    def _encode(self):
+        return _clad_to_engine_iface.PopAWheelie(
+            objectID=self.obj.object_id,
+            approachAngle_rad=self.approach_angle.radians,
+            useApproachAngle=self.use_approach_angle,
+            usePreDockPose=self.use_approach_angle,
+            useManualSpeed=False)
+
+
 class TurnTowardsFace(action.Action):
     '''Tracks the progress of a turn towards face robot action.
 
@@ -633,6 +664,10 @@ class Robot(event.Dispatcher):
     #: callable: The factory function that returns a
     #: :class:`PlaceObjectOnGroundHere` class or subclass instance.
     place_object_on_ground_here_factory = PlaceObjectOnGroundHere
+
+    #: callable: The factory function that returns a
+    #: :class:`PopAWheelie` class or subclass instance.
+    pop_a_wheelie_factory = PopAWheelie
 
     #: callable: The factory function that returns a
     #: :class:`SayText` class or subclass instance.
@@ -1102,9 +1137,6 @@ class Robot(event.Dispatcher):
 
         self.dispatch_event(EvtRobotStateUpdated, robot=self)
 
-        if msg.robotID != self.robot_id:
-            logger.error("robot ID changed mismatch (msg=%s, self=%s)", msg.robotID, self.robot_id )
-
     def _recv_msg_behavior_transition(self, evt, *, msg):
         new_type = behavior.BehaviorTypes.find_by_id(msg.newBehaviorExecType)
         if self._current_behavior is not None:
@@ -1359,7 +1391,7 @@ class Robot(event.Dispatcher):
             light4 (:class:`cozmo.lights.Light`): The rear backpack light
             light5 (:class:`cozmo.lights.Light`): The right backpack light
         '''
-        msg = _clad_to_engine_iface.SetBackpackLEDs(robotID=self.robot_id)
+        msg = _clad_to_engine_iface.SetBackpackLEDs()
         for i, light in enumerate( (light1, light2, light3, light4, light5) ):
             if light is not None:
                 lights._set_light(msg, i, light)
@@ -1508,6 +1540,22 @@ class Robot(event.Dispatcher):
                                                     in_parallel=in_parallel,
                                                     num_retries=num_retries)
         return action
+
+    def play_audio(self, audio_event):
+        '''Starts playing audio on the device.
+
+        Sends an audio event to the engine using the id specified by the 
+        supplied audio_event.
+
+        Args:
+            audio_event (object): An attribute of the :class:`cozmo.audio.AudioEvents` class
+        '''
+        audio_event_id = audio_event.id
+        game_object_id = _clad_to_engine_anki.AudioMetaData.GameObjectType.CodeLab
+
+        msg = _clad_to_engine_anki.AudioEngine.Multiplexer.PostAudioEvent(
+            audioEvent=audio_event_id, gameObject=game_object_id)
+        self.conn.send_msg(msg)
 
     def play_anim_trigger(self, trigger, loop_count=1, in_parallel=False,
                           num_retries=0, use_lift_safe=False, ignore_body_track=False,
@@ -1896,9 +1944,13 @@ class Robot(event.Dispatcher):
 
         Args:
             target_object (:class:`cozmo.objects.LightCube`): The cube to dock with.
-            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.  For example, 180 degrees will cause cozmo to drive past the cube and approach it from behind.
-            alignment_type (:class:`cozmo.robot_alignment.RobotAlignmentTypes`): which part of the robot to line up with the front of the object.
-            distance_from_marker (:class:`cozmo.util.Distance`): distance from the cube marker to stop when using Custom alignment
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the
+                cube from.  For example, 180 degrees will cause cozmo to drive 
+                past the cube and approach it from behind.
+            alignment_type (:class:`cozmo.robot_alignment.RobotAlignmentTypes`):
+                which part of the robot to line up with the front of the object.
+            distance_from_marker (:class:`cozmo.util.Distance`): distance from 
+                the cube marker to stop when using Custom alignment
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
                 be already complete.
@@ -1925,8 +1977,12 @@ class Robot(event.Dispatcher):
 
         Args:
             target_object (:class:`cozmo.objects.LightCube`): The cube to roll.
-            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the cube from.   For example, 180 degrees will cause cozmo to drive past the cube and approach it from behind.
-            check_for_object_on_top (bool): If there is a cube on top of the specified cube, and check_for_object_on_top is True, then Cozmo will ignore the action.
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the 
+                cube from.   For example, 180 degrees will cause cozmo to drive
+                past the cube and approach it from behind.
+            check_for_object_on_top (bool): If there is a cube on top of the 
+                specified cube, and check_for_object_on_top is True, then Cozmo 
+                will ignore the action.
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
                 be already complete.
@@ -1942,6 +1998,37 @@ class Robot(event.Dispatcher):
         action = self.roll_cube_factory(obj=target_object, approach_angle=approach_angle,
                                         check_for_object_on_top=check_for_object_on_top,
                                         conn=self.conn, robot=self, dispatch_parent=self)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
+        return action
+
+    def pop_a_wheelie(self, target_object, approach_angle=None,
+                      in_parallel=False, num_retries=0):
+        '''Tells Cozmo to "pop a wheelie" using a light cube.
+
+        Args:
+            target_object (:class:`cozmo.objects.LightCube`): The cube to push
+                down on with cozmo's lift, to start the wheelie.
+            approach_angle (:class:`cozmo.util.Angle`): The angle to approach the
+                cube from. For example, 180 degrees will cause cozmo to drive
+                past the cube and approach it from behind.
+            in_parallel (bool): True to run this action in parallel with
+                previous actions, False to require that all previous actions
+                be already complete.
+            num_retries (int): Number of times to retry the action if the
+                previous attempt(s) failed.
+        Returns:
+            A :class:`cozmo.robot.PopAWheelie` action object which can be queried
+                to see when it is complete.
+        '''
+        if not isinstance(target_object, objects.LightCube):
+            raise TypeError("Target must be a light cube")
+
+        action = self.pop_a_wheelie_factory(obj=target_object,
+                                            approach_angle=approach_angle,
+                                            conn=self.conn,
+                                            robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action,
                                                     in_parallel=in_parallel,
                                                     num_retries=num_retries)

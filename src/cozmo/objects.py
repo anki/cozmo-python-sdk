@@ -604,8 +604,7 @@ class LightCube(ObservableObject):
     # TODO: make this explicit as to which light goes to which corner.
     def set_light_corners(self, light1, light2, light3, light4):
         """Set the light for each corner"""
-        msg = _clad_to_engine_iface.SetAllActiveObjectLEDs(
-                objectID=self.object_id, robotID=self._robot.robot_id)
+        msg = _clad_to_engine_iface.SetAllActiveObjectLEDs(objectID=self.object_id)
         for i, light in enumerate( (light1, light2, light3, light4) ):
             if light is not None:
                 lights._set_light(msg, i, light)
@@ -619,7 +618,7 @@ class LightCube(ObservableObject):
             light (:class:`cozmo.lights.Light`): The settings for the lights.
         '''
         msg = _clad_to_engine_iface.SetAllActiveObjectLEDs(
-                objectID=self.object_id, robotID=self._robot.robot_id)
+                objectID=self.object_id)
         for i in range(4):
             lights._set_light(msg, i, light)
 

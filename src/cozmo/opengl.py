@@ -604,8 +604,9 @@ class OpenGLViewer():
     Args:
         enable_camera_view (bool): True to also open a 2nd window to display
             the live camera view.
+        show_viewer_controls (bool): Specifies whether to draw controls on the view.
     """
-    def __init__(self, enable_camera_view):
+    def __init__(self, enable_camera_view, show_viewer_controls=True):
         # Queues from SDK thread to OpenGL thread
         self._img_queue = collections.deque(maxlen=1)
         self._nav_memory_map_queue = collections.deque(maxlen=1)
@@ -652,6 +653,22 @@ class OpenGLViewer():
         # Mouse
         self._is_mouse_down = {}
         self._mouse_pos = None  # type: util.Vector2
+
+        # Controls
+        self._show_controls = show_viewer_controls
+        self._instructions = '\n'.join(['W, S: Move forward, backward',
+                                        'A, D: Turn left, right',
+                                        'R, F: Lift up, down',
+                                        'T, G: Head up, down',
+                                        '',
+                                        'LMB: Rotate camera',
+                                        'RMB: Move camera',
+                                        'LMB + RMB: Move camera up/down',
+                                        'LMB + Z: Zoom camera',
+                                        'X: same as RMB',
+                                        'TAB: center view on robot',
+                                        '',
+                                        'H: Toggle help'])
 
         # Camera position and orientation defined by a look-at positions
         # and a pitch/and yaw to rotate around that along with a distance
@@ -1102,10 +1119,33 @@ class OpenGLViewer():
 
             self._draw_cozmo(robot_frame)
 
+        if self._show_controls:
+            self._draw_controls()
+
         # Draw the (translucent) nav map last so it's sorted correctly against opaque geometry
         self._draw_memory_map()
 
         glutSwapBuffers()
+
+    def _draw_controls(self):
+        try:
+            GLUT_BITMAP_9_BY_15
+        except NameError:
+            pass
+        else: 
+            self._draw_text(GLUT_BITMAP_9_BY_15, self._instructions, 10, 10)
+
+    def _draw_text(self, font, input, x, y, line_height=16, r=1.0, g=1.0, b=1.0):
+        '''Render text based on window position. The origin is in the bottom-left.'''
+        glColor3f(r, g, b)
+        glWindowPos2f(x,y)
+        input_list = input.split('\n')
+        y = y + (line_height * (len(input_list) -1))
+        for line in input_list:
+            glWindowPos2f(x, y)
+            y -= line_height
+            for ch in line:
+                glutBitmapCharacter(font, ctypes.c_int(ord(ch)))
 
     def _display_camera_view(self, window):
         glutSetWindow(window.gl_window)
@@ -1199,6 +1239,9 @@ class OpenGLViewer():
                 self._camera_look_at.set_to(robot_pos)
         elif ord(key) == 27:  # Escape key
             self._request_exit()
+        elif ord(key) == 72 or ord(key) == 104: # H key
+            self._show_controls = not self._show_controls
+
 
     def _on_special_key_up(self, key, x, y):
         self._update_modifier_keys()
@@ -1298,6 +1341,11 @@ class OpenGLViewer():
             self._is_keyboard_control_enabled = False
         else:
             self._is_keyboard_control_enabled = True
+
+        try:
+            GLUT_BITMAP_9_BY_15
+        except NameError:
+            logger.warning("Warning: GLUT font not detected. Help message will be unavailable.")
 
         glutMouseFunc(self._on_mouse_button)
         glutMotionFunc(self._on_mouse_move)

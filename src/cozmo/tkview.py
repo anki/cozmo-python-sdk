@@ -89,8 +89,13 @@ class TkImageViewer(tkinter.Frame, TkThreadable):
 
         self.tk_root = tk_root
         tk_root.wm_title(window_name)
+        # Tell the TK root not to resize based on the contents of the window.
+        # Necessary to get the resizing to function properly
+        tk_root.pack_propagate(False)
+        # Set the starting window size
+        tk_root.geometry('{}x{}'.format(720, 540))
 
-        self.label  = tkinter.Label(self.tk_root,image=None)
+        self.label = tkinter.Label(self.tk_root,image=None)
         self.tk_root.protocol("WM_DELETE_WINDOW", self._delete_window)
         self._isRunning = True
         self.robot = None
@@ -102,7 +107,6 @@ class TkImageViewer(tkinter.Frame, TkThreadable):
             # force window on top of all others, regardless of focus
             tk_root.wm_attributes("-topmost", 1)
 
-        self.last_configure = time.time()
         self.tk_root.bind("<Configure>", self.configure)
         self._repeat_draw_frame()
 
@@ -120,13 +124,8 @@ class TkImageViewer(tkinter.Frame, TkThreadable):
     # The base class configure doesn't take an event
     #pylint: disable=arguments-differ
     def configure(self, event):
-        # hack to interrupt feedback loop between image resizing
-        # and frame resize detection; there has to be a better solution to this.
-        if time.time() - self.last_configure < 0.1:
-            return
         if event.width < 50 or event.height < 50:
             return
-        self.last_configure = time.time()
         self.height = event.height
         self.width = event.width
 
@@ -158,7 +157,8 @@ class TkImageViewer(tkinter.Frame, TkThreadable):
 
         self.label.configure(image=photoImage)
         self.label.image = photoImage
-        self.label.pack()
+        # Dynamically expand the image to fit the window. And fill in both X and Y directions.
+        self.label.pack(fill=tkinter.BOTH, expand=True)
 
     def _repeat_draw_frame(self, event=None):
         self._draw_frame()

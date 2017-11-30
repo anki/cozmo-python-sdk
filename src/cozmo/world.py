@@ -689,8 +689,7 @@ class World(event.Dispatcher):
 
     def send_available_objects(self):
         # XXX description for this?
-        msg = _clad_to_engine_iface.SendAvailableObjects(
-                robotID=self.robot.robot_id, enable=True)
+        msg = _clad_to_engine_iface.SendAvailableObjects(enable=True)
         self.conn.send_msg(msg)
 
     def _remove_custom_marker_object_instances(self):
