@@ -1629,7 +1629,7 @@ class Robot(event.Dispatcher):
         object at some point in the future to terminate execution.
 
         Args:
-            behavior_type (:class:`cozmo.behavior._BehaviorType):  An attribute of
+            behavior_type (:class:`cozmo.behavior._BehaviorType`):  An attribute of
                 :class:`cozmo.behavior.BehaviorTypes`.
         Returns:
             :class:`cozmo.behavior.Behavior`
@@ -1656,7 +1656,7 @@ class Robot(event.Dispatcher):
         This call blocks and stops the behavior after active_time seconds.
 
         Args:
-            behavior_type (:class:`cozmo.behavior._BehaviorType): An attribute of
+            behavior_type (:class:`cozmo.behavior._BehaviorType`): An attribute of
                 :class:`cozmo.behavior.BehaviorTypes`.
             active_time (float): specifies the maximum time to execute in seconds
         Raises:
