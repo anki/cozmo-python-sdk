@@ -739,11 +739,7 @@ def streaming_video(url_root):
     try:
         while True:
             if remote_control_cozmo:
-                image = remote_control_cozmo.cozmo.world.latest_image
-                if _display_debug_annotations != DEBUG_ANNOTATIONS_DISABLED:
-                    image = image.annotate_image(scale=2)
-                else:
-                    image = image.raw_image
+                image = get_annotated_image()
 
                 img_io = io.BytesIO()
                 image.save(img_io, 'PNG')
