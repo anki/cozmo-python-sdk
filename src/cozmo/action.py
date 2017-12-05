@@ -219,6 +219,9 @@ class ActionResults(CladEnumWrapper):
 
     #: Not carrying an object when it was expected, but may succeed if the action is retried.
     NOT_CARRYING_OBJECT_RETRY = _ActionResult("NOT_CARRYING_OBJECT_RETRY", _clad_enum.NOT_CARRYING_OBJECT_RETRY)
+    
+    #: Cozmo is expected to be on the charger, but is not.
+    NOT_ON_CHARGER = _ActionResult("NOT_ON_CHARGER", _clad_enum.NOT_ON_CHARGER)
 
     #: Cozmo was unable to plan a path, but may succeed if the action is retried.
     PATH_PLANNING_FAILED_RETRY = _ActionResult("PATH_PLANNING_FAILED_RETRY", _clad_enum.PATH_PLANNING_FAILED_RETRY)
@@ -561,7 +564,7 @@ class _ActionDispatcher(event.Dispatcher):
             position = _clad_to_game_cozmo.QueueActionPosition.NOW
 
         qmsg = _clad_to_engine_iface.QueueSingleAction(
-            robotID=self.robot.robot_id, idTag=action_id, numRetries=num_retries,
+            idTag=action_id, numRetries=num_retries,
             position=position, action=_clad_to_engine_iface.RobotActionUnion())
         action_msg = action._encode()
         cls_name = action_msg.__class__.__name__
@@ -644,8 +647,7 @@ class _ActionDispatcher(event.Dispatcher):
             self._aborting[action._action_id] = action
             del self._in_progress[action._action_id]
 
-            msg = _clad_to_engine_iface.CancelActionByIdTag(idTag=action._action_id,
-                                                            robotID=self.robot.robot_id)
+            msg = _clad_to_engine_iface.CancelActionByIdTag(idTag=action._action_id)
             self.robot.conn.send_msg(msg)
 
     def _abort_all_actions(self, log_abort_messages):
@@ -660,7 +662,6 @@ class _ActionDispatcher(event.Dispatcher):
 
         logger.info('Sending abort request for all actions')
         # RobotActionType.UNKNOWN is a wildcard that matches all actions when cancelling.
-        msg = _clad_to_engine_iface.CancelAction(robotID=self.robot.robot_id,
-                                                 actionType=_clad_to_engine_cozmo.RobotActionType.UNKNOWN)
+        msg = _clad_to_engine_iface.CancelAction(actionType=_clad_to_engine_cozmo.RobotActionType.UNKNOWN)
         self.robot.conn.send_msg(msg)
 

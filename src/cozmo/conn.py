@@ -81,31 +81,50 @@ FORCED_ROBOT_MESSAGES = {"AnimationAborted",
                          "CarryStateUpdate",
                          "ChargerEvent",
                          "ConnectedObjectStates",
+                         "CreatedFixedCustomObject",
                          "CubeLightsStateTransition",
                          "CurrentCameraParams",
+                         "DefinedCustomObject",
                          "DeviceAccelerometerValuesRaw",
                          "DeviceAccelerometerValuesUser",
                          "DeviceGyroValues",
                          "IsDeviceIMUSupported",
                          "LoadedKnownFace",
                          "LocatedObjectStates",
-                         "MemoryMapMessageBegin",
                          "MemoryMapMessage",
+                         "MemoryMapMessageBegin",
                          "MemoryMapMessageEnd",
+                         "ObjectAccel",
+                         "ObjectAvailable",
                          "ObjectConnectionState",
+                         "ObjectMoved",
                          "ObjectPowerLevel",
                          "ObjectProjectsIntoFOV",
+                         "ObjectStoppedMoving",
+                         "ObjectTapped",
+                         "ObjectTappedFiltered",
+                         "ObjectUpAxisChanged",
+                         "PerRobotSettings",
                          "ReactionaryBehaviorTransition",
                          "RobotChangedObservedFaceID",
                          "RobotCliffEventFinished",
+                         "RobotCompletedAction",
+                         "RobotDeletedAllCustomObjects",
+                         "RobotDeletedCustomMarkerObjects",
+                         "RobotDeletedFixedCustomObjects",
+                         "RobotDelocalized",
                          "RobotErasedAllEnrolledFaces",
                          "RobotErasedEnrolledFace",
+                         "RobotObservedFace",
                          "RobotObservedMotion",
+                         "RobotObservedObject",
                          "RobotObservedPet",
                          "RobotObservedPossibleObject",
                          "RobotOnChargerPlatformEvent",
+                         "RobotPoked",
                          "RobotReachedEnrollmentCount",
                          "RobotRenamedEnrolledFace",
+                         "RobotState",
                          "UnexpectedMovement"}
 
 
@@ -209,10 +228,6 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
             msg = msg._data
             robot_id = getattr(msg, 'robotID', None)
 
-            if not robot_id and self._primary_robot and (tag_name in FORCED_ROBOT_MESSAGES):
-                # Forward to the primary robot
-                robot_id = self._primary_robot.robot_id
-
             event_name = '_Msg' +  tag_name
 
             evttype = getattr(_clad, event_name, None)
@@ -220,24 +235,31 @@ class CozmoConnection(event.Dispatcher, clad_protocol.CLADProtocol):
                 logger.error('Received unknown CLAD message %s', event_name)
                 return
 
-            if robot_id:
-                # dispatch robot-specific messages to Cozmo robot instances
-                return self._process_robot_msg(robot_id, evttype, msg)
-
-            self.dispatch_event(evttype, msg=msg)
+            # Dispatch messages to the robot if they either:
+            # a) are explicitly white listed in FORCED_ROBOT_MESSAGES
+            # b) have a robotID specified in the message
+            # Otherwise dispatch the message through this connection.
+            if (robot_id is not None) or (tag_name in FORCED_ROBOT_MESSAGES):
+                if robot_id is None:
+                    # The only robot ID ever used is 1, so it is safe to assume that here as a default.
+                    robot_id = 1
+                self._process_robot_msg(robot_id, evttype, msg)
+            else:
+                self.dispatch_event(evttype, msg=msg)
 
         except Exception as exc:
             # No exceptions should reach this point; it's a bug if they do.
             self.abort(exc)
 
     def _process_robot_msg(self, robot_id, evttype, msg):
-        if robot_id > 1:
-            # One day we might support multiple robots.. if we see a robot_id != 1
-            # currently though, it's an error.
-            # Note: MsgRobotPoked always sends the wrong id through currently
+        if robot_id != 1:
+            # Note: some messages replace robotID with value!=1 (like mfgID for example)
+            #       as a result, this log may fire quite often. Log Level is set to debug
+            #       since it suppressed by default (prevents spamming).
             logger.debug('INVALID ROBOT_ID SEEN robot_id=%s event=%s msg=%s', robot_id, evttype, msg.__str__())
             robot_id = 1 # XXX remove when errant messages have been fixed
 
+        # Note: this code constructs the robot if it doesn't exist at this time
         robot = self._robots.get(robot_id)
         if not robot:
             logger.info('Found robot id=%s', robot_id)

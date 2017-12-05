@@ -635,7 +635,7 @@ def _connect_viewer(f, conn_factory, connector, viewer):
 
 
 def connect_with_3dviewer(f, conn_factory=conn.CozmoConnection, connector=None,
-                          enable_camera_view=False):
+                          enable_camera_view=False, show_viewer_controls=True):
     '''Setup a connection to a device and run a user function while displaying Cozmo's 3d world.
 
     This displays an OpenGL window on the screen with a 3D view of Cozmo's
@@ -660,6 +660,7 @@ def connect_with_3dviewer(f, conn_factory=conn.CozmoConnection, connector=None,
             has the Cozmo app running in SDK mode.
         enable_camera_view (bool): Specifies whether to also open a 2D camera
             view in a second OpenGL window.
+        show_viewer_controls (bool): Specifies whether to draw controls on the view.
     '''
     try:
         from . import opengl
@@ -675,7 +676,7 @@ def connect_with_3dviewer(f, conn_factory=conn.CozmoConnection, connector=None,
                 'make sure the PyOpenGL, PyOpenGL-accelerate and Pillow packages are installed:\n'
                 'Do `pip3 install --user cozmo[3dviewer]` to install. Error: %s' % opengl)
 
-    viewer = opengl.OpenGLViewer(enable_camera_view=enable_camera_view)
+    viewer = opengl.OpenGLViewer(enable_camera_view=enable_camera_view, show_viewer_controls=show_viewer_controls)
 
     _connect_viewer(f, conn_factory, connector, viewer)
 
@@ -778,7 +779,8 @@ def setup_basic_logging(general_log_level=None, protocol_log_level=None,
 
 def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
                 connector=None, force_viewer_on_top=False,
-                deprecated_filter="default", use_3d_viewer=False):
+                deprecated_filter="default", use_3d_viewer=False,
+                show_viewer_controls=True):
     '''Connect to Cozmo and run the provided program/function f.
 
     Args:
@@ -806,6 +808,7 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
             understanding of the world in a window. Note that if both this and
             `use_viewer` are set then the 2D camera view will render in an OpenGL
             window instead of a TkView window.
+        show_viewer_controls (bool): Specifies whether to draw controls on the view.
     '''
     setup_basic_logging(deprecated_filter=deprecated_filter)
 
@@ -835,7 +838,7 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
     try:
         if use_3d_viewer:
             connect_with_3dviewer(wrapper, conn_factory=conn_factory, connector=connector,
-                                  enable_camera_view=use_viewer)
+                                  enable_camera_view=use_viewer, show_viewer_controls=show_viewer_controls)
         elif use_viewer:
             connect_with_tkviewer(wrapper, conn_factory=conn_factory, connector=connector,
                                   force_on_top=force_viewer_on_top)

@@ -10,5 +10,6 @@ __pycache__
 htmlcov
 .coverage
 
+/tests/lint/logs
 # pycharm 
 .idea

@@ -40,7 +40,8 @@ import functools
 
 try:
     from PIL import Image, ImageDraw
-except ImportError:
+except (ImportError, SyntaxError):
+    # may get SyntaxError if accidentally importing old Python 2 version of PIL
     ImageDraw = None
 
 from . import event
