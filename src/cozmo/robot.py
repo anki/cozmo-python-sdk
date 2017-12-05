@@ -1246,6 +1246,21 @@ class Robot(event.Dispatcher):
                                                         enableGyro=enable_gyro)
         self.conn.send_msg(msg)
 
+    def set_needs_levels(self, repair_value=1, energy_value=1, play_value=1):
+        """Manually set Cozmo's current needs levels.
+
+        The needs levels control whether Cozmo needs repairing, feeding or playing with.
+        Values outside of the 0.0 to 1.0 range are clamped internally.
+
+        Args:
+            repair_value (float): How repaired is Cozmo - 0='broken', 1='fully repaired'
+            energy_value (float): How energetic is Cozmo - 0='no-energy', 1='full energy'
+            play_value (float): How in need of play is Cozmo - 0='bored', 1='happy'
+        """
+        msg = _clad_to_engine_iface.ForceSetNeedsLevels(
+            newNeedLevel = [repair_value, energy_value, play_value])
+        self.conn.send_msg(msg)
+
     ### Camera Commands ###
 
     def enable_auto_exposure(self):
@@ -1677,7 +1692,7 @@ class Robot(event.Dispatcher):
         object at some point in the future to terminate execution.
 
         Args:
-            behavior_type (:class:`cozmo.behavior._BehaviorType):  An attribute of
+            behavior_type (:class:`cozmo.behavior._BehaviorType`):  An attribute of
                 :class:`cozmo.behavior.BehaviorTypes`.
         Returns:
             :class:`cozmo.behavior.Behavior`
@@ -1704,7 +1719,7 @@ class Robot(event.Dispatcher):
         This call blocks and stops the behavior after active_time seconds.
 
         Args:
-            behavior_type (:class:`cozmo.behavior._BehaviorType): An attribute of
+            behavior_type (:class:`cozmo.behavior._BehaviorType`): An attribute of
                 :class:`cozmo.behavior.BehaviorTypes`.
             active_time (float): specifies the maximum time to execute in seconds
         Raises:

@@ -41,6 +41,14 @@ class ImageBox(collections.namedtuple('ImageBox', 'top_left_x top_left_y width h
     the robot's camera view the object, face or pet actually appears.  It's then
     used by the :mod:`cozmo.annotate` module to show an outline of a box around
     the object, face or pet.
+
+    .. py:attribute:: width
+
+        float - The width of the box.
+
+    .. py:attribute:: height
+
+        float - The height of the box.
     '''
     __slots__ = ()
 
@@ -48,6 +56,33 @@ class ImageBox(collections.namedtuple('ImageBox', 'top_left_x top_left_y width h
     def _create_from_clad_rect(cls, img_rect):
         return cls(img_rect.x_topLeft, img_rect.y_topLeft,
                    img_rect.width, img_rect.height)
+
+    @property
+    def left_x(self):
+        """float: The x coordinate of the left of the box."""
+        return self.top_left_x
+
+    @property
+    def right_x(self):
+        """float: The x coordinate of the right of the box."""
+        return self.top_left_x + self.width
+
+    @property
+    def top_y(self):
+        """float: The y coordinate of the top of the box."""
+        return self.top_left_y
+
+    @property
+    def bottom_y(self):
+        """float: The y coordinate of the bottom of the box."""
+        return self.top_left_y + self.height
+
+    @property
+    def center(self):
+        """(float, float): The x,y coordinates of the center of the box."""
+        cen_x = self.top_left_x + (self.width * 0.5)
+        cen_y = self.top_left_y + (self.height * 0.5)
+        return cen_x, cen_y
 
     def __mul__(self, other):
         return ImageBox(self[0] * other, self[1] * other, self[2] * other, self[3] * other)
@@ -718,9 +753,48 @@ class Quaternion:
 
     @property
     def angle_z(self):
-        '''class:`Angle`: The z Euler component of the object's rotation. Defined as the rotation in the z axis.'''
+        '''class:`Angle`: The z Euler component of the object's rotation.
+
+        Defined as the rotation in the z axis.
+        '''
         q0,q1,q2,q3 = self.q0_q1_q2_q3
         return Angle(radians=math.atan2(2*(q1*q2+q0*q3), 1-2*(q2**2+q3**2)))
+
+    @property
+    def euler_angles(self):
+        '''tuple of float: Euler angles of an object.
+
+        Returns the pitch, yaw, roll Euler components of the object's
+        rotation defined as rotations in the x, y, and z axis respectively.
+
+        It interprets the rotations performed in the order: Z, Y, X
+        '''
+        # convert to matrix
+        matrix = self.to_matrix()
+
+        # normalize the magnitudes of cos(roll)*sin(pitch) (i.e. m12) and
+        #   cos(roll)*cos(pitch) (ie. m22), to isolate cos(roll) to be compared
+        #   against -sin(roll) (m02).  Unfortunately, this omits results with an
+        #   absolute angle larger than 90 degrees on roll.
+        absolute_cos_roll = math.sqrt(matrix.m12*matrix.m12+matrix.m22*matrix.m22)
+        near_gimbal_lock = absolute_cos_roll < 1e-6
+        if not near_gimbal_lock:
+            # general case euler decomposition
+            pitch = math.atan2(matrix.m22, matrix.m12)
+            yaw = math.atan2(matrix.m00, matrix.m01)
+            roll = math.atan2(absolute_cos_roll, -matrix.m02)
+        else:
+            # special case euler angle decomposition near gimbal lock
+            pitch = math.atan2(matrix.m11, -matrix.m21)
+            yaw = 0
+            roll = math.atan2(absolute_cos_roll, -matrix.m02)
+
+        # adjust roll to be consistent with how we orient the device
+        roll = math.pi * 0.5 - roll
+        if roll > math.pi:
+            roll -= math.pi * 2
+
+        return pitch, yaw, roll
 
 
 class Rotation(Quaternion):

@@ -29,7 +29,7 @@ has identified.
 '''
 
 # __all__ should order by constants, event classes, other classes, functions.
-__all__ = ['EvtNewRawCameraImage', 'CameraConfig', 'Camera']
+__all__ = ['EvtNewRawCameraImage', 'EvtRobotObservedMotion', 'CameraConfig', 'Camera']
 
 import functools
 import io

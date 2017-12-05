@@ -174,8 +174,8 @@ def add_img_box_to_image(image, box, color, text=None):
             of ImageText instances) to display multiple pieces of text.
     '''
     d = ImageDraw.Draw(image)
-    x1, y1 = box.top_left_x, box.top_left_y
-    x2, y2 = x1 + box.width, y1 + box.height
+    x1, y1 = box.left_x, box.top_y
+    x2, y2 = box.right_x, box.bottom_y
     d.rectangle([x1, y1, x2, y2], outline=color)
     if text is not None:
         if isinstance(text, collections.Iterable):

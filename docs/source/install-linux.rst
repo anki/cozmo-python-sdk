@@ -26,7 +26,7 @@ Ubuntu 14.04
     sudo add-apt-repository ppa:fkrull/deadsnakes
     sudo apt-get update
     sudo apt-get install python3.5
-    sudo update-alternatives --install /usr/bin/python3 python3.5 /usr/bin/python3.5.1
+    sudo update-alternatives --install /usr/bin/python3 python3.5 /usr/bin/python3.5 99
 
 2. Then install pip by typing in the following into the Terminal window::
 
