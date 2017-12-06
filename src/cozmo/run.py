@@ -780,7 +780,8 @@ def setup_basic_logging(general_log_level=None, protocol_log_level=None,
 def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
                 connector=None, force_viewer_on_top=False,
                 deprecated_filter="default", use_3d_viewer=False,
-                show_viewer_controls=True):
+                show_viewer_controls=True,
+                throw_error=False):
     '''Connect to Cozmo and run the provided program/function f.
 
     Args:
@@ -847,4 +848,8 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
     except KeyboardInterrupt:
         logger.info('Exit requested by user')
     except exceptions.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+        if throw_error:
+            logger.error("A connection error occurred: %s" % e)
+            raise e
+        else:
+            sys.exit("A connection error occurred: %s" % e)
