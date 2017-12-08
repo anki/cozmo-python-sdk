@@ -166,7 +166,7 @@ class RemoteControlCozmo:
                 self.anim_names.append(anim_name)
 
         default_anims_for_keys = ["anim_bored_01",  # 0
-                                  "id_poked_giggle",  # 1
+                                  "anim_poked_giggle",  # 1
                                   "anim_pounce_success_02",  # 2
                                   "anim_bored_event_02",  # 3
                                   "anim_bored_event_03",  # 4

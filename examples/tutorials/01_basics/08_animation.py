@@ -42,7 +42,7 @@ def cozmo_program(robot: cozmo.robot.Robot):
     # See the remote_control_cozmo.py example in apps for an easy way to see
     # the available animations.
     print("Playing Animation 3:")
-    robot.play_anim(name="id_poked_giggle").wait_for_completed()
+    robot.play_anim(name="anim_poked_giggle").wait_for_completed()
 
 
 cozmo.run_program(cozmo_program)
