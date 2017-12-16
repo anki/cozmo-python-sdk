@@ -198,6 +198,6 @@ for (_name, _id) in _clad_to_engine_cozmo.AnimationTrigger.__dict__.items():
 
 
 def animation_completed_filter():
-    '''Creates an :class:`como.event.Filter` to wait specifically for an animation completed event.'''
+    '''Creates an :class:`cozmo.event.Filter` to wait specifically for an animation completed event.'''
     return event.Filter(action.EvtActionCompleted,
         action=lambda action: isinstance(action, Animation))
