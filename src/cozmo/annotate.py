@@ -227,7 +227,8 @@ class Annotator:
 
     Subclasses of Annotator handle applying a single annotation to an image.
     '''
-    #: int: The priority of the annotator - Annotators with lower numbered priorities are applied first.
+    #: int: The priority of the annotator - Annotators with lower numbered 
+    #: priorities are applied first.
     priority = 100
 
     def __init__(self, img_annotator, priority=None):
