@@ -35,7 +35,7 @@ class RobotAlignmentTypes(CladEnumWrapper):
     #: Align the tips of the lift fingers with the target object
     LiftFinger = _entry_type("LiftFinger", _clad_enum.LIFT_FINGER)
 
-    #: Align the flat part of the life with the object
+    #: Align the flat part of the lift with the object
     #: (Useful for getting the fingers in the cube's grooves)
     LiftPlate = _entry_type("LiftPlate", _clad_enum.LIFT_PLATE)
 
