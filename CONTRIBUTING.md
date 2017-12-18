@@ -1,4 +1,4 @@
-We accept contributions from 3rd parties as long as you first complete an individual CLA (Client License Agreement):
+We accept contributions from 3rd parties as long as you first complete an individual CLA (Contributor License Agreement):
 
 http://go.anki.com/individual-cla
 
