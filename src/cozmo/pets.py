@@ -23,9 +23,10 @@ Each pet is assigned a :class:`Pet` object, which generates a number of
 observable events whenever the pet is observed, etc.
 
 If a pet goes off-screen, it will be assigned a new object_id (and
-therefore Pet object) when it returns. This is because the system can
-only tell if something appears to be a cat or a dog; it cannot recognize
-a specific pet or, for instance, tell the difference between two dogs.
+therefore a new Pet object will be created) when it returns. 
+This is because the system can only tell if something appears to be 
+a cat or a dog; it cannot recognize a specific pet or, for instance, 
+tell the difference between two dogs.
 
 Note that these pet-specific events are also passed up to the
 :class:`cozmo.world.World` object, so events for all pets can be
@@ -50,7 +51,7 @@ from . import util
 from ._clad import _clad_to_game_anki
 
 
-#: Length of time to go without receiving an observed event before
+#: Length of time in seconds to go without receiving an observed event before
 #: assuming that Cozmo can no longer see a pet.
 PET_VISIBILITY_TIMEOUT = objects.OBJECT_VISIBILITY_TIMEOUT
 
@@ -82,7 +83,7 @@ class EvtPetAppeared(event.Event):
 
     This differs from EvtPetObserved in that it's only triggered when
     a pet initially becomes visible.  If it disappears for more than
-    PET_VISIBILITY_TIMEOUT (0.2) seconds and then is seen again, a
+    PET_VISIBILITY_TIMEOUT seconds and then is seen again, a
     EvtPetDisappeared will be dispatched, followed by another
     EvtPetAppeared event.
 
