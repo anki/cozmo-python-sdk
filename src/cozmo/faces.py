@@ -52,7 +52,7 @@ from ._clad import _clad_to_engine_iface
 from ._clad import _clad_to_game_anki
 
 
-#: Length of time to go without receiving an observed event before
+#: Length of time in seconds to go without receiving an observed event before
 #: assuming that Cozmo can no longer see a face.
 FACE_VISIBILITY_TIMEOUT = objects.OBJECT_VISIBILITY_TIMEOUT
 
@@ -111,7 +111,7 @@ class EvtFaceAppeared(event.Event):
 
     This differs from EvtFaceObserved in that it's only triggered when
     a face initially becomes visible.  If it disappears for more than
-    FACE_VISIBILITY_TIMEOUT (0.2) seconds and then is seen again, a
+    FACE_VISIBILITY_TIMEOUT seconds and then is seen again, a
     EvtFaceDisappeared will be dispatched, followed by another
     EvtFaceAppeared event.
 
