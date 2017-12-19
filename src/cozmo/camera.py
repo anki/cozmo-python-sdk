@@ -235,7 +235,7 @@ class Camera(event.Dispatcher):
         self._auto_exposure_enabled = True
 
         if np is None:
-            logger.warning("Camera image processing not available due to missng NumPy or Pillow packages: %s" % _img_processing_available)
+            logger.warning("Camera image processing not available due to missing NumPy or Pillow packages: %s" % _img_processing_available)
         else:
             # set property to ensure clad initialization is sent.
             self.image_stream_enabled = False
