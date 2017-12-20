@@ -23,7 +23,6 @@ import asyncio
 import io
 import json
 import math
-import requests
 import sys
 
 sys.path.append('../lib/')
