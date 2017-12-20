@@ -6,6 +6,4 @@ If your employer(s) have rights to intellectual property that you create, and th
 
 http://go.anki.com/corporate-cla
 
-Please also review our coding style document (CODESTYLE.md) in the root directory:
-
-https://github.com/anki/cozmo-python-sdk/blob/master/CODESTYLE.md
+Please also review our: [Code Style Guide](CODESTYLE.md)
