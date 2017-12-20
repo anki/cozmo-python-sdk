@@ -24,7 +24,7 @@ Warning:
     This package requires Python to have the PyOpenGL package installed, along
     with an implementation of GLUT (OpenGL Utility Toolkit).
 
-    To install the Python packages do ``pip3 install --user 'cozmo[3dviewer]'``
+    To install the Python packages do ``pip3 install --user "cozmo[3dviewer]"``
 
     On Windows and Linux you must also install freeglut (macOS / OSX has one
     preinstalled).
