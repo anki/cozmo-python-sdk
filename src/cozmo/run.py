@@ -781,7 +781,7 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
                 connector=None, force_viewer_on_top=False,
                 deprecated_filter="default", use_3d_viewer=False,
                 show_viewer_controls=True,
-                throw_error=False):
+                exit_on_connection_error=True):
     '''Connect to Cozmo and run the provided program/function f.
 
     Args:
@@ -810,6 +810,8 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
             `use_viewer` are set then the 2D camera view will render in an OpenGL
             window instead of a TkView window.
         show_viewer_controls (bool): Specifies whether to draw controls on the view.
+        exit_on_connection_error (bool): Specify whether the program should exit on
+            connection error or should an error be raised. Default to true.
     '''
     setup_basic_logging(deprecated_filter=deprecated_filter)
 
@@ -848,8 +850,8 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
     except KeyboardInterrupt:
         logger.info('Exit requested by user')
     except exceptions.ConnectionError as e:
-        if throw_error:
-            logger.error("A connection error occurred: %s" % e)
-            raise e
-        else:
+        if exit_on_connection_error:
             sys.exit("A connection error occurred: %s" % e)
+        else:
+            logger.error("A connection error occurred: %s" % e)
+            raise
