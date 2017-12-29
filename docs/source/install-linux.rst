@@ -23,7 +23,7 @@ Ubuntu 14.04
 
 1. Type the following into your Terminal window to install Python 3.5::
 
-    sudo add-apt-repository ppa:fkrull/deadsnakes
+    sudo add-apt-repository ppa:deadsnakes
     sudo apt-get update
     sudo apt-get install python3.5
     sudo update-alternatives --install /usr/bin/python3 python3.5 /usr/bin/python3.5 99
