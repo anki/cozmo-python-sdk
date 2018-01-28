@@ -524,18 +524,38 @@ class TurnInPlace(action.Action):
 
     Returned by :meth:`~cozmo.robot.Robot.turn_in_place`
     '''
-    def __init__(self, angle, **kw):
+    def __init__(self, angle, speed, accel, angle_tolerance, is_absolute, **kw):
         super().__init__(**kw)
-        # :class:`cozmo.util.Angle`: The angle to turn
+        #: :class:`cozmo.util.Angle`: The angle to turn
         self.angle = angle
+        #: :class:`cozmo.util.Angle`: Angular turn speed (per second).
+        self.speed = speed
+        #: :class:`cozmo.util.Angle`: Acceleration of angular turn (per second squared).
+        self.accel = accel
+        #: :class:`cozmo.util.Angle`: The minimum angular tolerance to consider
+        #: the action complete (this is clamped to a minimum of 2 degrees internally).
+        self.angle_tolerance = angle_tolerance
+        #: bool: True to turn to a specific angle, False to turn relative to the current pose.
+        self.is_absolute = is_absolute
 
     def _repr_values(self):
-        return "angle=%s" % (self.angle,)
+        return "angle=%s, speed=%s, accel=%s, tolerance=%s is_absolute=%s" %\
+               (self.angle, self.speed, self.accel, self.angle_tolerance, self.is_absolute)
+
+    def _get_radians(self, in_angle, default_value=0.0):
+        # Helper method to allow None angles to represent default values
+        if in_angle is None:
+            return default_value
+        else:
+            return in_angle.radians
 
     def _encode(self):
         return _clad_to_engine_iface.TurnInPlace(
             angle_rad = self.angle.radians,
-            isAbsolute = 0)
+            speed_rad_per_sec = self._get_radians(self.speed),
+            accel_rad_per_sec2 = self._get_radians(self.accel),
+            tol_rad = self._get_radians(self.angle_tolerance),
+            isAbsolute = int(self.is_absolute))
 
 
 class PopAWheelie(action.Action):
@@ -2074,23 +2094,32 @@ class Robot(event.Dispatcher):
                                                     num_retries=num_retries)
         return action
 
-    def turn_in_place(self, angle, in_parallel=False, num_retries=0):
+    def turn_in_place(self, angle, in_parallel=False, num_retries=0, speed=None,
+                      accel=None, angle_tolerance=None, is_absolute=False):
         '''Turn the robot around its current position.
 
         Args:
-            angle: (:class:`cozmo.util.Angle`): The angle to turn. Positive
+            angle (:class:`cozmo.util.Angle`): The angle to turn. Positive
                 values turn to the left, negative values to the right.
             in_parallel (bool): True to run this action in parallel with
                 previous actions, False to require that all previous actions
                 be already complete.
             num_retries (int): Number of times to retry the action if the
                 previous attempt(s) failed.
+            speed (:class:`cozmo.util.Angle`): Angular turn speed (per second).
+            accel (:class:`cozmo.util.Angle`): Acceleration of angular turn
+                (per second squared).
+            angle_tolerance (:class:`cozmo.util.Angle`): angular tolerance
+                to consider the action complete (this is clamped to a minimum
+                of 2 degrees internally).
+            is_absolute (bool): True to turn to a specific angle, False to
+                turn relative to the current pose.
         Returns:
             A :class:`cozmo.robot.TurnInPlace` action object which can be
                 queried to see when it is complete.
         '''
-        # TODO: add support for absolute vs relative positioning, speed & accel options
-        action = self.turn_in_place_factory(angle=angle,
+        action = self.turn_in_place_factory(angle=angle, speed=speed,
+                accel=accel, angle_tolerance=angle_tolerance, is_absolute=is_absolute,
                 conn=self.conn, robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action,
                                                     in_parallel=in_parallel,
