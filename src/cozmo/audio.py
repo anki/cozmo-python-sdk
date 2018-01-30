@@ -192,9 +192,9 @@ class AudioEvents(CladEnumWrapper):
     #: Stops active plays of the level 4 hot potato music
     MusicHotPotatoLevel4LoopStop = _entry_type("MusicHotPotatoLevel4LoopStop", _clad_enum.Music_Hot_Potato_Level_4_Loop_Stop)
 
-    #: Plays the magic 8 ball reveal music
+    #: Plays the magic fortune teller reveal music
     MusicMagic8RevealStinger = _entry_type("MusicMagic8RevealStinger", _clad_enum.Music_Magic8_Reveal_Stinger)
-    #: Stops active plays of the magic 8 ball reveal music
+    #: Stops active plays of the magic fortune teller reveal music
     MusicMagic8RevealStingerStop = _entry_type("MusicMagic8RevealStingerStop", _clad_enum.Music_Magic8_Reveal_Stinger_Stop)
 
     #: Plays 80s style music
@@ -256,12 +256,12 @@ class AudioEvents(CladEnumWrapper):
     #: Stops active plays of hot potato timer end sound
     SfxHotPotatoTimerEndStop = _entry_type("SfxHotPotatoTimerEndStop", _clad_enum.Sfx_Hot_Potato_Timer_End_Stop)
 
-    #: Plays magic 8 ball message reveal sound
+    #: Plays magic fortune teller message reveal sound
     SfxMagic8MessageReveal = _entry_type("SfxMagic8MessageReveal", _clad_enum.Sfx_Magic8_Message_Reveal)
-    #: Stops active plays of magic 8 ball message reveal sound
+    #: Stops active plays of magic fortune teller message reveal sound
     SfxMagic8MessageRevealStop = _entry_type("SfxMagic8MessageRevealStop", _clad_enum.Sfx_Magic8_Message_Reveal_Stop)
 
-    #: Plays magnet attrack sound
+    #: Plays magnet attract sound
     SfxMagnetAttract = _entry_type("SfxMagnetAttract", _clad_enum.Sfx_Magnet_Attract)
     #: Stops active plays of magnet attrack sound
     SfxMagnetAttractStop = _entry_type("SfxMagnetAttractStop", _clad_enum.Sfx_Magnet_Attract_Stop)
@@ -298,5 +298,16 @@ class AudioEvents(CladEnumWrapper):
     SfxSharedTimerWarning = _entry_type("SfxSharedTimerWarning", _clad_enum.Sfx_Shared_Timer_Warning)
     #: Stop all active plays of timer warning sound
     SfxSharedTimerWarningStop = _entry_type("SfxSharedTimerWarningStop", _clad_enum.Sfx_Shared_Timer_Warning_Stop)
+
+    #: Plays a fun music sound (that loops indefinitely).
+    MusicFunLoop = _entry_type("Music_Fun_Loop", _clad_enum.Music_Fun_Loop)
+    #: Stops all active plays of the fun music sound.
+    MusicFunLoopStop = _entry_type("Music_Fun_Loop_Stop", _clad_enum.Music_Fun_Loop_Stop)
+
+    #: Plays the putt-hole-success sound.
+    SfxPuttHoleSuccess = _entry_type("Sfx_Putt_Hole_Success", _clad_enum.Sfx_Putt_Hole_Success)
+    #: Stops all active plays of the putt-hole-success sound.
+    SfxPuttHoleSuccessStop = _entry_type("Sfx_Putt_Hole_Success_Stop", _clad_enum.Sfx_Putt_Hole_Success_Stop)
+
 
 AudioEvents._init_class()
