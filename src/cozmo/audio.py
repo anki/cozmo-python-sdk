@@ -309,5 +309,69 @@ class AudioEvents(CladEnumWrapper):
     #: Stops all active plays of the putt-hole-success sound.
     SfxPuttHoleSuccessStop = _entry_type("Sfx_Putt_Hole_Success_Stop", _clad_enum.Sfx_Putt_Hole_Success_Stop)
 
+    #: Plays alien invasion sound.
+    Sfx_Alien_Invasion_Ufo = _entry_type("Sfx_Alien_Invasion_Ufo", _clad_enum.Sfx_Alien_Invasion_Ufo)
+    #: Stops all active plays of the alien invasion sound.
+    Sfx_Alien_Invasion_Ufo_Stop = _entry_type("Sfx_Alien_Invasion_Ufo_Stop", _clad_enum.Sfx_Alien_Invasion_Ufo_Stop)
 
-AudioEvents._init_class()
+    #: Plays brick bash sound.
+    Sfx_Brick_Bash = _entry_type("Sfx_Brick_Bash", _clad_enum.Sfx_Brick_Bash)
+    #: Stops all active plays of the brick bash sound.
+    Sfx_Brick_Bash_Stop = _entry_type("Sfx_Brick_Bash_Stop", _clad_enum.Sfx_Brick_Bash_Stop)
+
+    #: Plays constellation star sound.
+    Sfx_Constellation_Star = _entry_type("Sfx_Constellation_Star", _clad_enum.Sfx_Constellation_Star)
+    #: Stops all active plays of the constellation star sound.
+    Sfx_Constellation_Star_Stop = _entry_type("Sfx_Constellation_Star_Stop", _clad_enum.Sfx_Constellation_Star_Stop)
+
+    #: Plays egg cracking sound.
+    Sfx_Egg_Decorating_Crack = _entry_type("Sfx_Egg_Decorating_Crack", _clad_enum.Sfx_Egg_Decorating_Crack)
+    #: Stops all active plays of the egg cracking sound.
+    Sfx_Egg_Decorating_Crack_Stop = _entry_type("Sfx_Egg_Decorating_Crack_Stop", _clad_enum.Sfx_Egg_Decorating_Crack_Stop)
+
+    #: Plays fidget spinner loop.
+    Sfx_Fidget_Spinner_Loop_Play = _entry_type("Sfx_Fidget_Spinner_Loop_Play", _clad_enum.Sfx_Fidget_Spinner_Loop_Play)
+    #: Stops all the fidget spinned looping sound.
+    Sfx_Fidget_Spinner_Loop_Stop = _entry_type("Sfx_Fidget_Spinner_Loop_Stop", _clad_enum.Sfx_Fidget_Spinner_Loop_Stop)
+    #: Plays fidget spinner sound.
+    Sfx_Fidget_Spinner_Start = _entry_type("Sfx_Fidget_Spinner_Start", _clad_enum.Sfx_Fidget_Spinner_Start)
+    #: Stops all active plays of the fidget spinner sound.
+    Sfx_Fidget_Spinner_Start_Stop = _entry_type("Sfx_Fidget_Spinner_Start_Stop", _clad_enum.Sfx_Fidget_Spinner_Start_Stop)
+
+    #: Plays flappy sound.
+    Sfx_Flappy_Increase = _entry_type("Sfx_Flappy_Increase", _clad_enum.Sfx_Flappy_Increase)
+    #: Stops all active plays of the flappy sound.
+    Sfx_Flappy_Increase_Stop = _entry_type("Sfx_Flappy_Increase_Stop", _clad_enum.Sfx_Flappy_Increase_Stop)
+
+    #: Plays morse code dash sound.
+    Sfx_Morse_Code_Dash = _entry_type("Sfx_Morse_Code_Dash", _clad_enum.Sfx_Morse_Code_Dash)
+    #: Stops all active plays of the morse code dash sound.
+    Sfx_Morse_Code_Dash_Stop = _entry_type("Sfx_Morse_Code_Dash_Stop", _clad_enum.Sfx_Morse_Code_Dash_Stop)
+    #: Plays morse code dot sound.
+    Sfx_Morse_Code_Dot = _entry_type("Sfx_Morse_Code_Dot", _clad_enum.Sfx_Morse_Code_Dot)
+    #: Stops all active plays of the morse code dot sound.
+    Sfx_Morse_Code_Dot_Stop = _entry_type("Sfx_Morse_Code_Dot_Stop", _clad_enum.Sfx_Morse_Code_Dot_Stop)
+    #: Plays morse code silent sound.
+    Sfx_Morse_Code_Silent = _entry_type("Sfx_Morse_Code_Silent", _clad_enum.Sfx_Morse_Code_Silent)
+    #: Stops all active plays of the morse code silent sound.
+    Sfx_Morse_Code_Silent_Stop = _entry_type("Sfx_Morse_Code_Silent_Stop", _clad_enum.Sfx_Morse_Code_Silent_Stop)
+
+    #: Plays paddle ball bounce sound.
+    Sfx_Paddle_Ball_Bounce = _entry_type("Sfx_Paddle_Ball_Bounce", _clad_enum.Sfx_Paddle_Ball_Bounce)
+    #: Stops all active plays of the paddle ball bounce sound.
+    Sfx_Paddle_Ball_Bounce_Stop = _entry_type("Sfx_Paddle_Ball_Bounce_Stop", _clad_enum.Sfx_Paddle_Ball_Bounce_Stop)
+    
+    #: Plays the first pot of gold sound sound.
+    Sfx_Pot_O_Gold_Blip_Level1 = _entry_type("Sfx_Pot_O_Gold_Blip_Level1", _clad_enum.Sfx_Pot_O_Gold_Blip_Level1)
+    #: Stops all active plays of the first pot of gold blip sound.
+    Sfx_Pot_O_Gold_Blip_Level1_Stop = _entry_type("Sfx_Pot_O_Gold_Blip_Level1_Stop", _clad_enum.Sfx_Pot_O_Gold_Blip_Level1_Stop)
+    #: Plays the second pot of gold sound sound.
+    Sfx_Pot_O_Gold_Blip_Level2 = _entry_type("Sfx_Pot_O_Gold_Blip_Level2", _clad_enum.Sfx_Pot_O_Gold_Blip_Level2)
+    #: Stops all active plays of the second pot of gold blip sound.
+    Sfx_Pot_O_Gold_Blip_Level2_Stop = _entry_type("Sfx_Pot_O_Gold_Blip_Level2_Stop", _clad_enum.Sfx_Pot_O_Gold_Blip_Level2_Stop)
+    #: Plays the third pot of gold sound sound.
+    Sfx_Pot_O_Gold_Blip_Level3 = _entry_type("Sfx_Pot_O_Gold_Blip_Level3", _clad_enum.Sfx_Pot_O_Gold_Blip_Level3)
+    #: Stops all active plays of the third pot of gold blip sound.
+    Sfx_Pot_O_Gold_Blip_Level3_Stop = _entry_type("Sfx_Pot_O_Gold_Blip_Level3_Stop", _clad_enum.Sfx_Pot_O_Gold_Blip_Level3_Stop)
+
+AudioEvents._init_class(warn_on_missing_definitions=False)
