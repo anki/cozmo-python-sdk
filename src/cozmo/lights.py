@@ -33,7 +33,7 @@ class Color:
     Args:
         int_color (int): A 32 bit value holding the binary RGBA value (where A
             is ignored and forced to be fully opaque).
-        rgb (tuple): A tuple holding the integer values from 0-255 for (reg, green, blue)
+        rgb (tuple): A tuple holding the integer values from 0-255 for (red, green, blue)
         name (str): A name to assign to this color
     '''
 

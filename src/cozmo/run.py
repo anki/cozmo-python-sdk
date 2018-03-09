@@ -30,7 +30,7 @@ a 3d viewer (with optional 2nd window showing Cozmo's camera) (using OpenGL), if
 supported on your system.
 
 Finally, more advanced progarms can integrate the SDK with an existing event
-loop by using the :func:`connect_with_loop` function.
+loop by using the :func:`connect_on_loop` function.
 
 All of these functions make use of a :class:`DeviceConnector` subclass to
 deal with actually connecting to an Android or iOS device.  There shouldn't
