@@ -111,35 +111,35 @@ class Angle:
 
         if degrees is not None:
             radians = degrees * math.pi / 180
-        self._radians = radians
+        self._radians = float(radians)
 
     def __repr__(self):
         return "<%s %.2f radians (%.2f degrees)>" % (self.__class__.__name__, self.radians, self.degrees)
 
     def __add__(self, other):
         if not isinstance(other, Angle):
-            raise TypeError("Unsupported operand for + expected Angle")
+            raise TypeError("Unsupported type for + expected Angle")
         return radians(self.radians + other.radians)
 
     def __sub__(self, other):
         if not isinstance(other, Angle):
-            raise TypeError("Unsupported operand for - expected Angle")
+            raise TypeError("Unsupported type for - expected Angle")
         return radians(self.radians - other.radians)
 
     def __mul__(self, other):
         if not isinstance(other, (int, float)):
-            raise TypeError("Unsupported operand for * expected number")
+            raise TypeError("Unsupported type for * expected number")
         return radians(self.radians * other)
 
     def __truediv__(self, other):
         if not isinstance(other, (int, float)):
-            raise TypeError("Unsupported operand for / expected number")
+            raise TypeError("Unsupported type for / expected number")
         return radians(self.radians / other)
 
     def _cmp_int(self, other):
         if not isinstance(other, Angle):
-            raise TypeError("Unsupported operand for < expected Angle")
-        return (self.radians > other.radians) - (self.radians < other.radians)
+            raise TypeError("Unsupported type for comparison expected Angle")
+        return self.radians - other.radians
 
     def __eq__(self, other):
         return self._cmp_int(other) == 0
