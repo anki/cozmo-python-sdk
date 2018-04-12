@@ -59,6 +59,7 @@ from . import logger, logger_protocol
 from . import action
 from . import anim
 from . import audio
+from . import song
 from . import behavior
 from . import camera
 from . import conn
@@ -1541,6 +1542,45 @@ class Robot(event.Dispatcher):
 
     ## Animation Commands ##
 
+    def play_audio(self, audio_event):
+        '''Starts playing audio on the device.
+
+        Sends an audio event to the engine using the id specified by the
+        supplied audio_event.
+
+        Args:
+            audio_event (object): An attribute of the :class:`cozmo.audio.AudioEvents` class
+        '''
+        audio_event_id = audio_event.id
+        game_object_id = _clad_to_engine_anki.AudioMetaData.GameObjectType.CodeLab
+
+        msg = _clad_to_engine_anki.AudioEngine.Multiplexer.PostAudioEvent(
+            audioEvent=audio_event_id, gameObject=game_object_id)
+        self.conn.send_msg(msg)
+
+    def play_song(self, song_notes, loop_count=1, in_parallel=False, num_retries=0):
+        '''Starts playing song on the robot.
+
+        Plays a provided array of SongNotes using a custom animation on the robot.
+
+        Args:
+            song_notes (object[]): An array of :class:`cozmo.song.SongNote` classes
+
+        Returns:
+            A :class:`cozmo.anim.Animation` action object which can be queried
+                to see when it is complete.
+        '''
+
+        msg = _clad_to_engine_iface.ReplaceNotesInSong(notes=song_notes)
+        self.conn.send_msg(msg)
+
+        action = self.animation_factory('cozmo_sings_custom', loop_count,
+                conn=self.conn, robot=self, dispatch_parent=self)
+        self._action_dispatcher._send_single_action(action,
+                                                    in_parallel=in_parallel,
+                                                    num_retries=num_retries)
+        return action
+
     def play_anim(self, name, loop_count=1, in_parallel=False, num_retries=0):
         '''Starts an animation playing on a robot.
 
@@ -1575,22 +1615,6 @@ class Robot(event.Dispatcher):
                                                     in_parallel=in_parallel,
                                                     num_retries=num_retries)
         return action
-
-    def play_audio(self, audio_event):
-        '''Starts playing audio on the device.
-
-        Sends an audio event to the engine using the id specified by the 
-        supplied audio_event.
-
-        Args:
-            audio_event (object): An attribute of the :class:`cozmo.audio.AudioEvents` class
-        '''
-        audio_event_id = audio_event.id
-        game_object_id = _clad_to_engine_anki.AudioMetaData.GameObjectType.CodeLab
-
-        msg = _clad_to_engine_anki.AudioEngine.Multiplexer.PostAudioEvent(
-            audioEvent=audio_event_id, gameObject=game_object_id)
-        self.conn.send_msg(msg)
 
     def play_anim_trigger(self, trigger, loop_count=1, in_parallel=False,
                           num_retries=0, use_lift_safe=False, ignore_body_track=False,

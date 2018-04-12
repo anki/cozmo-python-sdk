@@ -26,6 +26,7 @@ The API
     cozmo.robot
     cozmo.robot_alignment
     cozmo.run
+    cozmo.song
     cozmo.tkview
     cozmo.util
     cozmo.world
