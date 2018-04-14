@@ -908,6 +908,16 @@ class Robot(event.Dispatcher):
         return self.conn.anim_names
 
     @property
+    def anim_triggers(self):
+        '''list of :class:`cozmo.anim.Triggers`, specifying available animation triggers
+
+        These can be sent to the play_anim_trigger to make the robot perform animations.
+
+        An alias of :attr:`cozmo.anim.Triggers.trigger_list`.
+        '''
+        return anim.Triggers.trigger_list
+
+    @property
     def pose(self):
         """:class:`cozmo.util.Pose`: The current pose (position and orientation) of Cozmo
         """
@@ -1543,10 +1553,18 @@ class Robot(event.Dispatcher):
     ## Animation Commands ##
 
     def play_audio(self, audio_event):
-        '''Starts playing audio on the device.
+        '''Sends an audio event to the engine
 
-        Sends an audio event to the engine using the id specified by the
-        supplied audio_event.
+        Most of these come in pairs, with one to start an audio effect, and one to stop
+        if desired.
+
+        Example: 
+            :attr:`cozmo.audio.AudioEvents.SfxSharedSuccess` starts a sound
+            :attr:`cozmo.audio.AudioEvents.SfxSharedSuccessStop` interrupts that sound in progress
+
+        Some events are part of the TinyOrchestra system which have special behavior.  
+        This system can be intitialized and stopped, and various musical instruments can be 
+        turned on and off while it is running.
 
         Args:
             audio_event (object): An attribute of the :class:`cozmo.audio.AudioEvents` class
@@ -1574,7 +1592,8 @@ class Robot(event.Dispatcher):
         msg = _clad_to_engine_iface.ReplaceNotesInSong(notes=song_notes)
         self.conn.send_msg(msg)
 
-        action = self.animation_factory('cozmo_sings_custom', loop_count,
+        song_animation_name = 'cozmo_sings_custom'
+        action = self.animation_factory(song_animation_name, loop_count,
                 conn=self.conn, robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action,
                                                     in_parallel=in_parallel,
