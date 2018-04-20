@@ -65,4 +65,6 @@ Please see the :ref:`trouble` section of the Initial Setup page for tips, or vis
 
 ----
 
+`Terms and Conditions <https://www.anki.com/en-us/company/terms-and-conditions>`_ and `Privacy Policy <https://www.anki.com/en-us/company/privacy>`_
+
 `Click here to return to the Cozmo Developer website. <http://developer.anki.com>`_
