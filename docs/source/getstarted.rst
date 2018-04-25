@@ -145,4 +145,6 @@ Now, nightnight.py is saved in the same folder as 01_hello_world.py.
 
 Now that you have written your own Cozmo program, take a look at the rest of the Cozmo SDK and at the many other example programs to get more ideas.
 
+`Terms and Conditions <https://www.anki.com/en-us/company/terms-and-conditions>`_ and `Privacy Policy <https://www.anki.com/en-us/company/privacy>`_
+
 `Click here to return to the Cozmo Developer website. <http://developer.anki.com>`_
