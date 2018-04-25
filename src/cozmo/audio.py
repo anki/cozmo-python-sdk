@@ -45,6 +45,8 @@ class _AudioEvent(collections.namedtuple('_AudioEvent', 'name id')):
 
 class AudioEvents(CladEnumWrapper):
     """The possible values for an AudioEvent.
+    Pass one of these event objects to robot.play_audio() to play the corresponding sound clip.
+    Example: ``robot.play_audio(cozmo.audio.AudioEvents.MusicFunLoop)``
     """
     _clad_enum = _clad_to_engine_anki.AudioMetaData.GameEvent.Codelab
     _entry_type = _AudioEvent

@@ -116,3 +116,7 @@ Final Installation (All Platforms)
 
       List of devices attached
       88148a08 unauthorized
+
+`Terms and Conditions <https://www.anki.com/en-us/company/terms-and-conditions>`_ and `Privacy Policy <https://www.anki.com/en-us/company/privacy>`_
+
+`Click here to return to the Cozmo Developer website. <http://developer.anki.com>`_

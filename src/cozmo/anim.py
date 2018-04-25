@@ -191,10 +191,13 @@ class Triggers:
 
     This class holds the set of defined animations triggers to pass to play_anim_trigger.
     """
+    trigger_list = []
 
 for (_name, _id) in _clad_to_engine_cozmo.AnimationTrigger.__dict__.items():
     if not _name.startswith('_'):
-        setattr(Triggers, _name, _AnimTrigger(_name, _id))
+        trigger = _AnimTrigger(_name, _id)
+        setattr(Triggers, _name, trigger)
+        Triggers.trigger_list.append(trigger)
 
 
 def animation_completed_filter():

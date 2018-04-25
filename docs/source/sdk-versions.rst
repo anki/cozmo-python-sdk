@@ -54,4 +54,6 @@ If you have incompatible versions of the app and the SDK, please update the app 
 
 ----
 
+`Terms and Conditions <https://www.anki.com/en-us/company/terms-and-conditions>`_ and `Privacy Policy <https://www.anki.com/en-us/company/privacy>`_
+
 `Click here to return to the Cozmo Developer website. <http://developer.anki.com>`_

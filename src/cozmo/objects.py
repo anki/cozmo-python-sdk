@@ -550,6 +550,8 @@ class LightCube(ObservableObject):
         self.last_moved_time = now
         self.last_moved_robot_timestamp = msg.timestamp
 
+        self.pose.invalidate()
+
         acceleration = util.Vector3(msg.accel.x, msg.accel.y, msg.accel.z)
 
         if started_moving:
