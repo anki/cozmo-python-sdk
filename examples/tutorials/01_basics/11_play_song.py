@@ -17,7 +17,7 @@
 '''Cozmo sings different musical notes
 
  A) Plays a rising scale of quarter notes
- B) then plays a the same pitch at different durations
+ B) Plays the same pitch at different durations
 '''
 
 import asyncio
