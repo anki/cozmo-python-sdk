@@ -18,8 +18,7 @@
 
 This example demonstrates Cozmo driving to and rolling a cube.
 You must place a cube in front of Cozmo so that he can see it.
-The cube should be no farther than 5 inches away from Cozmo
-and should be centered in front of him.
+The cube should be centered in front of him.
 '''
 
 import cozmo
