@@ -18,7 +18,7 @@
 
 This example demonstrates Cozmo driving to and docking with a cube, without
 picking it up.  You must place a cube in front of Cozmo so that he can see it.
-The cube should centered in front of him.
+The cube should be centered in front of him.
 '''
 
 import cozmo
