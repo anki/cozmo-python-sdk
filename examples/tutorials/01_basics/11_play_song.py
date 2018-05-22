@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Play Sounds
+'''Cozmo sings different musical notes
 
-Play a one-off sound on the device, then play one of the Tiny Orchestra loops.
+ A) Plays a rising scale of quarter notes
+ B) Plays the same pitch at different durations
 '''
 
 import asyncio
