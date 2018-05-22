@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "1.4.1.dev0"
+__version__ = "1.4.2.dev0"
 
 # Specify the version of cozmoclad that this package requires
 # Releases of the Cozmo package must specify an exact cozmoclad release
