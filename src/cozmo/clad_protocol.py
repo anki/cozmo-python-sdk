@@ -31,7 +31,6 @@ if sys.byteorder != 'little':
 class CLADProtocol(asyncio.Protocol):
     '''Low level CLAD codec'''
     _send_mutex = Lock()
-    _is_sending_data=False
 
     clad_decode_union = None
     clad_encode_union = None
@@ -95,10 +94,6 @@ class CLADProtocol(asyncio.Protocol):
         msg_buf = msg.pack()
         msg_size = struct.pack('H', len(msg_buf))
 
-        if self._is_sending_data:
-            print('Warning: simultaneous attempts to send messages using synchronous protocol, this may negatively impact performance')
-
-        self._is_sending_data = True
         self._send_mutex.acquire()
         try:
             self.transport.write(msg_size)
@@ -108,7 +103,6 @@ class CLADProtocol(asyncio.Protocol):
 
         finally:
             self._send_mutex.release()
-            self._is_sending_data = False
 
     def send_msg_new(self, msg):
         name = msg.__class__.__name__
