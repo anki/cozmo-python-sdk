@@ -2015,6 +2015,7 @@ class Robot(event.Dispatcher):
 
         Args:
             target_object (:class:`cozmo.objects.ObservableObject`): The destination object.
+                CustomObject instances are not supported.            
             distance_from_object (:class:`cozmo.util.Distance`): The distance from the
                 object to stop. This is the distance between the origins. For instance,
                 the distance from the robot's origin (between Cozmo's two front wheels)
@@ -2030,6 +2031,9 @@ class Robot(event.Dispatcher):
         '''
         if not isinstance(target_object, objects.ObservableObject):
             raise TypeError("Target must be an observable object")
+
+        if isinstance(target_object, objects.CustomObject):
+            raise TypeError("CustomObject instances not supported by go_to_object")
 
         action = self.go_to_object_factory(object_id=target_object.object_id,
                                            distance_from_object=distance_from_object,
