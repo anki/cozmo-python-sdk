@@ -16,8 +16,7 @@ pip3 install numpy \
 pillow \
 tweepy \
 flask \
-PyOpenGL \
-PyOpenGL-accelerate
+PyOpenGL
 sudo localectl set-locale LANG="en_US.UTF-8"
 
 echo ">>> Installing Android Command Line Tools"

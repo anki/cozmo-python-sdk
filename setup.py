@@ -47,7 +47,6 @@ Optional requirements for camera image processing/display:
 
 Optional requirements for 3D viewer/visualization:
     * PyOpenGL
-    * PyOpenGL-accelerate
     * Pillow
 '''
 
