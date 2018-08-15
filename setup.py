@@ -47,7 +47,6 @@ Optional requirements for camera image processing/display:
 
 Optional requirements for 3D viewer/visualization:
     * PyOpenGL
-    * PyOpenGL-accelerate
     * Pillow
 '''
 
@@ -104,7 +103,7 @@ setup(
     },
     install_requires=install_requires,
     extras_require={
-        '3dviewer': ['PyOpenGL>=3.1', 'PyOpenGL-accelerate>= 3.1',
+        '3dviewer': ['PyOpenGL>=3.1',
                      'Pillow>=3.3', 'numpy>=1.11'],
         'camera': ['Pillow>=3.3', 'numpy>=1.11'],
         'test': ['tox', 'pytest'],
