@@ -21,10 +21,16 @@ from io import BytesIO
 import json
 import sys
 import cozmo
+
 try:
-    import tweepy
-except ImportError:
-    sys.exit("Cannot import tweepy: Do `pip3 install --user tweepy` to install")
+    from tweepy_wrapper import tweepy, CozmoStream
+except SyntaxError as exc:
+    if sys.version_info.major >= 3 and sys.version_info.minor >= 7:
+        raise ImportError('Tweepy must be higher than version 3.6.0 when running against python 3.7 or higher.\n'
+                          'Do `pip3 install --user --upgrade tweepy` to upgrade.  If that does not work, download the\n'
+                          'latest tweepy master from github `https://github.com/tweepy/tweepy`.') from exc
+    else:
+        from tweepy_wrapper_deprecated import tweepy, CozmoStream
 
 
 def trim_tweet_text(tweet_text):
@@ -147,24 +153,6 @@ class CozmoTweetStreamListener(tweepy.StreamListener):
             return self.on_tweet_from_user(json_data, tweet_text, from_user, is_retweet)
         else:
             return self.on_non_tweet_data(json_data)
-
-
-class CozmoStream(tweepy.Stream):
-    '''Cozmo wrapper around tweepy.Stream
-       Primarily just to avoid needing to import tweepy outside of this file
-    '''
-
-    def async_userstream(self, stall_warnings=False, _with=None, replies=None,
-                          track=None, locations=None, run_in_new_thread=True, encoding='utf8'):
-        '''Wrapper around :meth:`userstream` for exposing async parameter
-
-        The async variable name in userstream clashes with the async keyword in asyncio
-        This wrapper hides the variable name so that it can be called from asyncio code
-        '''
-
-        self.userstream(stall_warnings=stall_warnings, _with=_with, replies=replies,\
-                        track=track, locations=locations, async=run_in_new_thread,\
-                        encoding=encoding)
 
 
 def has_default_twitter_keys(twitter_keys):

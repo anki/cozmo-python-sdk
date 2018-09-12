@@ -250,7 +250,7 @@ async def check_for_intruder(robot, dsg:DeskSecurityGuard):
         if not did_occur_recently(dsg.time_last_announced_owner, 60.0):
             await robot.play_anim_trigger(cozmo.anim.Triggers.NamedFaceInitialGreeting).wait_for_completed()
             dsg.time_last_announced_owner = time.time()
-        else:
+        elif owner_face:
             await robot.turn_towards_face(owner_face).wait_for_completed()
     elif can_see_intruders:
 
@@ -287,7 +287,8 @@ async def check_for_intruder(robot, dsg:DeskSecurityGuard):
                 dsg.time_last_pounced_at_intruder = time.time()
 
             # Turn towards the intruder to keep them in view
-            await robot.turn_towards_face(intruder_face).wait_for_completed()
+            if intruder_face:
+                await robot.turn_towards_face(intruder_face).wait_for_completed()
         else:
             # Possibly an intruder - turn backpack blue to indicate, and play
             # suspicious animation (if not played recently)
@@ -296,7 +297,7 @@ async def check_for_intruder(robot, dsg:DeskSecurityGuard):
             if not did_occur_recently(dsg.time_last_suspicious, 10.0):
                 await robot.play_anim_trigger(cozmo.anim.Triggers.HikingInterestingEdgeThought).wait_for_completed()
                 dsg.time_last_suspicious = time.time()
-            else:
+            elif intruder_face:
                 # turn robot towards intruder face slightly to get a better look at them
                 await robot.turn_towards_face(intruder_face).wait_for_completed()
     else:
