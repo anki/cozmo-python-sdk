@@ -63,4 +63,4 @@ Indices and tables
 
 `Terms and Conditions <https://www.anki.com/en-us/company/terms-and-conditions>`_ and `Privacy Policy <https://www.anki.com/en-us/company/privacy>`_
 
-`Click here to return to the Cozmo Developer website. <http://developer.anki.com>`_
+`Click here to return to the Anki Developer website. <http://developer.anki.com>`_
