@@ -14,7 +14,6 @@ python3-pil.imagetk \
 freeglut3
 pip3 install numpy \
 pillow \
-tweepy \
 flask \
 PyOpenGL
 sudo localectl set-locale LANG="en_US.UTF-8"

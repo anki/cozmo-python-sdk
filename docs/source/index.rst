@@ -35,12 +35,6 @@ Welcome to the Cozmo SDK!
 
 .. toctree::
     :maxdepth: 2
-    :caption: Advanced Tutorial
-
-    tutorial-advanced.rst
-
-.. toctree::
-    :maxdepth: 2
     :caption: SDK Versions
 
     sdk-versions.rst
