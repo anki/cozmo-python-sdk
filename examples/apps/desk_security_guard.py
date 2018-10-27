@@ -84,7 +84,7 @@ async def check_for_intruder(robot, dsg:DeskSecurityGuard):
     owner_face = None
     intruder_face = None
     for visible_face in robot.world.visible_faces:
-        if visible_face.name != "" and visible_face.name != None and visible_face.name == dsg.owner_name:
+        if visible_face.name.lower() == dsg.owner_name.lower():
             if owner_face:
                 print("Multiple faces with name %s seen - %s and %s!" %
                       (dsg.owner_name, owner_face, visible_face))
