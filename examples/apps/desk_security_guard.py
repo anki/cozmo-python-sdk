@@ -27,143 +27,19 @@ import time
 import cozmo
 from cozmo.util import degrees, distance_mm, speed_mmps
 
-sys.path.append('../lib/')
-import twitter_helpers as twitter_helpers
-import cozmo_twitter_keys as twitter_keys
-
-
-#: The twitter user (without the @ symbol) that will receive security photos, etc.
-OWNER_TWITTER_USERNAME = ""
-
 #: The name that the owner's face is enrolled as (i.e. your username in the app)
 #: When that face is seen, Cozmo will assume no other faces currently seen are intruders
 OWNER_FACE_ENROLL_NAME = ""
 
 
-if OWNER_TWITTER_USERNAME == "":
-    sys.exit("You must fill in OWNER_TWITTER_USERNAME")
 if OWNER_FACE_ENROLL_NAME == "":
     sys.exit("You must fill in OWNER_FACE_ENROLL_NAME")
-
-
-class TwitterStreamToAppCommunication:
-    '''Class for messaging to/from SecurityGuardStreamListener
-
-    Tweepy doesn't support asyncio, so this program must run the SecurityGuardStreamListener
-    stream in its own thread. Communication is deliberately limited between the rest of the
-    program and the stream to some simple signalling bools to avoid running
-    into any threading issues like race conditions.
-    '''
-    def __init__(self):
-        self.is_armed = True
-        self.has_arm_request = False
-        self.has_disarm_request = False
-
-
-class SecurityGuardStreamListener(twitter_helpers.CozmoTweetStreamListener):
-    '''React to Tweets sent to the Cozmo user, live, as they happen...
-
-    on_tweet_from_user is called whenever the Twitter user receives a tweet.
-    This allows the only the owner to enable and disable the alarm via Twitter.
-    '''
-
-    def __init__(self, twitter_api, stream_to_app_comms):
-        super().__init__(None, twitter_api)
-        self.stream_to_app_comms = stream_to_app_comms
-        self.owner_username = OWNER_TWITTER_USERNAME
-
-    def do_arm(self):
-        '''Request security guard alerts be enabled'''
-        if self.stream_to_app_comms.is_armed:
-            return "Already Armed!"
-        else:
-            self.stream_to_app_comms.has_arm_request = True
-            return "Arming!"
-
-    def do_disarm(self):
-        '''Request security guard alerts be disabled'''
-        if self.stream_to_app_comms.is_armed:
-            self.stream_to_app_comms.has_disarm_request = True
-            return "Disarming!"
-        else:
-            return "Already Disarmed!"
-
-    def get_supported_commands(self):
-        '''Construct a list of all methods in this class that start with "do_" - these are commands we accept.'''
-        prefix_str = "do_"
-        prefix_len = len(prefix_str)
-        supported_commands = []
-        for func_name in dir(self.__class__):
-            if func_name.startswith(prefix_str):
-                supported_commands.append(func_name[prefix_len:])
-        return supported_commands
-
-    def get_command(self, command_name):
-        '''Find a matching "do_" function and return it. Return None if there's no match.'''
-        try:
-            return getattr(self, 'do_' + command_name.lower())
-        except AttributeError:
-            return None
-
-    def extract_command_from_string(self, in_string):
-        '''Separate inString at each space, loop through until we find a command, and return tuple of cmd_func and cmd_args.'''
-
-        split_string = in_string.split()
-
-        for i in range(len(split_string)):
-
-            cmd_func = self.get_command(split_string[i])
-
-            if cmd_func:
-                return cmd_func
-
-        # No valid command found
-        return None
-
-    def on_tweet_from_user(self, json_data, tweet_text, from_user, is_retweet):
-        '''Handle every new tweet as it appears.'''
-
-        # ignore retweets
-        if is_retweet:
-            return True
-
-        # ignore any replies from this account (otherwise it would infinite loop as soon as you reply)
-        # allow other messages from this account (so you can tweet at yourself to control Cozmo if you want)
-
-        user_me = self.twitter_api.me()
-        is_from_me = (from_user.get('id') == user_me.id)
-
-        if is_from_me and tweet_text.startswith("@"):
-            # ignore replies from this account
-            return
-
-        from_user_name = from_user.get('screen_name')
-
-        from_owner = from_user_name.lower() == self.owner_username.lower()
-        if not from_owner:
-            print("Ignoring tweet from non-owner user %s" % from_user_name)
-            return
-
-        tweet_id = json_data.get('id_str')
-
-        cmd_func = self.extract_command_from_string(tweet_text)
-
-        reply_prefix = "@" + from_user_name + " "
-        if cmd_func is not None:
-            result_string = cmd_func()
-            if result_string:
-                self.post_tweet(reply_prefix + result_string, tweet_id)
-        else:
-            self.post_tweet(reply_prefix + "Sorry, I don't understand; available commands are: "
-                            + str(self.get_supported_commands()), tweet_id)
 
 
 class DeskSecurityGuard:
     '''Container for Security Guard status'''
 
-    def __init__(self, twitter_api):
-        self.twitter_api = twitter_api
-        self.owner_username = OWNER_TWITTER_USERNAME
+    def __init__(self):
         self.owner_name = OWNER_FACE_ENROLL_NAME
 
         self.is_armed = True
@@ -208,7 +84,7 @@ async def check_for_intruder(robot, dsg:DeskSecurityGuard):
     owner_face = None
     intruder_face = None
     for visible_face in robot.world.visible_faces:
-        if visible_face.name == dsg.owner_name:
+        if visible_face.name != "" and visible_face.name != None and visible_face.name == dsg.owner_name:
             if owner_face:
                 print("Multiple faces with name %s seen - %s and %s!" %
                       (dsg.owner_name, owner_face, visible_face))
@@ -261,21 +137,6 @@ async def check_for_intruder(robot, dsg:DeskSecurityGuard):
             # Definitely an intruder - turn backpack red to indicate
             robot.set_all_backpack_lights(cozmo.lights.red_light)
 
-            # Tweet a photo (every X seconds)
-            if not did_occur_recently(dsg.time_last_uploaded_photo, 15.0):
-                # Tweet the image to the owner
-                latest_image = robot.world.latest_image
-                if latest_image is not None:
-                    status_text = "@" + dsg.owner_username + " Intruder Detected"
-                    media_ids = twitter_helpers.upload_images(dsg.twitter_api, [latest_image.raw_image])
-                    posted_image = twitter_helpers.post_tweet(dsg.twitter_api, status_text, media_ids=media_ids)
-                    if posted_image:
-                        dsg.time_last_uploaded_photo = time.time()
-                    else:
-                        print("Failed to tweet photo of intruder!")
-                else:
-                    print("No camera image available to tweet!")
-
             # Sound an alarm (every X seconds)
             if not did_occur_recently(dsg.time_last_announced_intruder, 10):
                 await robot.say_text("Intruder Alert").wait_for_completed()
@@ -310,15 +171,8 @@ async def desk_security_guard(robot):
     # Turn on image receiving by the camera
     robot.camera.image_stream_enabled = True
 
-    # Connect Twitter, run async in the background
-    twitter_api, twitter_auth = twitter_helpers.init_twitter(twitter_keys)
-    stream_to_app_comms = TwitterStreamToAppCommunication()
-    stream_listener = SecurityGuardStreamListener(twitter_api, stream_to_app_comms)
-    twitter_stream = twitter_helpers.CozmoStream(twitter_auth, stream_listener)
-    twitter_stream.async_userstream(_with='user')
-
     # Create our security guard
-    dsg = DeskSecurityGuard(twitter_api)
+    dsg = DeskSecurityGuard()
 
     # Make sure Cozmo is clear of the charger
     if robot.is_on_charger:
@@ -342,20 +196,6 @@ async def desk_security_guard(robot):
     time_for_next_patrol = time.time() + time_between_patrols
 
     while True:
-
-        # Handle any external requests to arm or disarm Cozmo
-        if stream_to_app_comms.has_arm_request:
-            stream_to_app_comms.has_arm_request = False
-            if not dsg.is_armed:
-                print("Alarm Armed")
-                dsg.is_armed = True
-        if stream_to_app_comms.has_disarm_request:
-            stream_to_app_comms.has_disarm_request = False
-            if dsg.is_armed:
-                print("Alarm Disarmed")
-                dsg.is_armed = False
-
-        stream_to_app_comms.is_armed = dsg.is_armed
 
         # Turn head every few seconds to cover a wider field of view
         # Only do this if not currently investigating an intruder
