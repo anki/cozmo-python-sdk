@@ -18,11 +18,15 @@
 
 This example demonstrates Cozmo driving to and docking with a cube, without
 picking it up.  You must place a cube in front of Cozmo so that he can see it.
+The cube should be centered in front of him.
 '''
 
 import cozmo
+from cozmo.util import degrees
 
 async def dock_with_cube(robot: cozmo.robot.Robot):
+    await robot.set_head_angle(degrees(-5.0)).wait_for_completed()
+
     print("Cozmo is waiting until he sees a cube.")
     cube = await robot.world.wait_for_observed_light_cube()
 

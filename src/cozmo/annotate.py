@@ -227,8 +227,8 @@ class Annotator:
 
     Subclasses of Annotator handle applying a single annotation to an image.
     '''
-    #: int: The priority of the annotator - Annotators with lower numbered
-    # priorities are applied first.
+    #: int: The priority of the annotator - Annotators with higher numbered 
+    #: priorities are applied first.
     priority = 100
 
     def __init__(self, img_annotator, priority=None):
@@ -414,10 +414,10 @@ class ImageAnnotator(event.Dispatcher):
     All annotations can be disabled by setting the
     :attr:`annotation_enabled` property to False.
 
-    Eg. to disable face annotations, call
+    E.g. to disable face annotations, call
     ``coz.world.image_annotator.disable_annotator('faces')``
 
-    Annotators each have a priority number associated with them.  Annotators
+    Annotators each have a priority number associated with them. Annotators
     with a larger priority number are rendered first and may be overdrawn by those
     with a lower/smaller priority number.
     '''
@@ -450,7 +450,7 @@ class ImageAnnotator(event.Dispatcher):
                 already be defined
             annotator (:class:`Annotator` or callable): The annotator to add
                 may either by an instance of Annotator, or a factory callable
-                that will return an instance of Annotator.  The callable will
+                that will return an instance of Annotator. The callable will
                 be called with an ImageAnnotator instance as its first argument.
         Raises:
             :class:`ValueError` if the annotator is already defined.

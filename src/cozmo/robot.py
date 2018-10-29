@@ -889,6 +889,12 @@ class Robot(event.Dispatcher):
         msg = _clad_to_engine_iface.EnableLightStates(enable=enable, objectID=-1)
         self.conn.send_msg(msg)
 
+    def _enable_cube_sleep(self, enable=True, skip_animation=True):
+        # skip_animation (bool): True to skip the fadeout part of the sleep anim
+        msg = _clad_to_engine_iface.EnableCubeSleep(enable=enable,
+                                                    skipAnimation=skip_animation)
+        self.conn.send_msg(msg)
+
     #### Properties ####
 
     @property
@@ -1487,6 +1493,25 @@ class Robot(event.Dispatcher):
         msg = _clad_to_engine_iface.SetHeadlight(enable=enable)
         self.conn.send_msg(msg)
 
+    def enable_freeplay_cube_lights(self, enable=True):
+        """Enable, or disable, the automatic cube light mode used in freeplay.
+
+        Enabling the freeplay cube light mode causes the cubes to automatically
+        pulse blue when Cozmo can see them - as seen in the Cozmo app during
+        freeplay mode. This is disabled by default in SDK mode because it
+        overrides any other calls to set the cube light colors.
+
+        Args:
+            enable (bool): True to enable the freeplay cube light mode,
+                False to disable it.
+        """
+        if enable:
+            self._set_cube_light_state(True)
+            self._enable_cube_sleep(False, False)
+        else:
+            self._enable_cube_sleep(True, True)
+            self._set_cube_light_state(False)
+
     def set_head_angle(self, angle, accel=10.0, max_speed=10.0, duration=0.0,
                        warn_on_clamp=True, in_parallel=False, num_retries=0):
         '''Tell Cozmo's head to turn to a given angle.
@@ -1990,6 +2015,7 @@ class Robot(event.Dispatcher):
 
         Args:
             target_object (:class:`cozmo.objects.ObservableObject`): The destination object.
+                CustomObject instances are not supported.            
             distance_from_object (:class:`cozmo.util.Distance`): The distance from the
                 object to stop. This is the distance between the origins. For instance,
                 the distance from the robot's origin (between Cozmo's two front wheels)
@@ -2005,6 +2031,9 @@ class Robot(event.Dispatcher):
         '''
         if not isinstance(target_object, objects.ObservableObject):
             raise TypeError("Target must be an observable object")
+
+        if isinstance(target_object, objects.CustomObject):
+            raise TypeError("CustomObject instances not supported by go_to_object")
 
         action = self.go_to_object_factory(object_id=target_object.object_id,
                                            distance_from_object=distance_from_object,

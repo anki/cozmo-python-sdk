@@ -87,7 +87,7 @@ class EvtObjectAppeared(event.Event):
 
     This differs from EvtObjectObserved in that it's only triggered when
     an object initially becomes visible.  If it disappears for more than
-    OBJECT_VISIBILITY_TIMEOUT (0.2) seconds and then is seen again, a
+    OBJECT_VISIBILITY_TIMEOUT seconds and then is seen again, a
     EvtObjectDisappeared will be dispatched, followed by another
     EvtObjectAppeared event.
 

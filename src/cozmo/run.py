@@ -30,7 +30,7 @@ a 3d viewer (with optional 2nd window showing Cozmo's camera) (using OpenGL), if
 supported on your system.
 
 Finally, more advanced progarms can integrate the SDK with an existing event
-loop by using the :func:`connect_with_loop` function.
+loop by using the :func:`connect_on_loop` function.
 
 All of these functions make use of a :class:`DeviceConnector` subclass to
 deal with actually connecting to an Android or iOS device.  There shouldn't
@@ -780,7 +780,8 @@ def setup_basic_logging(general_log_level=None, protocol_log_level=None,
 def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
                 connector=None, force_viewer_on_top=False,
                 deprecated_filter="default", use_3d_viewer=False,
-                show_viewer_controls=True):
+                show_viewer_controls=True,
+                exit_on_connection_error=True):
     '''Connect to Cozmo and run the provided program/function f.
 
     Args:
@@ -809,6 +810,8 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
             `use_viewer` are set then the 2D camera view will render in an OpenGL
             window instead of a TkView window.
         show_viewer_controls (bool): Specifies whether to draw controls on the view.
+        exit_on_connection_error (bool): Specify whether the program should exit on
+            connection error or should an error be raised. Default to true.
     '''
     setup_basic_logging(deprecated_filter=deprecated_filter)
 
@@ -847,4 +850,8 @@ def run_program(f, use_viewer=False, conn_factory=conn.CozmoConnection,
     except KeyboardInterrupt:
         logger.info('Exit requested by user')
     except exceptions.ConnectionError as e:
-        sys.exit("A connection error occurred: %s" % e)
+        if exit_on_connection_error:
+            sys.exit("A connection error occurred: %s" % e)
+        else:
+            logger.error("A connection error occurred: %s" % e)
+            raise
