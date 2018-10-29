@@ -503,8 +503,8 @@ def filter_handler(event, **filters):
 
     For example::
 
-        # Handle only if the majorWin animation completed
-        @filter_handler(cozmo.anim.EvtAnimationCompleted, animation_name="majorWin")
+        # Handle only if the anim_majorwin animation completed
+        @filter_handler(cozmo.anim.EvtAnimationCompleted, animation_name="anim_majorwin")
 
         # Handle only when the observed object is a LightCube
         @filter_handler(cozmo.objects.EvtObjectObserved, obj=lambda obj: isinstance(cozmo.objects.LightCube))
