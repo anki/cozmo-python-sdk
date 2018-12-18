@@ -13,41 +13,18 @@
 # limitations under the License.
 
 '''
-Cozmo, by Anki.
+The Cozmo SDK is a flexible vision-based robotics platform used in enterprise, education, and entertainment.
 
-Cozmo is a small robot with a big personality.
+Cozmo’s pioneering combination of advanced robotics hardware and software are part of what make him an innovative consumer experience. But it’s also what makes him, in conjunction with the Cozmo SDK, a groundbreaking robotics platform that’s expressive, engaging, and entertaining.
 
-This library lets you take command of Cozmo and write programs for him.
+We built the Cozmo SDK to be robust enough for enterprise and research, but simple enough for anyone with a bit of technical know-how to tap into our sophisticated robotics and AI technologies. Organizations and institutions using the Cozmo SDK include SAP, Oracle, Carnegie Mellon University, and Georgia Tech. Find out more at developer.anki.com
 
-Cozmo features:
+Cozmo SDK documentation: http://cozmosdk.anki.com/docs/
 
-    * A camera with advanced vision system
-    * A robotic lifter
-    * Independent tank treads
-    * Pivotable head
-    * An array of LEDs
-    * An accelerometer
-    * A gyroscope
-    * Cliff detection
-    * Face recognition
-    * Path planning
-    * Animation and behavior systems
-    * Power cubes, with LEDs, an accelerometer and tap detection
-
-This SDK provides users with access to take control of Cozmo and write simple
-or advanced programs with him.
+Official developer forum: https://forums.anki.com/
 
 Requirements:
     * Python 3.5.1 or later
-
-Optional requirements for camera image processing/display:
-    * Tkinter (Usually supplied by default with Python)
-    * Pillow
-    * NumPy
-
-Optional requirements for 3D viewer/visualization:
-    * PyOpenGL
-    * Pillow
 '''
 
 
@@ -81,9 +58,9 @@ setup(
     version=version,
     description='SDK for Anki Cozmo, the small robot with the big personality',
     long_description=__doc__,
-    url='https://developer.anki.com/cozmo/',
+    url='https://developer.anki.com',
     author='Anki, Inc',
-    author_email='cozmosdk@anki.com',
+    author_email='developer@anki.com',
     license='Apache License, Version 2.0',
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
