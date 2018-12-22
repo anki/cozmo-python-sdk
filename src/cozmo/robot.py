@@ -1646,6 +1646,12 @@ class Robot(event.Dispatcher):
                 be already complete.
             num_retries (int): Number of times to retry the action if the
                 previous attempt(s) failed.
+            ignore_body_track (bool): True to ignore the animation track for
+                Cozmo's body (i.e. the wheels / treads).
+            ignore_head_track (bool): True to ignore the animation track for
+                Cozmo's head.
+            ignore_lift_track (bool): True to ignore the animation track for
+                Cozmo's lift.
         Returns:
             A :class:`cozmo.anim.Animation` action object which can be queried
                 to see when it is complete.
