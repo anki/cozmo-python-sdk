@@ -1625,7 +1625,8 @@ class Robot(event.Dispatcher):
                                                     num_retries=num_retries)
         return action
 
-    def play_anim(self, name, loop_count=1, in_parallel=False, num_retries=0):
+    def play_anim(self, name, loop_count=1, in_parallel=False, num_retries=0,
+                  ignore_body_track=False, ignore_head_track=False, ignore_lift_track=False):
         '''Starts an animation playing on a robot.
 
         Returns an Animation object as soon as the request to play the animation
@@ -1654,6 +1655,7 @@ class Robot(event.Dispatcher):
         if name not in self.conn.anim_names:
             raise ValueError('Unknown animation name "%s"' % name)
         action = self.animation_factory(name, loop_count,
+                ignore_body_track, ignore_head_track, ignore_lift_track,
                 conn=self.conn, robot=self, dispatch_parent=self)
         self._action_dispatcher._send_single_action(action,
                                                     in_parallel=in_parallel,
