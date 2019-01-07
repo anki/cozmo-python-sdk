@@ -43,8 +43,8 @@ class EvtAnimationCompleted(action.EvtActionCompleted):
 
 class Animation(action.Action):
     '''An Animation describes an actively-playing animation on a robot.'''
-    def __init__(self, anim_name, loop_count, ignore_body_track,
-                 ignore_head_track, ignore_lift_track, **kw):
+    def __init__(self, anim_name, loop_count, ignore_body_track=False,
+                 ignore_head_track=False, ignore_lift_track=False, **kw):
         super().__init__(**kw)
 
         #: The name of the animation that was dispatched
