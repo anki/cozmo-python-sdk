@@ -43,7 +43,8 @@ class EvtAnimationCompleted(action.EvtActionCompleted):
 
 class Animation(action.Action):
     '''An Animation describes an actively-playing animation on a robot.'''
-    def __init__(self, anim_name, loop_count, **kw):
+    def __init__(self, anim_name, loop_count, ignore_body_track=False,
+                 ignore_head_track=False, ignore_lift_track=False, **kw):
         super().__init__(**kw)
 
         #: The name of the animation that was dispatched
@@ -52,11 +53,27 @@ class Animation(action.Action):
         #: The number of iterations the animation was requested for
         self.loop_count = loop_count
 
+        #: bool: True to ignore the body track (i.e. the wheels / treads)
+        self.ignore_body_track = ignore_body_track
+
+        #: bool: True to ignore the head track
+        self.ignore_head_track = ignore_head_track
+
+        #: bool: True to ignore the lift track
+        self.ignore_lift_track = ignore_lift_track
+
+
     def _repr_values(self):
-        return "anim_name=%s loop_count=%s" % (self.anim_name, self.loop_count)
+        all_tracks = {"body":self.ignore_body_track,
+                      "head":self.ignore_head_track,
+                      "lift":self.ignore_lift_track}
+        ignore_tracks = [k for k, v in all_tracks.items() if v]
+
+        return "anim_name=%s loop_count=%s ignore_tracks=%s" % (self.anim_name, self.loop_count, str(ignore_tracks))
 
     def _encode(self):
-        return _clad_to_engine_iface.PlayAnimation(animationName=self.anim_name, numLoops=self.loop_count)
+        return _clad_to_engine_iface.PlayAnimation(animationName=self.anim_name, numLoops=self.loop_count, ignoreBodyTrack=self.ignore_body_track,
+            ignoreHeadTrack=self.ignore_head_track, ignoreLiftTrack=self.ignore_lift_track)
 
     def _dispatch_completed_event(self, msg):
         self._completed_event = EvtAnimationCompleted(
