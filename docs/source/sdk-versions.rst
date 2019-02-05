@@ -67,6 +67,8 @@ The Cozmo SDK is updated often in order to provide you with the best possible us
 +---------------+---------------+
 | 3.2.0         | 1.4.8         |
 +---------------+---------------+
+| 3.3.0         | 1.4.9         |
++---------------+---------------+
 
 If you have incompatible versions of the app and the SDK, please update the app and SDK.
 
