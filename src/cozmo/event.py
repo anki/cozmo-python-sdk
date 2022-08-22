@@ -485,7 +485,7 @@ class Dispatcher(base.Base):
 
         self.add_event_handler(event, f)
         if timeout:
-             return await asyncio.wait_for(f, timeout, loop=self._loop)
+             return await asyncio.wait_for(f, timeout)
         return await f
 
 
